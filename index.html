@@ -180,11 +180,7 @@
 
 <header>
   <div class="logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 24 24"><path d="M12 2L4 7v10l8 5 8-5V7L12 2zm0 2.5l6 3.75v7.5L12 19.5l-6-3.75v-7.5L12 4.5z"/></svg>
-    </div>
-    <!-- UPDATE: Replace with your company name or swap for <img src="logo.png"> -->
-    <span class="logo-text">Emissions Explorer</span>
+    <img src="TASA_EFX_Logo_Final.jpeg" alt="TASA Logo" style="height: 38px; width: auto;">
   </div>
   <div class="header-right">
     <span>kgCO₂e / USD</span>
@@ -455,8 +451,8 @@ const COL = {
 // TO UPDATE DATA: replace emissions_factors.csv
 // Keep column names identical — values can change
 // =============================================
-Papa.parse('emissions_factors.csv', {
-  download: true, header: true, dynamicTyping: true, delimiter: '\t',
+Papa.parse('TASA_Silver_NAICS_ISIC.csv', {
+  download: true, header: true, dynamicTyping: true, delimiter: ',',
   complete: r => { allData = r.data.filter(d => d['Country Name']); init(); },
   error: () => {
     document.getElementById('loading').innerHTML =
