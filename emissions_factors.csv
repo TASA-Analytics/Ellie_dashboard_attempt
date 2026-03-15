@@ -1,0 +1,97 @@
+country,sector,scope1,scope2,scope3,unit,year
+USA,Agriculture,0.85,0.42,1.23,kgCO2e/USD,2023
+USA,Manufacturing,1.45,0.78,2.34,kgCO2e/USD,2023
+USA,Construction,1.12,0.56,1.89,kgCO2e/USD,2023
+USA,Transportation,2.31,0.91,1.67,kgCO2e/USD,2023
+USA,Energy,3.45,1.23,2.89,kgCO2e/USD,2023
+USA,Retail,0.34,0.21,0.98,kgCO2e/USD,2023
+USA,Healthcare,0.56,0.34,1.12,kgCO2e/USD,2023
+USA,Finance,0.12,0.18,0.67,kgCO2e/USD,2023
+USA,Technology,0.23,0.45,0.89,kgCO2e/USD,2023
+USA,Mining,4.12,1.56,3.21,kgCO2e/USD,2023
+USA,Food & Beverage,1.23,0.67,2.45,kgCO2e/USD,2023
+USA,Chemicals,2.89,1.12,3.56,kgCO2e/USD,2023
+Germany,Agriculture,0.72,0.31,1.05,kgCO2e/USD,2023
+Germany,Manufacturing,1.23,0.61,2.12,kgCO2e/USD,2023
+Germany,Construction,0.98,0.44,1.67,kgCO2e/USD,2023
+Germany,Transportation,1.89,0.72,1.45,kgCO2e/USD,2023
+Germany,Energy,2.67,0.98,2.34,kgCO2e/USD,2023
+Germany,Retail,0.28,0.17,0.84,kgCO2e/USD,2023
+Germany,Healthcare,0.45,0.28,0.98,kgCO2e/USD,2023
+Germany,Finance,0.09,0.14,0.56,kgCO2e/USD,2023
+Germany,Technology,0.19,0.38,0.75,kgCO2e/USD,2023
+Germany,Mining,3.45,1.23,2.89,kgCO2e/USD,2023
+Germany,Food & Beverage,1.05,0.54,2.12,kgCO2e/USD,2023
+Germany,Chemicals,2.34,0.89,3.12,kgCO2e/USD,2023
+China,Agriculture,1.23,0.67,1.89,kgCO2e/USD,2023
+China,Manufacturing,2.34,1.23,3.45,kgCO2e/USD,2023
+China,Construction,1.78,0.89,2.67,kgCO2e/USD,2023
+China,Transportation,3.12,1.45,2.34,kgCO2e/USD,2023
+China,Energy,5.67,2.34,4.12,kgCO2e/USD,2023
+China,Retail,0.56,0.34,1.23,kgCO2e/USD,2023
+China,Healthcare,0.78,0.45,1.45,kgCO2e/USD,2023
+China,Finance,0.23,0.31,0.89,kgCO2e/USD,2023
+China,Technology,0.45,0.78,1.23,kgCO2e/USD,2023
+China,Mining,6.23,2.67,4.89,kgCO2e/USD,2023
+China,Food & Beverage,1.89,0.98,3.12,kgCO2e/USD,2023
+China,Chemicals,4.12,1.78,5.23,kgCO2e/USD,2023
+Brazil,Agriculture,1.56,0.45,2.12,kgCO2e/USD,2023
+Brazil,Manufacturing,1.67,0.89,2.78,kgCO2e/USD,2023
+Brazil,Construction,1.34,0.67,2.23,kgCO2e/USD,2023
+Brazil,Transportation,2.45,1.12,1.98,kgCO2e/USD,2023
+Brazil,Energy,2.12,0.78,2.56,kgCO2e/USD,2023
+Brazil,Retail,0.42,0.26,1.05,kgCO2e/USD,2023
+Brazil,Healthcare,0.63,0.38,1.23,kgCO2e/USD,2023
+Brazil,Finance,0.15,0.21,0.72,kgCO2e/USD,2023
+Brazil,Technology,0.31,0.56,0.98,kgCO2e/USD,2023
+Brazil,Mining,4.78,1.89,3.67,kgCO2e/USD,2023
+Brazil,Food & Beverage,1.45,0.72,2.67,kgCO2e/USD,2023
+Brazil,Chemicals,3.12,1.34,4.23,kgCO2e/USD,2023
+India,Agriculture,1.34,0.78,2.01,kgCO2e/USD,2023
+India,Manufacturing,2.12,1.05,3.23,kgCO2e/USD,2023
+India,Construction,1.56,0.78,2.45,kgCO2e/USD,2023
+India,Transportation,2.89,1.34,2.12,kgCO2e/USD,2023
+India,Energy,4.89,1.98,3.67,kgCO2e/USD,2023
+India,Retail,0.48,0.29,1.12,kgCO2e/USD,2023
+India,Healthcare,0.67,0.41,1.34,kgCO2e/USD,2023
+India,Finance,0.18,0.26,0.78,kgCO2e/USD,2023
+India,Technology,0.38,0.65,1.05,kgCO2e/USD,2023
+India,Mining,5.34,2.12,4.23,kgCO2e/USD,2023
+India,Food & Beverage,1.67,0.84,2.89,kgCO2e/USD,2023
+India,Chemicals,3.56,1.56,4.67,kgCO2e/USD,2023
+UK,Agriculture,0.67,0.28,0.98,kgCO2e/USD,2023
+UK,Manufacturing,1.12,0.56,1.98,kgCO2e/USD,2023
+UK,Construction,0.89,0.41,1.56,kgCO2e/USD,2023
+UK,Transportation,1.78,0.67,1.34,kgCO2e/USD,2023
+UK,Energy,2.45,0.89,2.12,kgCO2e/USD,2023
+UK,Retail,0.25,0.15,0.78,kgCO2e/USD,2023
+UK,Healthcare,0.41,0.25,0.89,kgCO2e/USD,2023
+UK,Finance,0.08,0.12,0.51,kgCO2e/USD,2023
+UK,Technology,0.17,0.34,0.69,kgCO2e/USD,2023
+UK,Mining,3.12,1.12,2.67,kgCO2e/USD,2023
+UK,Food & Beverage,0.98,0.49,1.98,kgCO2e/USD,2023
+UK,Chemicals,2.12,0.81,2.89,kgCO2e/USD,2023
+Australia,Agriculture,0.91,0.38,1.34,kgCO2e/USD,2023
+Australia,Manufacturing,1.34,0.69,2.23,kgCO2e/USD,2023
+Australia,Construction,1.05,0.49,1.78,kgCO2e/USD,2023
+Australia,Transportation,2.12,0.84,1.56,kgCO2e/USD,2023
+Australia,Energy,3.12,1.12,2.67,kgCO2e/USD,2023
+Australia,Retail,0.31,0.19,0.91,kgCO2e/USD,2023
+Australia,Healthcare,0.52,0.31,1.05,kgCO2e/USD,2023
+Australia,Finance,0.11,0.16,0.61,kgCO2e/USD,2023
+Australia,Technology,0.21,0.41,0.81,kgCO2e/USD,2023
+Australia,Mining,4.56,1.78,3.45,kgCO2e/USD,2023
+Australia,Food & Beverage,1.12,0.58,2.23,kgCO2e/USD,2023
+Australia,Chemicals,2.56,1.02,3.34,kgCO2e/USD,2023
+Japan,Agriculture,0.78,0.35,1.12,kgCO2e/USD,2023
+Japan,Manufacturing,1.34,0.65,2.23,kgCO2e/USD,2023
+Japan,Construction,1.02,0.48,1.72,kgCO2e/USD,2023
+Japan,Transportation,1.98,0.78,1.52,kgCO2e/USD,2023
+Japan,Energy,2.89,1.05,2.45,kgCO2e/USD,2023
+Japan,Retail,0.29,0.18,0.87,kgCO2e/USD,2023
+Japan,Healthcare,0.48,0.29,0.95,kgCO2e/USD,2023
+Japan,Finance,0.10,0.15,0.58,kgCO2e/USD,2023
+Japan,Technology,0.20,0.39,0.78,kgCO2e/USD,2023
+Japan,Mining,3.78,1.45,3.02,kgCO2e/USD,2023
+Japan,Food & Beverage,1.08,0.55,2.15,kgCO2e/USD,2023
+Japan,Chemicals,2.45,0.95,3.23,kgCO2e/USD,2023
