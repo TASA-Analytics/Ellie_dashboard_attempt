@@ -201,10 +201,28 @@ let allData = [];   // raw wide rows from CSV
 let dfLong  = [];   // melted to long form: {isic, country, countrySector, year, scope, value}
 
 function parseCSV(text){
-  const lines = text.trim().split('\n');
-  const hdr   = lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+  // Proper CSV parser — handles quoted fields containing commas
+  function parseLine(line){
+    const vals = [];
+    let cur = '', inQuote = false;
+    for(let i=0; i<line.length; i++){
+      const ch = line[i];
+      if(ch==='"'){
+        if(inQuote && line[i+1]==='"'){ cur+='"'; i++; } // escaped quote
+        else inQuote = !inQuote;
+      } else if(ch===',' && !inQuote){
+        vals.push(cur.trim()); cur='';
+      } else {
+        cur += ch;
+      }
+    }
+    vals.push(cur.trim());
+    return vals;
+  }
+  const lines = text.trim().split(/\r?\n/);
+  const hdr   = parseLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
   return lines.slice(1).filter(l=>l.trim()).map(ln=>{
-    const vals = ln.split(',').map(v=>v.trim().replace(/^"|"$/g,''));
+    const vals = parseLine(ln).map(v=>v.replace(/^"|"$/g,'').trim());
     const o={}; hdr.forEach((h,i)=>o[h]=vals[i]??''); return o;
   });
 }
@@ -259,7 +277,7 @@ function switchTab(id,btn){
 function getSelected(id){ return [...document.getElementById(id).selectedOptions].map(o=>o.value); }
 
 // ── Default selections shown on first load ──
-const DEFAULT_ISIC      = 'Manufacture of abrasive products'; // EDIT: default sector
+const DEFAULT_ISIC      = 'Manufacture of other non-metallic mineral products n.e.c.'; // EDIT: default sector
 const DEFAULT_COUNTRIES = ['Mexico','South Korea','United States']; // EDIT: default countries
 
 function populateControls(){
