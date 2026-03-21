@@ -22,6 +22,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans','Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--white);min-height:100vh;}
 
+/* NAV */
 nav{display:flex;align-items:center;justify-content:space-between;padding:13px 32px;
     background:rgba(13,15,26,0.97);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100;}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--white);}
@@ -32,6 +33,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:13px 3
 .nav-links a:hover{color:var(--gold);}
 .nav-links a.active{color:var(--white);border-bottom:2px solid var(--gold);padding-bottom:2px;}
 
+/* PAGE HEADER */
 .ph{background:var(--navy2);border:1px solid var(--bdr);border-radius:12px;
     padding:20px 24px 16px;margin:20px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
 .ph-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:rgba(26,188,156,0.15);color:var(--teal);margin-bottom:8px;}
@@ -42,81 +44,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:13px 3
 .stat-val{font-size:20px;font-weight:800;color:var(--teal);}
 .stat-lbl{font-size:10px;color:var(--mid);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;}
 
-.controls{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;
-           padding:14px 20px;margin:14px 24px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;}
-.ctrl-group{display:flex;flex-direction:column;gap:5px;}
-.ctrl-label{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--teal);text-transform:uppercase;}
-select{background:var(--navy);color:var(--white);border:1.5px solid var(--bdr);
-  border-radius:8px;padding:7px 12px;font-family:inherit;font-size:13px;
-  appearance:none;cursor:pointer;transition:border-color .2s;min-width:200px;}
-select:focus{outline:none;border-color:var(--teal);}
-select option{background:var(--navy2);color:var(--white);}
-.ctrl-hint{font-size:10px;color:var(--mid);}
-
-.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 24px 14px;}
-.kpi{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;padding:14px 18px;position:relative;overflow:hidden;}
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kpi-c,var(--teal));}
-.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--mid);margin-bottom:5px;}
-.kpi-val{font-size:22px;font-weight:800;color:var(--white);letter-spacing:-0.02em;}
-.kpi-sub{font-size:11px;color:var(--mid);margin-top:3px;}
-
-.chart-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 14px;overflow:hidden;}
-.chart-hdr{padding:14px 18px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
-.chart-title{font-size:14px;font-weight:700;color:var(--white);}
-.chart-sub{font-size:11px;color:var(--mid);margin-top:2px;}
-.legend-inline{display:flex;gap:14px;align-items:center;flex-shrink:0;}
-.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);}
-.leg-swatch{width:10px;height:10px;border-radius:2px;}
-.chart-scroll{overflow-x:auto;overflow-y:hidden;padding:16px 18px 8px;}
-.chart-scroll svg{display:block;}
-
-.table-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 24px;overflow:hidden;}
-.table-hdr{padding:12px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
-.table-title{font-size:13px;font-weight:700;color:var(--white);}
-.tbl-scroll{overflow-x:auto;}
-table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:520px;}
-table.dt thead th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
-  color:var(--mid);padding:8px 12px;text-align:left;border-bottom:1px solid var(--bdr);
-  cursor:pointer;user-select:none;white-space:nowrap;}
-table.dt thead th:hover{color:var(--white);}
-table.dt thead th.sort-asc::after{content:" ↑";}
-table.dt thead th.sort-desc::after{content:" ↓";}
-table.dt td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
-table.dt tbody tr:hover td{background:rgba(255,255,255,0.025);}
-table.dt td:nth-child(2),table.dt td:nth-child(3),table.dt td:nth-child(6){font-variant-numeric:tabular-nums;text-align:right;}
-.mini-bar-wrap{display:flex;align-items:center;gap:6px;}
-.mini-bar-bg{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;width:80px;flex-shrink:0;}
-.mini-bar-fill{height:100%;border-radius:3px;}
-
-/* INSIGHT ROW: callout + 2 donuts */
-.insight-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 24px 14px;}
-.callout-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;
-  padding:20px 22px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
-.callout-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--teal);}
-.callout-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--mid);margin-bottom:8px;}
-.callout-val{font-size:36px;font-weight:800;color:var(--teal);letter-spacing:-0.03em;line-height:1;}
-.callout-unit{font-size:12px;color:var(--mid);margin-top:6px;}
-.callout-sub{font-size:11px;color:var(--mid);margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr);line-height:1.5;}
-.callout-sub strong{color:var(--white);}
-
-.donut-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;padding:16px 18px;}
-.donut-panel-title{font-size:12px;font-weight:700;color:var(--white);margin-bottom:14px;}
-.donut-panel-sub{font-size:10px;color:var(--mid);margin-top:2px;font-weight:400;}
-.donut-wrap{display:flex;align-items:center;gap:16px;}
-.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1;}
-.donut-leg-row{display:flex;align-items:center;gap:7px;}
-.donut-leg-swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
-.donut-leg-name{font-size:11px;color:var(--dim);flex:1;line-height:1.3;}
-.donut-leg-vals{text-align:right;}
-.donut-leg-val{font-size:11px;font-weight:700;color:var(--white);display:block;}
-.donut-leg-pct{font-size:10px;color:var(--mid);}
-@media(max-width:900px){.insight-row{grid-template-columns:1fr;}}
-
-@keyframes spin{to{transform:rotate(360deg);}}
-.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.1);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
-#loading-state{display:flex;align-items:center;justify-content:center;min-height:280px;gap:10px;color:var(--mid);font-size:13px;padding:24px;flex-wrap:wrap;text-align:center;}
-
-/* FILTER BAR (below page header) */
+/* FILTER BAR */
 .filter-bar{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;
   margin:12px 24px 0;padding:14px 20px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;}
 .fg{display:flex;flex-direction:column;gap:5px;}
@@ -136,36 +64,117 @@ table.dt td:nth-child(2),table.dt td:nth-child(3),table.dt td:nth-child(6){font-
   z-index:500;display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .3s;}
 .upsell-overlay.show{opacity:1;pointer-events:all;}
-.upsell-card{background:linear-gradient(145deg,#121d38,#0d0f1a);
-  border:2px solid var(--gold);border-radius:20px;
-  padding:48px 44px;max-width:460px;width:92%;text-align:center;
+.upsell-card{background:linear-gradient(145deg,#121d38,#0d0f1a);border:2px solid var(--gold);
+  border-radius:20px;padding:48px 44px;max-width:460px;width:92%;text-align:center;
   transform:translateY(20px) scale(0.97);transition:transform .35s cubic-bezier(0.34,1.56,0.64,1);}
 .upsell-overlay.show .upsell-card{transform:translateY(0) scale(1);}
 .upsell-icon{font-size:44px;margin-bottom:16px;display:block;}
 .upsell-card h2{font-size:24px;font-weight:800;margin-bottom:10px;letter-spacing:-.02em;color:var(--white);}
 .upsell-card h2 span{color:var(--gold);}
-.upsell-what{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
-  color:var(--teal);margin-bottom:8px;}
+.upsell-what{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--teal);margin-bottom:8px;}
 .upsell-card p{font-size:13px;color:var(--dim);line-height:1.75;margin-bottom:28px;}
 .upsell-card p strong{color:rgba(255,255,255,0.85);}
 .upsell-actions{display:flex;flex-direction:column;align-items:center;gap:10px;}
-.upsell-btn{display:inline-block;background:var(--gold);color:#0d0f1a;
-  padding:13px 34px;border-radius:10px;font-weight:800;text-decoration:none;font-size:14px;
-  letter-spacing:.01em;transition:transform .15s,box-shadow .15s;cursor:pointer;border:none;font-family:inherit;}
+.upsell-btn{display:inline-block;background:var(--gold);color:#0d0f1a;padding:13px 34px;
+  border-radius:10px;font-weight:800;text-decoration:none;font-size:14px;
+  transition:transform .15s,box-shadow .15s;cursor:pointer;border:none;font-family:inherit;}
 .upsell-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(245,166,35,0.4);}
 .upsell-dismiss{font-size:12px;color:rgba(255,255,255,0.32);cursor:pointer;
   background:none;border:none;font-family:inherit;transition:color .2s;padding:4px;}
 .upsell-dismiss:hover{color:rgba(255,255,255,0.65);}
 
-footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-content:space-between;align-items:center;color:rgba(255,255,255,0.22);font-size:12px;margin-top:4px;}
+/* CONTROLS */
+.controls{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;
+  padding:14px 20px;margin:14px 24px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;}
+.ctrl-group{display:flex;flex-direction:column;gap:5px;}
+.ctrl-label{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--teal);text-transform:uppercase;}
+select{background:var(--navy);color:var(--white);border:1.5px solid var(--bdr);
+  border-radius:8px;padding:7px 12px;font-family:inherit;font-size:13px;
+  appearance:none;cursor:pointer;transition:border-color .2s;min-width:180px;}
+select:focus{outline:none;border-color:var(--teal);}
+select option{background:var(--navy2);color:var(--white);}
+.ctrl-hint{font-size:10px;color:var(--mid);}
+
+/* INSIGHT ROW */
+.insight-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 24px 14px;}
+.callout-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;
+  padding:20px 22px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
+.callout-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--teal);}
+.callout-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--mid);margin-bottom:8px;}
+.callout-val{font-size:36px;font-weight:800;color:var(--teal);letter-spacing:-0.03em;line-height:1;}
+.callout-unit{font-size:12px;color:var(--mid);margin-top:6px;}
+.callout-sub{font-size:11px;color:var(--mid);margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr);line-height:1.5;}
+.callout-sub strong{color:var(--white);}
+.donut-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;padding:16px 18px;}
+.donut-panel-title{font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px;}
+.donut-panel-sub{font-size:10px;color:var(--mid);}
+.donut-wrap{display:flex;align-items:center;gap:14px;margin-top:12px;}
+.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1;}
+.donut-leg-row{display:flex;align-items:flex-start;gap:7px;}
+.donut-leg-swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+.donut-leg-name{font-size:11px;color:var(--dim);flex:1;line-height:1.3;}
+.donut-leg-val{font-size:11px;font-weight:700;color:var(--white);}
+.donut-leg-pct{font-size:10px;color:var(--mid);}
+
+/* TIER BAR CHART PANEL */
+.chart-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 14px;overflow:hidden;}
+.chart-hdr{padding:14px 18px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.chart-title{font-size:14px;font-weight:700;color:var(--white);}
+.chart-sub{font-size:11px;color:var(--mid);margin-top:2px;}
+.legend-inline{display:flex;gap:14px;align-items:center;flex-shrink:0;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);}
+.leg-swatch{width:10px;height:10px;border-radius:2px;}
+.chart-scroll{overflow-x:auto;overflow-y:hidden;padding:16px 18px 8px;}
+
+/* SECTOR TABLE PANEL */
+.table-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 24px;overflow:hidden;}
+.table-hdr{padding:12px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.table-title{font-size:13px;font-weight:700;color:var(--white);}
+.tbl-scroll{overflow-x:auto;}
+table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:520px;}
+table.dt thead th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+  color:var(--mid);padding:8px 12px;text-align:left;border-bottom:1px solid var(--bdr);
+  cursor:pointer;user-select:none;white-space:nowrap;}
+table.dt thead th:hover{color:var(--white);}
+table.dt thead th.sort-asc::after{content:" ↑";}
+table.dt thead th.sort-desc::after{content:" ↓";}
+table.dt td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+table.dt tbody tr:hover td{background:rgba(255,255,255,0.025);}
+.mini-bar-wrap{display:flex;align-items:center;gap:6px;}
+.mini-bar-bg{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;width:80px;flex-shrink:0;}
+.mini-bar-fill{height:100%;border-radius:3px;}
+
+/* LOADING */
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.1);border-top-color:var(--teal);
+  border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+#loading-state{display:flex;align-items:center;justify-content:center;min-height:280px;
+  gap:10px;color:var(--mid);font-size:13px;padding:24px;flex-wrap:wrap;text-align:center;}
+
+footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-content:space-between;
+  align-items:center;color:rgba(255,255,255,0.22);font-size:12px;margin-top:4px;}
+@media(max-width:900px){.insight-row{grid-template-columns:1fr;}}
 @media(max-width:700px){
   nav,footer{padding:12px 14px;}
-  .ph,.controls,.kpi-row,.chart-panel,.table-panel{margin-left:12px;margin-right:12px;}
-  .kpi-row{grid-template-columns:1fr;}
+  .ph,.filter-bar,.controls,.insight-row,.chart-panel,.table-panel{margin-left:12px;margin-right:12px;}
 }
 </style>
 </head>
 <body>
+
+<!-- UPSELL OVERLAY -->
+<div class="upsell-overlay" id="upsell">
+  <div class="upsell-card">
+    <span class="upsell-icon">📊</span>
+    <div class="upsell-what" id="upsell-what">Additional Data Available</div>
+    <h2>Unlock <span>Full rLCA</span> Access</h2>
+    <p id="upsell-msg">rLCA reports for additional countries, sectors, and years are available through TASA EFX. <strong>Contact us</strong> to get access to the full dataset.</p>
+    <div class="upsell-actions">
+      <a href="#" onclick="window.location.href='mai'+'lto:info@tasa-efx.com';return false;" class="upsell-btn">Contact TASA EFX →</a>
+      <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
+    </div>
+  </div>
+</div>
 
 <nav>
   <a class="nav-logo" href="index.html"><span class="logo-text">TASA <em>EFX</em></span></a>
@@ -176,20 +185,6 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
     <a href="rlca.html" class="active">rLCA</a>
   </div>
 </nav>
-
-<!-- UPSELL OVERLAY -->
-<div class="upsell-overlay" id="upsell">
-  <div class="upsell-card">
-    <span class="upsell-icon">📊</span>
-    <div class="upsell-what" id="upsell-what">Additional Data Available</div>
-    <h2>Unlock <span>Full rLCA</span> Access</h2>
-    <p id="upsell-msg">rLCA reports for additional countries, sectors, and years are available through TASA EFX. <strong>Contact us</strong> to get access to the full dataset.</p>
-    <div class="upsell-actions">
-      <a href="/cdn-cgi/l/email-protection#41282f272e01352032206c2427396f222e2c" class="upsell-btn">Contact TASA EFX →</a>
-      <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
-    </div>
-  </div>
-</div>
 
 <div class="ph">
   <div>
@@ -235,54 +230,30 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
 <div id="main-content" style="display:none">
 
-<div class="controls">
-  <div class="ctrl-group">
-    <span class="ctrl-label">Tier filter (table)</span>
-    <select id="f-tier" onchange="render()"></select>
-    <span class="ctrl-hint">Filters the sector detail table below · bar chart always shows all tiers</span>
-  </div>
-  <div class="ctrl-group">
-    <span class="ctrl-label">Sort by</span>
-    <select id="f-sort" onchange="render()">
-      <option value="combined">Combined (S1 + S2)</option>
-      <option value="s1">Scope 1 · Direct</option>
-      <option value="s2">Scope 2 · Electricity</option>
-      <option value="alpha">Alphabetical</option>
-    </select>
-  </div>
-  <div class="ctrl-group">
-    <span class="ctrl-label">Show</span>
-    <select id="f-topn" onchange="render()">
-      <option value="0">All sectors</option>
-      <option value="10">Top 10</option>
-      <option value="15">Top 15</option>
-      <option value="20">Top 20</option>
-    </select>
-  </div>
-</div>
-
-<!-- INSIGHT ROW: Total Emissions callout + 2 donuts -->
-<div class="insight-row">
+<!-- INSIGHT ROW: EI callout + 2 donuts -->
+<div class="insight-row" style="margin-top:14px">
 
   <div class="callout-panel">
     <div class="callout-eyebrow">🌿 Total Emissions Intensity</div>
     <div class="callout-val" id="total-ei">—</div>
     <div class="callout-unit">Mg CO₂e / Million USD</div>
-    <div class="callout-sub" id="total-ei-sub">Loading from Sector Emissions Factors…</div>
+    <div class="callout-sub" id="total-ei-sub">Abrasive Materials · South Korea · 2023</div>
   </div>
 
   <div class="donut-panel">
-    <div class="donut-panel-title">Scope Split <span class="donut-panel-sub">— S1 vs S2 of lifecycle total</span></div>
+    <div class="donut-panel-title">Scope Split</div>
+    <div class="donut-panel-sub">S1 vs S2 · lifecycle total across all tiers</div>
     <div class="donut-wrap">
-      <svg id="donut-scope" width="100" height="100" viewBox="0 0 100 100" style="flex-shrink:0"></svg>
+      <svg id="donut-scope" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
       <div class="donut-legend" id="donut-scope-legend"></div>
     </div>
   </div>
 
   <div class="donut-panel">
-    <div class="donut-panel-title">Tier Depth <span class="donut-panel-sub">— early vs late supply chain</span></div>
+    <div class="donut-panel-title">Tier Depth</div>
+    <div class="donut-panel-sub">Near-term (T0–T3) vs deep supply chain (T4–T10)</div>
     <div class="donut-wrap">
-      <svg id="donut-tier" width="100" height="100" viewBox="0 0 100 100" style="flex-shrink:0"></svg>
+      <svg id="donut-tier" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
       <div class="donut-legend" id="donut-tier-legend"></div>
     </div>
   </div>
@@ -304,10 +275,38 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <div class="chart-scroll" id="tier-chart-scroll"></div>
 </div>
 
+<!-- CONTROLS (for sector table) -->
+<div class="controls">
+  <div class="ctrl-group">
+    <span class="ctrl-label">Tier filter (table)</span>
+    <select id="f-tier" onchange="render()"></select>
+    <span class="ctrl-hint">Filters the sector detail table · bar chart always shows all tiers</span>
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Sort by</span>
+    <select id="f-sort" onchange="render()">
+      <option value="combined">Combined (S1 + S2)</option>
+      <option value="s1">Scope 1 · Direct</option>
+      <option value="s2">Scope 2 · Electricity</option>
+      <option value="alpha">Alphabetical</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Show</span>
+    <select id="f-topn" onchange="render()">
+      <option value="0">All sectors</option>
+      <option value="10">Top 10</option>
+      <option value="15">Top 15</option>
+      <option value="20">Top 20</option>
+    </select>
+  </div>
+</div>
+
+<!-- SECTOR TABLE -->
 <div class="table-panel">
   <div class="table-hdr">
     <div class="table-title">Sector Detail</div>
-    <div style="font-size:11px;color:var(--mid)">Click column headers to sort · % share is of the visible selection total</div>
+    <div style="font-size:11px;color:var(--mid)">Click column headers to sort · % share of visible total</div>
   </div>
   <div class="tbl-scroll">
     <table class="dt">
@@ -331,41 +330,44 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <span>rLCA · Abrasive Materials · South Korea 2023</span>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-// ══════════════════════════════════════════════════════════════
+<script>
+// ══════════════════════════════════════════════════════
 // CONFIG
-// ══════════════════════════════════════════════════════════════
-const XLSX_FILE   = 'TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx';
-const SHEET_NAME  = '10 Tiers_all_sectors';
-const EF_SHEET    = 'Sector Emissions Factors';
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+const XLSX_FILE  = 'TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx';
+const SHEET_NAME = '10 Tiers_all_sectors';
+const EF_SHEET   = 'Sector Emissions Factors';
+const SILVER_CSV = 'TASA_Silver_NAICS_ISIC.csv';
+const DEFAULT_COUNTRY = 'South Korea';
+const DEFAULT_SECTOR  = 'South Korea — Abrasive Material';
+const FREE_YEAR       = '2023';
+// ══════════════════════════════════════════════════════
 
 const S1_COLOR = '#e8534a';
 const S2_COLOR = '#f0a500';
 const TEAL_COL = '#1ABC9C';
-const TIER_COLORS = ['#7c5cbf','#5c7cbf','#4a90d9','#2e86ab','#1abc9c',
-                     '#16a085','#27ae60','#f39c12','#e67e22','#e74c3c','#c0392b'];
 
 let tableData   = [];
 let s1Cols      = [];
 let s2Cols      = [];
 let tierOptions = [];
-let efData      = {};   // { 'Total Emissions Intensity': val, 'Scope 1': val, 'Scope 2': val, ... }
+let efData      = {};
+let silverMap   = {};
 let sortCol     = 'combined';
 let sortDir     = 'desc';
 
-// ── Load Excel — accepts pre-parsed workbook ─────────────────
+// ── Excel loader ──────────────────────────────────────
 function loadExcel(wb) {
-  // ── Sheet 1: 10 Tiers_all_sectors ──
+  // Sheet 1: tier data
   const ws = wb.Sheets[SHEET_NAME];
   if (!ws) { showError(`Sheet "${SHEET_NAME}" not found. Available: ${wb.SheetNames.join(', ')}`); return; }
 
-  const raw    = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-  let hdrIdx   = raw.findIndex(r => r.some(c => String(c).trim() === 'Sectors'));
+  const raw     = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+  let   hdrIdx  = raw.findIndex(r => r.some(c => String(c).trim() === 'Sectors'));
   if (hdrIdx < 0) hdrIdx = 0;
   const headers = raw[hdrIdx].map(h => String(h).trim());
   const rows    = raw.slice(hdrIdx+1).filter(r => r.some(c => c !== ''))
-                     .map(r => { const o={}; headers.forEach((h,i)=>o[h]=r[i]??''); return o; });
+                     .map(r => { const o={}; headers.forEach((h,i) => o[h]=r[i]??''); return o; });
 
   s1Cols = headers.filter(h => h.includes('Scope 1'));
   s2Cols = headers.filter(h => h.includes('Scope 2'));
@@ -388,18 +390,15 @@ function loadExcel(wb) {
   tierSel.innerHTML = '<option value="total">Total — all tiers summed</option>';
   tierOptions.forEach(t => tierSel.add(new Option(t.label, t.s1col)));
 
-  // ── Sheet 2: Sector Emissions Factors ──
+  // Sheet 2: Sector Emissions Factors
   const wsEF = wb.Sheets[EF_SHEET];
   if (wsEF) {
     const efRaw = XLSX.utils.sheet_to_json(wsEF, {defval:''});
-    // Find the row for Abrasive Materials (or first row if not found)
     const efRow = efRaw.find(r =>
       Object.values(r).some(v => String(v).toLowerCase().includes('abrasive'))
     ) || efRaw[0] || {};
-    efData = {};
     Object.entries(efRow).forEach(([k,v]) => {
-      const n = parseFloat(v);
-      efData[String(k).trim()] = isNaN(n) ? v : n;
+      const n = parseFloat(v); efData[String(k).trim()] = isNaN(n) ? v : n;
     });
   }
 
@@ -412,431 +411,318 @@ function loadExcel(wb) {
   render();
 }
 
-// ── Total Emissions callout from Sector Emissions Factors ─────
-function renderCallout() {
-  const ei = efData['Total Emissions Intensity'];
-  const s1 = efData['Scope 1'] || efData['Scope 1 Emissions Intensity'] || 0;
-  const s2 = efData['Scope 2'] || efData['Scope 2 Emissions Intensity'] || 0;
-
-  document.getElementById('total-ei').textContent =
-    (typeof ei === 'number') ? ei.toFixed(2) : (ei || '—');
-
-  // Build sub-line from whatever EF columns we found
-  const parts = [];
-  if (typeof s1 === 'number' && s1 > 0) parts.push(`<strong>S1:</strong> ${s1.toFixed(3)}`);
-  if (typeof s2 === 'number' && s2 > 0) parts.push(`<strong>S2:</strong> ${s2.toFixed(3)}`);
-  // Any other numeric fields (S3, etc.)
-  Object.entries(efData).forEach(([k,v]) => {
-    if (typeof v === 'number' && v > 0 && k !== 'Total Emissions Intensity'
-        && !k.toLowerCase().includes('scope 1') && !k.toLowerCase().includes('scope 2')) {
-      parts.push(`<strong>${k}:</strong> ${v.toFixed(3)}`);
-    }
-  });
-  document.getElementById('total-ei-sub').innerHTML =
-    parts.length ? parts.join(' &nbsp;·&nbsp; ') : 'Abrasive Materials · South Korea · 2023';
+function showError(msg) {
+  document.getElementById('loading-state').innerHTML =
+    `<div style="color:#e8534a;text-align:center;font-size:13px;line-height:1.8;max-width:480px">
+      <div style="font-size:32px;margin-bottom:10px">⚠️</div>
+      <strong>Could not load data</strong><br>${msg}<br>
+      <span style="color:var(--mid);font-size:11px">Ensure
+      <code style="color:var(--teal)">${XLSX_FILE}</code>
+      is in the same folder as this HTML file.</span>
+    </div>`;
 }
 
-// ── Tier bar chart (Tier 0 → Tier 10, S1+S2 grouped) ─────────
+// ── Callout ───────────────────────────────────────────
+function renderCallout() {
+  const ei = efData['Total Emissions Intensity'];
+  document.getElementById('total-ei').textContent =
+    typeof ei === 'number' ? ei.toFixed(2) : (ei || '—');
+  const s1 = efData['Scope 1'] || 0, s2 = efData['Scope 2'] || 0;
+  const parts = [];
+  if (s1 > 0) parts.push(`<strong>S1:</strong> ${s1.toFixed(3)}`);
+  if (s2 > 0) parts.push(`<strong>S2:</strong> ${s2.toFixed(3)}`);
+  if (parts.length)
+    document.getElementById('total-ei-sub').innerHTML = parts.join(' &nbsp;·&nbsp; ');
+}
+
+// ── Tier bar chart ────────────────────────────────────
 function renderTierBarChart() {
   const container = document.getElementById('tier-chart-scroll');
-  const n = tierOptions.length;   // typically 11 (Tier 0 … Tier 10)
+  const n = tierOptions.length;
   if (!n || !tableData.length) return;
 
-  // Sum S1 and S2 across ALL sectors for each tier
-  const tierTotals = tierOptions.map(t => {
-    const s1 = tableData.reduce((a, row) => a + (row.s1[t.s1col]||0), 0);
-    const s2 = t.s2col ? tableData.reduce((a, row) => a + (row.s2[t.s2col]||0), 0) : 0;
-    return { label: t.label, s1, s2, combined: s1+s2 };
-  });
+  const tierTotals = tierOptions.map(t => ({
+    label: t.label,
+    s1: tableData.reduce((a,r) => a+(r.s1[t.s1col]||0), 0),
+    s2: t.s2col ? tableData.reduce((a,r) => a+(r.s2[t.s2col]||0), 0) : 0
+  }));
 
-  const BAR_W   = 32;
-  const BAR_GAP = 4;
-  const GRP_GAP = 18;
-  const mL=54, mR=16, mT=20, mB=52;
-  const grpW   = BAR_W*2 + BAR_GAP + GRP_GAP;
-  const chartW = grpW * n;
-  const chartH = 280;
-  const W = chartW + mL + mR;
-  const H = chartH + mT + mB;
+  const BAR_W=34, BAR_GAP=4, GRP_GAP=20;
+  const mL=52, mR=16, mT=18, mB=50;
+  const grpW=BAR_W*2+BAR_GAP+GRP_GAP, chartW=grpW*n, chartH=260;
+  const W=chartW+mL+mR, H=chartH+mT+mB;
+  const maxVal = Math.max(...tierTotals.map(t=>Math.max(t.s1,t.s2)), 1e-10);
 
-  const maxVal = Math.max(...tierTotals.map(t => Math.max(t.s1, t.s2)), 1e-10);
+  let o = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  o += `<g transform="translate(${mL},${mT})">`;
 
-  let out = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  out += `<g transform="translate(${mL},${mT})">`;
-
-  // Grid
   for (let g=0; g<=5; g++) {
-    const yy = (g/5)*chartH, val = maxVal*(1-g/5);
-    out += `<line x1="0" y1="${yy.toFixed(1)}" x2="${chartW}" y2="${yy.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
-    out += `<text x="-5" y="${(yy+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${fmtAxis(val)}</text>`;
+    const yy=(g/5)*chartH, val=maxVal*(1-g/5);
+    o += `<line x1="0" y1="${yy.toFixed(1)}" x2="${chartW}" y2="${yy.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+    o += `<text x="-5" y="${(yy+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${fmtAxis(val)}</text>`;
   }
 
-  // Bars per tier
-  tierTotals.forEach((t, i) => {
-    const gx  = i * grpW;
-    const midX = gx + BAR_W + BAR_GAP/2;
-    const col  = TIER_COLORS[i % TIER_COLORS.length];
-
-    // S1 bar
-    const h1 = Math.max(1, (t.s1/maxVal)*chartH);
-    out += `<rect x="${gx}" y="${(chartH-h1).toFixed(1)}" width="${BAR_W}" height="${h1.toFixed(1)}"
-      fill="${S1_COLOR}" rx="2" opacity="0.88"/>`;
-    // S1 value label on top if tall enough
-    if (h1 > 18) out += `<text x="${(gx+BAR_W/2).toFixed(1)}" y="${(chartH-h1-4).toFixed(1)}"
-      text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s1)}</text>`;
-
-    // S2 bar
-    const h2 = Math.max(1, (t.s2/maxVal)*chartH);
-    out += `<rect x="${(gx+BAR_W+BAR_GAP).toFixed(1)}" y="${(chartH-h2).toFixed(1)}" width="${BAR_W}" height="${h2.toFixed(1)}"
-      fill="${S2_COLOR}" rx="2" opacity="0.88"/>`;
-    if (h2 > 18) out += `<text x="${(gx+BAR_W+BAR_GAP+BAR_W/2).toFixed(1)}" y="${(chartH-h2-4).toFixed(1)}"
-      text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s2)}</text>`;
-
-    // Tier label on X axis
-    const lbl = t.label.replace(' · Focal Sector','').replace('Tier ','T');
-    out += `<text x="${midX.toFixed(1)}" y="${(chartH+14).toFixed(1)}"
-      text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${lbl}</text>`;
-    // Full label below
-    const fullLbl = t.label.length > 16 ? t.label.replace(' · Focal Sector','') : t.label;
-    out += `<text x="${midX.toFixed(1)}" y="${(chartH+26).toFixed(1)}"
-      text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.28)" font-family="DM Sans,sans-serif">${fullLbl}</text>`;
+  tierTotals.forEach((t,i) => {
+    const gx=i*grpW, mid=gx+BAR_W+BAR_GAP/2;
+    const h1=Math.max(1,(t.s1/maxVal)*chartH);
+    o += `<rect x="${gx}" y="${(chartH-h1).toFixed(1)}" width="${BAR_W}" height="${h1.toFixed(1)}" fill="${S1_COLOR}" rx="2" opacity="0.88"/>`;
+    if(h1>16) o += `<text x="${(gx+BAR_W/2).toFixed(1)}" y="${(chartH-h1-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s1)}</text>`;
+    const h2=Math.max(1,(t.s2/maxVal)*chartH);
+    o += `<rect x="${(gx+BAR_W+BAR_GAP).toFixed(1)}" y="${(chartH-h2).toFixed(1)}" width="${BAR_W}" height="${h2.toFixed(1)}" fill="${S2_COLOR}" rx="2" opacity="0.88"/>`;
+    if(h2>16) o += `<text x="${(gx+BAR_W+BAR_GAP+BAR_W/2).toFixed(1)}" y="${(chartH-h2-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s2)}</text>`;
+    const lbl = t.label.replace(' · Focal Sector','');
+    o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${lbl}</text>`;
   });
 
-  // Baseline
-  out += `<line x1="0" y1="${chartH}" x2="${chartW}" y2="${chartH}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
-  out += `</g></svg>`;
+  o += `<line x1="0" y1="${chartH}" x2="${chartW}" y2="${chartH}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+  o += `</g></svg>`;
+  container.innerHTML = o;
 
-  container.innerHTML = out;
-
-  // Also render donuts now that tierTotals is available
   renderDonuts(tierTotals);
 }
 
-// ── Two donut charts ──────────────────────────────────────────
+// ── Donuts ────────────────────────────────────────────
 function renderDonuts(tierTotals) {
-  const allS1 = tierTotals.reduce((a,t)=>a+t.s1, 0);
-  const allS2 = tierTotals.reduce((a,t)=>a+t.s2, 0);
-  const grand = allS1 + allS2;
-
-  // Donut 1: Scope 1 vs Scope 2
-  drawDonut('donut-scope', [
-    { label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR },
-    { label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR }
+  const allS1 = tierTotals.reduce((a,t)=>a+t.s1,0);
+  const allS2 = tierTotals.reduce((a,t)=>a+t.s2,0);
+  const grand = allS1+allS2;
+  drawDonut('donut-scope',[
+    {label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR},
+    {label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}
   ], grand, 'donut-scope-legend');
-
-  // Donut 2: Early tiers (0–3) vs Late tiers (4–10)
-  const early = tierTotals.slice(0, 4).reduce((a,t)=>a+t.combined, 0);
-  const late  = tierTotals.slice(4).reduce((a,t)=>a+t.combined, 0);
-  drawDonut('donut-tier', [
-    { label:'Tiers 0–3 · Near-term',  val:early, color:TEAL_COL },
-    { label:'Tiers 4–10 · Deep chain', val:late,  color:'#7c5cbf' }
+  const early = tierTotals.slice(0,4).reduce((a,t)=>a+t.s1+t.s2,0);
+  const late  = tierTotals.slice(4).reduce((a,t)=>a+t.s1+t.s2,0);
+  drawDonut('donut-tier',[
+    {label:'Tiers 0–3 · Near-term',    val:early, color:TEAL_COL},
+    {label:'Tiers 4–10 · Deep chain',  val:late,  color:'#7c5cbf'}
   ], grand, 'donut-tier-legend');
 }
 
 function drawDonut(svgId, segs, total, legendId) {
   const svg = document.getElementById(svgId);
   svg.innerHTML = '';
-  const cx=50, cy=50, R=44, r=28, TAU=2*Math.PI;
-  const tot = segs.reduce((a,s)=>a+s.val, 0) || 1;
-
+  const cx=48, cy=48, R=42, r=26, TAU=2*Math.PI;
+  const tot = segs.reduce((a,s)=>a+s.val,0)||1;
   let angle = -Math.PI/2;
   segs.forEach(seg => {
-    const sweep = (seg.val/tot)*TAU;
-    if (sweep < 0.001) return;
-    const large = sweep > Math.PI ? 1:0;
+    const sweep=(seg.val/tot)*TAU; if(sweep<0.001) return;
+    const large=sweep>Math.PI?1:0;
     const x1=cx+R*Math.cos(angle), y1=cy+R*Math.sin(angle);
-    const a2 = angle+sweep;
-    const x2=cx+R*Math.cos(a2),   y2=cy+R*Math.sin(a2);
+    const a2=angle+sweep;
+    const x2=cx+R*Math.cos(a2), y2=cy+R*Math.sin(a2);
     const ix1=cx+r*Math.cos(angle), iy1=cy+r*Math.sin(angle);
     const ix2=cx+r*Math.cos(a2),   iy2=cy+r*Math.sin(a2);
-    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
     p.setAttribute('d',`M${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${r},${r} 0 ${large},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z`);
-    p.setAttribute('fill', seg.color);
-    p.setAttribute('opacity','0.9');
-    svg.appendChild(p);
-    angle += sweep;
+    p.setAttribute('fill',seg.color); p.setAttribute('opacity','0.9');
+    svg.appendChild(p); angle+=sweep;
   });
-
-  // Center hole
-  const hole = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  const hole=document.createElementNS('http://www.w3.org/2000/svg','circle');
   hole.setAttribute('cx',cx); hole.setAttribute('cy',cy); hole.setAttribute('r',r-1);
-  hole.setAttribute('fill','rgba(18,21,34,0.97)');
-  svg.appendChild(hole);
+  hole.setAttribute('fill','rgba(18,21,34,0.97)'); svg.appendChild(hole);
 
-  // Legend
-  const leg = document.getElementById(legendId);
-  leg.innerHTML = segs.map(s => {
-    const pct = (s.val/tot*100).toFixed(1);
+  document.getElementById(legendId).innerHTML = segs.map(s => {
+    const pct=(s.val/tot*100).toFixed(1);
     return `<div class="donut-leg-row">
       <div class="donut-leg-swatch" style="background:${s.color}"></div>
       <span class="donut-leg-name">${s.label}</span>
-      <div class="donut-leg-vals">
+      <span style="text-align:right">
         <span class="donut-leg-val">${fmtAxis(s.val)}</span>
-        <span class="donut-leg-pct">${pct}%</span>
-      </div>
+        <span class="donut-leg-pct"> ${pct}%</span>
+      </span>
     </div>`;
   }).join('');
 }
 
-function showError(msg) {
-  document.getElementById('loading-state').innerHTML =
-    `<div style="color:#e8534a;text-align:center;font-size:13px;line-height:1.8;max-width:480px">
-      <div style="font-size:32px;margin-bottom:10px">⚠️</div>
-      <strong>Could not load data</strong><br>${msg}<br>
-      <span style="color:var(--mid);font-size:11px">Ensure <code style="color:var(--teal)">${XLSX_FILE}</code>
-      is in the same folder as this HTML file.</span>
-    </div>`;
-}
-
-// ── Get S1/S2 for a table row at selected tier ────────────────
+// ── Row values helper ─────────────────────────────────
 function getRowValues(row, tierKey) {
   if (tierKey === 'total') {
-    return {
-      s1: s1Cols.reduce((a,c) => a + row.s1[c], 0),
-      s2: s2Cols.reduce((a,c) => a + row.s2[c], 0)
-    };
+    return { s1:s1Cols.reduce((a,c)=>a+row.s1[c],0), s2:s2Cols.reduce((a,c)=>a+row.s2[c],0) };
   }
-  const t = tierOptions.find(t => t.s1col === tierKey);
-  return {
-    s1: t ? (row.s1[t.s1col]||0) : 0,
-    s2: t && t.s2col ? (row.s2[t.s2col]||0) : 0
-  };
+  const t = tierOptions.find(t=>t.s1col===tierKey);
+  return { s1:t?(row.s1[t.s1col]||0):0, s2:(t&&t.s2col)?(row.s2[t.s2col]||0):0 };
 }
 
-// ── Format ────────────────────────────────────────────────────
+// ── Format helpers ────────────────────────────────────
 function fmt(v) {
-  if (v === 0) return '0';
-  const a = Math.abs(v);
-  if (a >= 1000) return (v/1000).toFixed(2) + 'k';
-  if (a >= 1)    return v.toFixed(3);
-  if (a >= 0.001) return v.toFixed(5);
+  if(v===0) return '0'; const a=Math.abs(v);
+  if(a>=1000) return (v/1000).toFixed(2)+'k';
+  if(a>=1)    return v.toFixed(3);
+  if(a>=0.001) return v.toFixed(5);
   return v.toExponential(3);
 }
 function fmtAxis(v) {
-  if (v === 0) return '0';
-  const a = Math.abs(v);
-  if (a >= 1000) return (v/1000).toFixed(1) + 'k';
-  if (a >= 1)    return v.toFixed(2);
-  if (a >= 0.001) return v.toFixed(4);
+  if(v===0) return '0'; const a=Math.abs(v);
+  if(a>=1000) return (v/1000).toFixed(1)+'k';
+  if(a>=1)    return v.toFixed(2);
+  if(a>=0.001) return v.toFixed(4);
   return v.toExponential(2);
 }
 
-// ── Render — drives the sector table only ────────────────────
+// ── Render (table) ────────────────────────────────────
 function render() {
   const tierKey = document.getElementById('f-tier').value;
   const sortBy  = document.getElementById('f-sort').value;
-  const topN    = parseInt(document.getElementById('f-topn').value) || 0;
+  const topN    = parseInt(document.getElementById('f-topn').value)||0;
 
   let rows = tableData.map(row => {
-    const { s1, s2 } = getRowValues(row, tierKey);
-    return { sector: row.sector, s1, s2, combined: s1+s2 };
+    const {s1,s2} = getRowValues(row, tierKey);
+    return {sector:row.sector, s1, s2, combined:s1+s2};
   });
 
-  if      (sortBy === 'combined') rows.sort((a,b) => b.combined - a.combined);
-  else if (sortBy === 's1')       rows.sort((a,b) => b.s1 - a.s1);
-  else if (sortBy === 's2')       rows.sort((a,b) => b.s2 - a.s2);
-  else                            rows.sort((a,b) => a.sector.localeCompare(b.sector));
+  if      (sortBy==='combined') rows.sort((a,b)=>b.combined-a.combined);
+  else if (sortBy==='s1')       rows.sort((a,b)=>b.s1-a.s1);
+  else if (sortBy==='s2')       rows.sort((a,b)=>b.s2-a.s2);
+  else                          rows.sort((a,b)=>a.sector.localeCompare(b.sector));
 
-  if (topN > 0) rows = rows.slice(0, topN);
-
-  const totS1 = rows.reduce((a,r) => a+r.s1, 0);
-  const totS2 = rows.reduce((a,r) => a+r.s2, 0);
-
+  if (topN>0) rows=rows.slice(0,topN);
+  const totS1=rows.reduce((a,r)=>a+r.s1,0);
+  const totS2=rows.reduce((a,r)=>a+r.s2,0);
   renderTable(rows, totS1, totS2);
 }
 
-// ── Table ─────────────────────────────────────────────────────
+// ── Table ─────────────────────────────────────────────
 function renderTable(rows, totS1, totS2) {
-  const maxS1 = Math.max(...rows.map(r=>r.s1), 1e-10);
-  const maxS2 = Math.max(...rows.map(r=>r.s2), 1e-10);
+  const maxS1=Math.max(...rows.map(r=>r.s1),1e-10);
+  const maxS2=Math.max(...rows.map(r=>r.s2),1e-10);
+  let sorted=[...rows];
+  if      (sortCol==='sector')   sorted.sort((a,b)=>sortDir==='asc'?a.sector.localeCompare(b.sector):b.sector.localeCompare(a.sector));
+  else if (sortCol==='s1')       sorted.sort((a,b)=>sortDir==='asc'?a.s1-b.s1:b.s1-a.s1);
+  else if (sortCol==='s2')       sorted.sort((a,b)=>sortDir==='asc'?a.s2-b.s2:b.s2-a.s2);
+  else                           sorted.sort((a,b)=>sortDir==='asc'?a.combined-b.combined:b.combined-a.combined);
 
-  // Secondary sort on table (independent of chart sort)
-  let sorted = [...rows];
-  if      (sortCol === 'sector')   sorted.sort((a,b) => sortDir==='asc' ? a.sector.localeCompare(b.sector) : b.sector.localeCompare(a.sector));
-  else if (sortCol === 's1')       sorted.sort((a,b) => sortDir==='asc' ? a.s1-b.s1 : b.s1-a.s1);
-  else if (sortCol === 's2')       sorted.sort((a,b) => sortDir==='asc' ? a.s2-b.s2 : b.s2-a.s2);
-  else                             sorted.sort((a,b) => sortDir==='asc' ? a.combined-b.combined : b.combined-a.combined);
-
-  // Header sort indicators
-  document.querySelectorAll('table.dt thead th').forEach(th => th.classList.remove('sort-asc','sort-desc'));
-  const colIdx = {sector:0,s1:1,s2:2,combined:5}[sortCol];
-  if (colIdx !== undefined) {
-    const th = document.querySelectorAll('table.dt thead th')[colIdx];
-    if (th) th.classList.add(sortDir==='asc'?'sort-asc':'sort-desc');
-  }
+  document.querySelectorAll('table.dt thead th').forEach(th=>th.classList.remove('sort-asc','sort-desc'));
+  const idx={sector:0,s1:1,s2:2,combined:5}[sortCol];
+  if(idx!==undefined){ const th=document.querySelectorAll('table.dt thead th')[idx]; if(th) th.classList.add(sortDir==='asc'?'sort-asc':'sort-desc'); }
 
   document.getElementById('tbl-body').innerHTML = sorted.map(row => {
-    const s1w = (row.s1 / maxS1 * 100).toFixed(1);
-    const s2w = (row.s2 / maxS2 * 100).toFixed(1);
-    const s1p = totS1 > 0 ? (row.s1/totS1*100).toFixed(1) : '0.0';
-    const s2p = totS2 > 0 ? (row.s2/totS2*100).toFixed(1) : '0.0';
+    const s1w=(row.s1/maxS1*100).toFixed(1), s2w=(row.s2/maxS2*100).toFixed(1);
+    const s1p=totS1>0?(row.s1/totS1*100).toFixed(1):'0.0';
+    const s2p=totS2>0?(row.s2/totS2*100).toFixed(1):'0.0';
     return `<tr>
       <td style="color:var(--white);font-weight:500">${row.sector}</td>
-      <td style="color:${S1_COLOR};font-weight:700">${fmt(row.s1)}</td>
-      <td style="color:${S2_COLOR};font-weight:700">${fmt(row.s2)}</td>
-      <td><div class="mini-bar-wrap">
-        <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${s1w}%;background:${S1_COLOR}"></div></div>
-        <span style="font-size:10px;color:var(--mid);min-width:32px;text-align:right">${s1p}%</span>
-      </div></td>
-      <td><div class="mini-bar-wrap">
-        <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${s2w}%;background:${S2_COLOR}"></div></div>
-        <span style="font-size:10px;color:var(--mid);min-width:32px;text-align:right">${s2p}%</span>
-      </div></td>
-      <td style="color:var(--white);font-weight:700">${fmt(row.combined)}</td>
+      <td style="color:${S1_COLOR};font-weight:700;text-align:right">${fmt(row.s1)}</td>
+      <td style="color:${S2_COLOR};font-weight:700;text-align:right">${fmt(row.s2)}</td>
+      <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${s1w}%;background:${S1_COLOR}"></div></div><span style="font-size:10px;color:var(--mid);min-width:32px;text-align:right">${s1p}%</span></div></td>
+      <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${s2w}%;background:${S2_COLOR}"></div></div><span style="font-size:10px;color:var(--mid);min-width:32px;text-align:right">${s2p}%</span></div></td>
+      <td style="color:var(--white);font-weight:700;text-align:right">${fmt(row.combined)}</td>
     </tr>`;
   }).join('');
 }
 
 function sortTable(col) {
-  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-  else { sortCol = col; sortDir = 'desc'; }
+  if(sortCol===col) sortDir=sortDir==='asc'?'desc':'asc';
+  else { sortCol=col; sortDir='desc'; }
   render();
 }
 
-// ── Filter bar — populated from Silver CSV, upsell on non-free ──
-const SILVER_CSV     = 'TASA_Silver_NAICS_ISIC.csv';
-const DEFAULT_COUNTRY = 'South Korea';
-const DEFAULT_SECTOR  = 'South Korea — Abrasive Material'; // free demo sector
-const FREE_YEAR       = '2023';
-
-let silverMap = {}; // { country: [sector, ...] }
-
+// ── Silver CSV / filter bar ───────────────────────────
 function parseCSV(text) {
   function parseLine(line) {
-    const vals = []; let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') { if (inQ && line[i+1]==='"') { cur+='"'; i++; } else inQ=!inQ; }
-      else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
-      else cur += ch;
+    const vals=[]; let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+      else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}
+      else cur+=ch;
     }
     vals.push(cur.trim()); return vals;
   }
-  const lines = text.trim().split(/\r?\n/);
-  const hdr   = parseLine(lines[0]).map(h => h.replace(/^"|"$/g,'').trim());
-  return lines.slice(1).filter(l => l.trim()).map(ln => {
-    const vals = parseLine(ln).map(v => v.replace(/^"|"$/g,'').trim());
-    const o = {}; hdr.forEach((h,i) => o[h] = vals[i] ?? ''); return o;
+  const lines=text.trim().split(/\r?\n/);
+  const hdr=parseLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).filter(l=>l.trim()).map(ln=>{
+    const vals=parseLine(ln).map(v=>v.replace(/^"|"$/g,'').trim());
+    const o={}; hdr.forEach((h,i)=>o[h]=vals[i]??''); return o;
   });
 }
 
 function buildSilverMap(csvText) {
-  const rows = parseCSV(csvText);
-  silverMap = {};
-  rows.forEach(row => {
-    const country = row['Country Name'], sector = row['Country Sector'];
-    if (!country || !sector) return;
-    if (!silverMap[country]) silverMap[country] = new Set();
-    silverMap[country].add(sector);
+  const rows=parseCSV(csvText);
+  silverMap={};
+  rows.forEach(row=>{
+    const c=row['Country Name'],s=row['Country Sector'];
+    if(!c||!s) return;
+    if(!silverMap[c]) silverMap[c]=new Set();
+    silverMap[c].add(s);
   });
-  Object.keys(silverMap).forEach(c => { silverMap[c] = [...silverMap[c]].sort(); });
-
-  // Populate country dropdown
-  const cSel = document.getElementById('fb-country');
-  cSel.innerHTML = '';
-  Object.keys(silverMap).sort().forEach(c => {
-    const o = new Option(c, c);
-    if (c === DEFAULT_COUNTRY) o.selected = true;
-    cSel.add(o);
+  Object.keys(silverMap).forEach(c=>{silverMap[c]=[...silverMap[c]].sort();});
+  const cSel=document.getElementById('fb-country');
+  cSel.innerHTML='';
+  Object.keys(silverMap).sort().forEach(c=>{
+    const o=new Option(c,c); if(c===DEFAULT_COUNTRY) o.selected=true; cSel.add(o);
   });
-
-  // Populate sector dropdown for default country
   rebuildSectorDropdown(DEFAULT_COUNTRY, DEFAULT_SECTOR);
 }
 
 function rebuildSectorDropdown(country, selectValue) {
-  const sSel = document.getElementById('fb-sector');
-  sSel.innerHTML = '';
-  (silverMap[country] || []).forEach(s => sSel.add(new Option(s, s)));
-  // Try to select the target value; fall back to first option
-  const match = [...sSel.options].find(o => o.value === selectValue);
-  sSel.value = match ? selectValue : (sSel.options[0] || {}).value || '';
+  const sSel=document.getElementById('fb-sector');
+  sSel.innerHTML='';
+  (silverMap[country]||[]).forEach(s=>sSel.add(new Option(s,s)));
+  const match=[...sSel.options].find(o=>o.value===selectValue);
+  sSel.value=match?selectValue:(sSel.options[0]||{}).value||'';
 }
 
 function onCountryChange() {
-  const country = document.getElementById('fb-country').value;
-  if (country !== DEFAULT_COUNTRY) {
-    showUpsell(
-      `Country · ${country}`,
-      `rLCA reports for <strong>${country}</strong> are available through TASA EFX. Contact us to get access to the full dataset for your country of interest.`
-    );
-    document.getElementById('fb-country').value = DEFAULT_COUNTRY;
-    rebuildSectorDropdown(DEFAULT_COUNTRY, DEFAULT_SECTOR);
-    return;
+  const c=document.getElementById('fb-country').value;
+  if(c!==DEFAULT_COUNTRY){
+    showUpsell(`Country · ${c}`,`rLCA reports for <strong>${c}</strong> are available through TASA EFX. Contact us to get access.`);
+    document.getElementById('fb-country').value=DEFAULT_COUNTRY;
+    rebuildSectorDropdown(DEFAULT_COUNTRY,DEFAULT_SECTOR); return;
   }
-  rebuildSectorDropdown(country, DEFAULT_SECTOR);
+  rebuildSectorDropdown(c,DEFAULT_SECTOR);
 }
-
 function onSectorChange() {
-  const sector = document.getElementById('fb-sector').value;
-  // Free if it contains "Abrasive Material" (matches "South Korea — Abrasive Material")
-  if (sector.toLowerCase().includes('abrasive material')) return;
-  showUpsell(
-    `Sector · ${sector}`,
-    `rLCA reports for <strong>${sector}</strong> are available through TASA EFX. Contact us to get access to the full dataset for this sector.`
-  );
-  document.getElementById('fb-sector').value = DEFAULT_SECTOR;
+  const s=document.getElementById('fb-sector').value;
+  if(s.toLowerCase().includes('abrasive material')) return;
+  showUpsell(`Sector · ${s}`,`rLCA reports for <strong>${s}</strong> are available through TASA EFX. Contact us to get access.`);
+  document.getElementById('fb-sector').value=DEFAULT_SECTOR;
 }
-
 function onYearChange() {
-  const year = document.getElementById('fb-year').value;
-  if (year === FREE_YEAR) return;
-  const label = year === '2017' ? '2017 (Base Year)' : year;
-  showUpsell(
-    `Year · ${label}`,
-    `rLCA reports for <strong>${label}</strong> are available through TASA EFX. Contact us to access data across all available years.`
-  );
-  document.getElementById('fb-year').value = FREE_YEAR;
+  const y=document.getElementById('fb-year').value;
+  if(y===FREE_YEAR) return;
+  showUpsell(`Year · ${y}`,`rLCA reports for <strong>${y}</strong> are available through TASA EFX. Contact us for access across all years.`);
+  document.getElementById('fb-year').value=FREE_YEAR;
 }
-
-function showUpsell(what, msg) {
-  document.getElementById('upsell-what').textContent = what;
-  document.getElementById('upsell-msg').innerHTML    = msg;
+function showUpsell(what,msg){
+  document.getElementById('upsell-what').textContent=what;
+  document.getElementById('upsell-msg').innerHTML=msg;
   document.getElementById('upsell').classList.add('show');
 }
+function dismissUpsell(){ document.getElementById('upsell').classList.remove('show'); }
+document.getElementById('upsell').addEventListener('click',function(e){if(e.target===this)dismissUpsell();});
 
-function dismissUpsell() {
-  document.getElementById('upsell').classList.remove('show');
-}
-
-document.getElementById('upsell').addEventListener('click', function(e) {
-  if (e.target === this) dismissUpsell();
-});
-
-// ── Boot ──────────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────
 (async () => {
   try {
-    // Fetch both files in parallel but process Excel first — don't wait for CSV to show charts
     const [silverResp, xlsxResp] = await Promise.all([
       fetch(SILVER_CSV),
       fetch(XLSX_FILE)
     ]);
-    if (!silverResp.ok) throw new Error(`Silver CSV not found: ${SILVER_CSV}`);
-    if (!xlsxResp.ok)   throw new Error(`Excel file not found: ${XLSX_FILE}`);
+    if (!silverResp.ok) throw new Error(`Silver CSV not found (${silverResp.status})`);
+    if (!xlsxResp.ok)   throw new Error(`Excel file not found (${xlsxResp.status})`);
 
-    // Read both bodies in parallel
     const [silverText, xlsxBuf] = await Promise.all([
       silverResp.text(),
       xlsxResp.arrayBuffer()
     ]);
 
-    // Parse Excel — restricted to only the 2 sheets we need, fastest options
     const wb = XLSX.read(new Uint8Array(xlsxBuf), {
-      type: 'array',
-      sheets: [SHEET_NAME, EF_SHEET],  // only parse what we use
-      cellStyles: false,
-      cellFormula: false,
-      cellHTML: false,
-      cellNF: false,
-      sheetStubs: false,
-      dense: true                       // array-of-arrays internally — much faster
+      type:         'array',
+      sheets:       [SHEET_NAME, EF_SHEET],
+      cellStyles:   false,
+      cellFormula:  false,
+      cellHTML:     false,
+      cellNF:       false,
+      sheetStubs:   false
     });
-    loadExcel(wb);
 
-    // Silver CSV can finish after — only drives filter dropdowns
+    loadExcel(wb);
     buildSilverMap(silverText);
 
   } catch(e) {
     showError(`<strong>${e.message}</strong>`);
   }
 })();
+</script>
+</body>
+</html>
