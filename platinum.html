@@ -280,8 +280,7 @@ function parseCSVLine(line){
   vals.push(cur.trim()); return vals;
 }
 function parseCSV(text){
-  const lines=text.trim().split(/
-?
+  const lines=text.trim().split(/?
 /);
   const hdr=parseCSVLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
   return lines.slice(1).filter(l=>l.trim()).map(ln=>{
