@@ -280,7 +280,8 @@ function parseCSVLine(line){
   vals.push(cur.trim()); return vals;
 }
 function parseCSV(text){
-  const lines=text.trim().split(/?
+  const lines=text.trim().split(/
+?
 /);
   const hdr=parseCSVLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
   return lines.slice(1).filter(l=>l.trim()).map(ln=>{
@@ -355,38 +356,28 @@ function onFilterChange(){
   renderDashboard(sector, year);
 }
 
-// ── Load Silver CSV → build silverMap ────────────────────────
-async function loadSilver(){
-  const r = await fetch(SILVER_CSV);
-  if(!r.ok) throw new Error('Silver CSV not found');
-  const rows = parseCSV(await r.text());
-
-  // Build silverMap: country → sorted unique Country Sector values
+// ── Build silverMap from pre-fetched text ─────────────────────
+function buildSilverMap(csvText){
+  const rows = parseCSV(csvText);
+  silverMap = {};
   rows.forEach(row=>{
-    const country = row['Country Name'];
-    const sector  = row['Country Sector'];
+    const country=row['Country Name'], sector=row['Country Sector'];
     if(!country||!sector) return;
     if(!silverMap[country]) silverMap[country]=new Set();
     silverMap[country].add(sector);
   });
-  // Convert Sets to sorted arrays
   Object.keys(silverMap).forEach(c=>{ silverMap[c]=[...silverMap[c]].sort(); });
 
-  // Populate Country dropdown with all unique countries, sorted
-  const countries = Object.keys(silverMap).sort();
-  const cSel = document.getElementById('f-country');
+  // Country dropdown
+  const countries=Object.keys(silverMap).sort();
+  const cSel=document.getElementById('f-country');
   cSel.innerHTML='';
-  countries.forEach(c=>{
-    const o=new Option(c,c);
-    if(c===DEFAULT_COUNTRY) o.selected=true;
-    cSel.add(o);
-  });
+  countries.forEach(c=>{ const o=new Option(c,c); if(c===DEFAULT_COUNTRY) o.selected=true; cSel.add(o); });
 
-  // Populate Sector dropdown for default country (South Korea)
-  const defSectors = silverMap[DEFAULT_COUNTRY]||[];
-  const sSel = document.getElementById('f-sector');
+  // Sector dropdown for default country
+  const sSel=document.getElementById('f-sector');
   sSel.innerHTML='';
-  defSectors.forEach(s=>sSel.add(new Option(s,s)));
+  (silverMap[DEFAULT_COUNTRY]||[]).forEach(s=>sSel.add(new Option(s,s)));
 }
 
 // ── Load Platinum Excel ───────────────────────────────────────
@@ -774,9 +765,10 @@ function renderTable(){
   document.getElementById('tb').innerHTML=rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??'—'}</td>`).join('')}</tr>`).join('');
 }
 
-// ── Boot: load both files in parallel ────────────────────────
+// ── Boot: fetch each file exactly once ───────────────────────
 (async()=>{
   try{
+    // Fetch both files in parallel — each fetched exactly once
     const [silverResp, xlsxResp] = await Promise.all([
       fetch(SILVER_CSV),
       fetch(XLSX_FILE)
@@ -784,39 +776,24 @@ function renderTable(){
     if(!silverResp.ok) throw new Error('Silver CSV not found: '+SILVER_CSV);
     if(!xlsxResp.ok)   throw new Error('Platinum Excel not found: '+XLSX_FILE);
 
-    await loadSilver(); // waits for Silver CSV (already fetched above, re-use text)
-    // Re-fetch silver text since we already checked ok above
-    const silverText = await fetch(SILVER_CSV).then(r=>r.text());
-    const silverRows = parseCSV(silverText);
-    silverMap = {};
-    silverRows.forEach(row=>{
-      const country=row['Country Name'], sector=row['Country Sector'];
-      if(!country||!sector) return;
-      if(!silverMap[country]) silverMap[country]=new Set();
-      silverMap[country].add(sector);
-    });
-    Object.keys(silverMap).forEach(c=>{silverMap[c]=[...silverMap[c]].sort();});
+    // Process both responses
+    const [silverText, xlsxBuf] = await Promise.all([
+      silverResp.text(),
+      xlsxResp.arrayBuffer()
+    ]);
 
-    // Populate country dropdown
-    const countries=Object.keys(silverMap).sort();
-    const cSel=document.getElementById('f-country');
-    cSel.innerHTML='';
-    countries.forEach(c=>{const o=new Option(c,c);if(c===DEFAULT_COUNTRY)o.selected=true;cSel.add(o);});
+    // Build Silver dropdown data
+    buildSilverMap(silverText);
 
-    // Populate sector dropdown for South Korea
-    const defSectors=silverMap[DEFAULT_COUNTRY]||[];
-    const sSel=document.getElementById('f-sector');
-    sSel.innerHTML='';
-    defSectors.forEach(s=>sSel.add(new Option(s,s)));
+    // Parse Platinum Excel
+    loadExcel(new Uint8Array(xlsxBuf));
 
-    // Load Platinum Excel
-    loadExcel(new Uint8Array(await xlsxResp.arrayBuffer()));
-
-    // Render default
-    renderDashboard(sSel.value,'2023');
+    // Render default view
+    const firstSector = document.getElementById('f-sector').value;
+    renderDashboard(firstSector, '2023');
 
   } catch(e){
-    showError(`Failed to load data: <strong>${e.message}</strong><br>Make sure both files are in the root of your GitHub repo.`);
+    showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure both files are in the root of your GitHub repo.');
   }
 })();
 </script>
