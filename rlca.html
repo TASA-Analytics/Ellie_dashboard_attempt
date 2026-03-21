@@ -398,8 +398,8 @@ function loadExcel(wb) {
   const rows    = raw.slice(hdrIdx+1).filter(r => r.some(c => c !== ''))
                      .map(r => { const o={}; headers.forEach((h,i) => o[h]=r[i]??''); return o; });
 
-  s1Cols = headers.filter(h => h.includes('Scope 1'));
-  s2Cols = headers.filter(h => h.includes('Scope 2'));
+  s1Cols = headers.filter(h => h.toLowerCase().includes('scope 1'));
+  s2Cols = headers.filter(h => h.toLowerCase().includes('scope 2'));
 
   tableData = rows.filter(r => String(r['Sectors']||'').trim()).map(r => {
     const s1={}, s2={};
@@ -409,9 +409,9 @@ function loadExcel(wb) {
   });
 
   tierOptions = s1Cols.map(s1c => {
-    const prefix = s1c.replace(' Scope 1','').trim();
-    const s2c    = s2Cols.find(c => c.replace(' Scope 2','').trim() === prefix) || null;
-    const label  = prefix === 'Scope' ? 'Tier 0 · Focal Sector' : prefix;
+    const prefix = s1c.replace(/\s*scope\s*1\s*/i,'').trim();
+    const s2c    = s2Cols.find(c => c.replace(/\s*scope\s*2\s*/i,'').trim() === prefix) || null;
+    const label  = prefix === '' ? 'Tier 0 · Focal Sector' : prefix;
     return { label, s1col: s1c, s2col: s2c };
   });
 
