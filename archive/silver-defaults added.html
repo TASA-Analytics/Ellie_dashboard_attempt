@@ -259,30 +259,19 @@ function switchTab(id,btn){
 function getSelected(id){ return [...document.getElementById(id).selectedOptions].map(o=>o.value); }
 
 // ── Default selections shown on first load ──
-const DEFAULT_ISIC      = 'Manufacture of abrasive products'; // EDIT: default sector
-const DEFAULT_COUNTRIES = ['Mexico','Korea','United States']; // EDIT: default countries
-
-// Strip leading ISIC codes like "C2391 — " or "23.91 - " from a title string,
-// keeping only the human-readable description.
-function stripIsicCode(raw){
-  // Remove patterns like "C2391 — ", "23.91 - ", "2391 – " etc. at the start
-  return raw.replace(/^[A-Z]?\d[\d.\s]*[\u2013\u2014\-–—]+\s*/,'').trim();
-}
+const DEFAULT_ISIC    = 'Abrasive Material';   // EDIT: change default sector if needed
+const DEFAULT_COUNTRY = 'Korea';               // EDIT: change default country if needed
 
 function populateControls(){
-  // Use stripped titles so the dropdown only shows descriptions, not codes
-  const isicsRaw  = [...new Set(dfLong.map(r=>r.isic).filter(Boolean))].sort();
+  const isics     = [...new Set(dfLong.map(r=>r.isic).filter(Boolean))].sort();
   const countries = [...new Set(dfLong.map(r=>r.country).filter(Boolean))].sort();
 
   const iSel = document.getElementById('f-isic');
   iSel.innerHTML = '';
-  isicsRaw.forEach(raw=>{
-    const title = stripIsicCode(raw);
-    const o = new Option(title, raw); // display=stripped, value=original (for filtering)
-    if(raw === DEFAULT_ISIC || title === DEFAULT_ISIC ||
-       (!isicsRaw.some(r=> r===DEFAULT_ISIC || stripIsicCode(r)===DEFAULT_ISIC) && raw===isicsRaw[0])){
-      o.selected = true;
-    }
+  isics.forEach(s=>{
+    const o = new Option(s,s);
+    // Pre-select the default sector
+    if(s === DEFAULT_ISIC || (!isics.includes(DEFAULT_ISIC) && s === isics[0])) o.selected = true;
     iSel.add(o);
   });
 
@@ -290,8 +279,8 @@ function populateControls(){
   cSel.innerHTML = '';
   countries.forEach(c=>{
     const o = new Option(c,c);
-    // Select all three default countries
-    if(DEFAULT_COUNTRIES.includes(c)) o.selected = true;
+    // Pre-select the default country; fall back to first country if not found
+    if(c === DEFAULT_COUNTRY || (!countries.includes(DEFAULT_COUNTRY) && c === countries[0])) o.selected = true;
     cSel.add(o);
   });
 }
