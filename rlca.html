@@ -116,6 +116,16 @@ select option{background:var(--navy2);color:var(--white);}
 .donut-leg-val{font-size:11px;font-weight:700;color:var(--white);}
 .donut-leg-pct{font-size:10px;color:var(--mid);}
 
+/* SCOPE PILLS */
+.scope-pills{display:flex;gap:6px;flex-wrap:wrap;}
+.scope-pill{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;
+  border:1.5px solid var(--bdr);color:var(--dim);cursor:pointer;
+  transition:all .2s;background:none;font-family:inherit;letter-spacing:0.04em;}
+.scope-pill:hover{border-color:var(--white);color:var(--white);}
+.scope-pill.active-total{background:rgba(26,188,156,0.18);border-color:var(--teal);color:var(--teal);}
+.scope-pill.active-s1{background:rgba(232,83,74,0.18);border-color:var(--s1);color:var(--s1);}
+.scope-pill.active-s2{background:rgba(240,165,0,0.18);border-color:var(--s2);color:var(--s2);}
+
 /* TIER BAR CHART PANEL */
 .chart-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 14px;overflow:hidden;}
 .chart-hdr{padding:14px 18px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
@@ -242,7 +252,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
   <div class="donut-panel">
     <div class="donut-panel-title">Scope Split</div>
-    <div class="donut-panel-sub">S1 vs S2 · lifecycle total across all tiers</div>
+    <div class="donut-panel-sub" id="donut-scope-sub">S1 vs S2 · all sectors</div>
     <div class="donut-wrap">
       <svg id="donut-scope" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
       <div class="donut-legend" id="donut-scope-legend"></div>
@@ -251,7 +261,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
   <div class="donut-panel">
     <div class="donut-panel-title">Tier Depth</div>
-    <div class="donut-panel-sub">Near-term (T0–T3) vs deep supply chain (T4–T10)</div>
+    <div class="donut-panel-sub" id="donut-tier-sub">Near-term (T0–T3) vs deep (T4–T10)</div>
     <div class="donut-wrap">
       <svg id="donut-tier" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
       <div class="donut-legend" id="donut-tier-legend"></div>
@@ -260,12 +270,30 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
 </div>
 
+<!-- CHART FILTERS: scope + input sector -->
+<div class="controls" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none;">
+  <div class="ctrl-group">
+    <span class="ctrl-label">Scope</span>
+    <div class="scope-pills">
+      <button class="scope-pill active-total" onclick="setScopeFilter('total',this)">Total</button>
+      <button class="scope-pill" onclick="setScopeFilter('s1',this)">Scope 1 · Direct</button>
+      <button class="scope-pill" onclick="setScopeFilter('s2',this)">Scope 2 · Electricity</button>
+    </div>
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Input Sector</span>
+    <select id="chart-sector" onchange="renderTierBarChart()" style="min-width:220px;">
+      <option value="all">All Sectors (aggregated)</option>
+    </select>
+  </div>
+</div>
+
 <!-- TIER BAR CHART -->
-<div class="chart-panel">
+<div class="chart-panel" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none;margin-top:0">
   <div class="chart-hdr">
     <div>
       <div class="chart-title">Lifecycle Emissions by Tier</div>
-      <div class="chart-sub">Scope 1 (red) and Scope 2 (amber) summed across all input sectors at each upstream tier</div>
+      <div class="chart-sub" id="chart-sub-text">Scope 1 (red) and Scope 2 (amber) · all input sectors · each upstream tier</div>
     </div>
     <div class="legend-inline">
       <div class="leg-item"><div class="leg-swatch" style="background:var(--s1)"></div>Scope 1 · Direct</div>
@@ -355,6 +383,7 @@ let efData      = {};
 let silverMap   = {};
 let sortCol     = 'combined';
 let sortDir     = 'desc';
+let scopeFilter = 'total'; // 'total' | 's1' | 's2'
 
 // ── Excel loader ──────────────────────────────────────
 function loadExcel(wb) {
@@ -389,6 +418,11 @@ function loadExcel(wb) {
   const tierSel = document.getElementById('f-tier');
   tierSel.innerHTML = '<option value="total">Total — all tiers summed</option>';
   tierOptions.forEach(t => tierSel.add(new Option(t.label, t.s1col)));
+
+  // Populate chart sector dropdown
+  const chartSel = document.getElementById('chart-sector');
+  chartSel.innerHTML = '<option value="all">All Sectors (aggregated)</option>';
+  tableData.forEach(r => chartSel.add(new Option(r.sector, r.sector)));
 
   // Sheet 2: Sector Emissions Factors
   const wsEF = wb.Sheets[EF_SHEET];
@@ -435,23 +469,50 @@ function renderCallout() {
     document.getElementById('total-ei-sub').innerHTML = parts.join(' &nbsp;·&nbsp; ');
 }
 
+// ── Scope pill handler ────────────────────────────────
+function setScopeFilter(scope, btn) {
+  scopeFilter = scope;
+  document.querySelectorAll('.scope-pill').forEach(b => {
+    b.className = 'scope-pill';
+  });
+  btn.classList.add('active-' + scope);
+  renderTierBarChart();
+}
+
 // ── Tier bar chart ────────────────────────────────────
 function renderTierBarChart() {
-  const container = document.getElementById('tier-chart-scroll');
+  const container  = document.getElementById('tier-chart-scroll');
+  const chartSub   = document.getElementById('chart-sub-text');
   const n = tierOptions.length;
   if (!n || !tableData.length) return;
 
-  const tierTotals = tierOptions.map(t => ({
-    label: t.label,
-    s1: tableData.reduce((a,r) => a+(r.s1[t.s1col]||0), 0),
-    s2: t.s2col ? tableData.reduce((a,r) => a+(r.s2[t.s2col]||0), 0) : 0
-  }));
+  const selectedSector = document.getElementById('chart-sector').value;
+  const srcRows = selectedSector === 'all'
+    ? tableData
+    : tableData.filter(r => r.sector === selectedSector);
 
-  const BAR_W=34, BAR_GAP=4, GRP_GAP=20;
+  // Build per-tier totals respecting scope filter
+  const tierTotals = tierOptions.map(t => {
+    const s1 = srcRows.reduce((a,r) => a+(r.s1[t.s1col]||0), 0);
+    const s2 = t.s2col ? srcRows.reduce((a,r) => a+(r.s2[t.s2col]||0), 0) : 0;
+    return { label: t.label, s1, s2 };
+  });
+
+  // Determine what to render per bar based on scope filter
+  const showS1 = scopeFilter !== 's2';
+  const showS2 = scopeFilter !== 's1';
+  const BAR_W  = scopeFilter === 'total' ? 34 : 48;
+  const BAR_GAP = 4, GRP_GAP = 20;
   const mL=52, mR=16, mT=18, mB=50;
-  const grpW=BAR_W*2+BAR_GAP+GRP_GAP, chartW=grpW*n, chartH=260;
+  const grpW   = scopeFilter === 'total' ? BAR_W*2+BAR_GAP+GRP_GAP : BAR_W+GRP_GAP;
+  const chartW = grpW*n, chartH=260;
   const W=chartW+mL+mR, H=chartH+mT+mB;
-  const maxVal = Math.max(...tierTotals.map(t=>Math.max(t.s1,t.s2)), 1e-10);
+
+  const maxVal = Math.max(...tierTotals.map(t => {
+    if (scopeFilter==='s1') return t.s1;
+    if (scopeFilter==='s2') return t.s2;
+    return Math.max(t.s1, t.s2);
+  }), 1e-10);
 
   let o = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   o += `<g transform="translate(${mL},${mT})">`;
@@ -462,40 +523,80 @@ function renderTierBarChart() {
     o += `<text x="-5" y="${(yy+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${fmtAxis(val)}</text>`;
   }
 
-  tierTotals.forEach((t,i) => {
-    const gx=i*grpW, mid=gx+BAR_W+BAR_GAP/2;
-    const h1=Math.max(1,(t.s1/maxVal)*chartH);
-    o += `<rect x="${gx}" y="${(chartH-h1).toFixed(1)}" width="${BAR_W}" height="${h1.toFixed(1)}" fill="${S1_COLOR}" rx="2" opacity="0.88"/>`;
-    if(h1>16) o += `<text x="${(gx+BAR_W/2).toFixed(1)}" y="${(chartH-h1-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s1)}</text>`;
-    const h2=Math.max(1,(t.s2/maxVal)*chartH);
-    o += `<rect x="${(gx+BAR_W+BAR_GAP).toFixed(1)}" y="${(chartH-h2).toFixed(1)}" width="${BAR_W}" height="${h2.toFixed(1)}" fill="${S2_COLOR}" rx="2" opacity="0.88"/>`;
-    if(h2>16) o += `<text x="${(gx+BAR_W+BAR_GAP+BAR_W/2).toFixed(1)}" y="${(chartH-h2-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s2)}</text>`;
+  tierTotals.forEach((t, i) => {
+    const gx  = i * grpW;
     const lbl = t.label.replace(' · Focal Sector','');
-    o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${lbl}</text>`;
+
+    if (scopeFilter === 'total') {
+      const h1 = Math.max(1,(t.s1/maxVal)*chartH);
+      o += `<rect x="${gx}" y="${(chartH-h1).toFixed(1)}" width="${BAR_W}" height="${h1.toFixed(1)}" fill="${S1_COLOR}" rx="2" opacity="0.88"/>`;
+      if(h1>16) o += `<text x="${(gx+BAR_W/2).toFixed(1)}" y="${(chartH-h1-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s1)}</text>`;
+      const h2 = Math.max(1,(t.s2/maxVal)*chartH);
+      o += `<rect x="${(gx+BAR_W+BAR_GAP).toFixed(1)}" y="${(chartH-h2).toFixed(1)}" width="${BAR_W}" height="${h2.toFixed(1)}" fill="${S2_COLOR}" rx="2" opacity="0.88"/>`;
+      if(h2>16) o += `<text x="${(gx+BAR_W+BAR_GAP+BAR_W/2).toFixed(1)}" y="${(chartH-h2-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s2)}</text>`;
+      const mid = gx+BAR_W+BAR_GAP/2;
+      o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${lbl}</text>`;
+    } else {
+      const val = scopeFilter==='s1' ? t.s1 : t.s2;
+      const col = scopeFilter==='s1' ? S1_COLOR : S2_COLOR;
+      const bh  = Math.max(1,(val/maxVal)*chartH);
+      const mid = gx+BAR_W/2;
+      o += `<rect x="${gx}" y="${(chartH-bh).toFixed(1)}" width="${BAR_W}" height="${bh.toFixed(1)}" fill="${col}" rx="2" opacity="0.88"/>`;
+      if(bh>16) o += `<text x="${mid.toFixed(1)}" y="${(chartH-bh-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(val)}</text>`;
+      o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${lbl}</text>`;
+    }
   });
 
   o += `<line x1="0" y1="${chartH}" x2="${chartW}" y2="${chartH}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
   o += `</g></svg>`;
   container.innerHTML = o;
 
-  renderDonuts(tierTotals);
+  // Update chart subtitle
+  const scopeLbl = scopeFilter==='s1' ? 'Scope 1 · Direct only'
+                 : scopeFilter==='s2' ? 'Scope 2 · Electricity only'
+                 : 'Scope 1 (red) and Scope 2 (amber)';
+  const secLbl   = selectedSector==='all' ? 'all input sectors' : selectedSector;
+  document.getElementById('chart-sub-text').textContent =
+    `${scopeLbl} · ${secLbl} · each upstream tier`;
+
+  renderDonuts(tierTotals, selectedSector);
 }
 
 // ── Donuts ────────────────────────────────────────────
-function renderDonuts(tierTotals) {
-  const allS1 = tierTotals.reduce((a,t)=>a+t.s1,0);
-  const allS2 = tierTotals.reduce((a,t)=>a+t.s2,0);
+function renderDonuts(tierTotals, selectedSector) {
+  const showS1 = scopeFilter !== 's2';
+  const showS2 = scopeFilter !== 's1';
+
+  const allS1 = showS1 ? tierTotals.reduce((a,t)=>a+t.s1,0) : 0;
+  const allS2 = showS2 ? tierTotals.reduce((a,t)=>a+t.s2,0) : 0;
   const grand = allS1+allS2;
-  drawDonut('donut-scope',[
-    {label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR},
-    {label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}
-  ], grand, 'donut-scope-legend');
-  const early = tierTotals.slice(0,4).reduce((a,t)=>a+t.s1+t.s2,0);
-  const late  = tierTotals.slice(4).reduce((a,t)=>a+t.s1+t.s2,0);
+
+  // Scope split donut
+  const scopeSegs = scopeFilter === 'total'
+    ? [{label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR},
+       {label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}]
+    : scopeFilter === 's1'
+    ? [{label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR}]
+    : [{label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}];
+  drawDonut('donut-scope', scopeSegs, grand, 'donut-scope-legend');
+
+  // Tier depth donut — early (T0-T3) vs late (T4-T10), using active scope
+  const early = tierTotals.slice(0,4).reduce((a,t) => {
+    return a + (showS1?t.s1:0) + (showS2?t.s2:0);
+  }, 0);
+  const late  = tierTotals.slice(4).reduce((a,t) => {
+    return a + (showS1?t.s1:0) + (showS2?t.s2:0);
+  }, 0);
   drawDonut('donut-tier',[
-    {label:'Tiers 0–3 · Near-term',    val:early, color:TEAL_COL},
-    {label:'Tiers 4–10 · Deep chain',  val:late,  color:'#7c5cbf'}
+    {label:'Tiers 0–3 · Near-term',   val:early, color:TEAL_COL},
+    {label:'Tiers 4–10 · Deep chain', val:late,  color:'#7c5cbf'}
   ], grand, 'donut-tier-legend');
+
+  // Update donut subtitles
+  const secLbl = (!selectedSector || selectedSector==='all') ? 'all sectors' : selectedSector;
+  const scpLbl = scopeFilter==='s1'?'S1 only':scopeFilter==='s2'?'S2 only':'S1+S2';
+  document.getElementById('donut-scope-sub').textContent = `${scpLbl} · ${secLbl}`;
+  document.getElementById('donut-tier-sub').textContent  = `${scpLbl} · ${secLbl}`;
 }
 
 function drawDonut(svgId, segs, total, legendId) {
