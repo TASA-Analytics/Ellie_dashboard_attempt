@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emissions Factors Explorer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+  /* =============================================
+     CSS VARIABLES — Edit brand colors here
+  ============================================= */
+  :root {
+    --bg:           #f7f6f2;
+    --surface:      #ffffff;
+    --border:       #e8e5de;
+    --text-primary: #1a1a18;
+    --text-muted:   #7a776e;
+    --accent:       #2a6049;
+    --accent-light: #e8f2ed;
+    --accent-mid:   #4a9070;
+    --scope1:       #2a6049;
+    --scope2:       #4a9070;
+    --scope3:       #a8d4c0;
+    --total:        #1a3d2e;
+    --radius:       10px;
+    --shadow:       0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; position: sticky; top: 0; z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 32px; height: 32px; background: var(--accent);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .logo-mark svg { width: 18px; height: 18px; fill: white; }
+  .logo-text { font-family: 'DM Serif Display', serif; font-size: 18px; letter-spacing: -0.3px; }
+  .header-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-muted); }
+  .data-badge { background: var(--accent-light); color: var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+
+  /* YEAR BAR */
+  .year-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 10px 40px; display: flex; align-items: center; gap: 10px;
+  }
+  .year-bar-label { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-right: 4px; }
+  .year-btn {
+    padding: 5px 15px; border: 1px solid var(--border); border-radius: 20px;
+    background: transparent; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+  }
+  .year-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .year-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+  main { max-width: 1300px; margin: 0 auto; padding: 32px 40px; }
+
+  .page-title { margin-bottom: 28px; }
+  .page-title h1 { font-family: 'DM Serif Display', serif; font-size: 32px; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .page-title p { color: var(--text-muted); font-size: 15px; font-weight: 300; }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 28px; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; transition: box-shadow 0.2s; }
+  .kpi-card:hover { box-shadow: var(--shadow); }
+  .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; }
+  .kpi-value { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.5px; line-height: 1; margin-bottom: 4px; }
+  .kpi-sub { font-size: 11px; color: var(--text-muted); }
+  .kpi-total  { border-top: 3px solid var(--total); }
+  .kpi-scope1 { border-top: 3px solid var(--scope1); }
+  .kpi-scope2 { border-top: 3px solid var(--scope2); }
+  .kpi-scope3 { border-top: 3px solid var(--scope3); }
+  .kpi-accent { border-top: 3px solid var(--accent); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px; margin-bottom: 24px; width: fit-content; }
+  .tab-btn { padding: 8px 18px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text-muted); transition: all 0.15s; white-space: nowrap; }
+  .tab-btn:hover { color: var(--text-primary); background: var(--bg); }
+  .tab-btn.active { background: var(--accent); color: white; font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* FILTERS */
+  .filters { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-label { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+  select {
+    font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 7px 28px 7px 11px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--surface);
+    color: var(--text-primary); cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a776e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 9px center; transition: border-color 0.15s;
+  }
+  select:focus { outline: none; border-color: var(--accent); }
+
+  /* CHART CARDS */
+  .chart-grid { display: grid; gap: 20px; }
+  .chart-grid-2 { grid-template-columns: 1fr 1fr; }
+  .chart-grid-1 { grid-template-columns: 1fr; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .chart-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .chart-card-title { font-family: 'DM Serif Display', serif; font-size: 17px; letter-spacing: -0.2px; margin-bottom: 3px; }
+  .chart-card-sub { font-size: 12px; color: var(--text-muted); }
+  .scope-legend { display: flex; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .trend-note { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 10px; }
+
+  /* TABLE */
+  .table-controls { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+  .table-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .search-box { font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 7px 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-primary); width: 220px; }
+  .search-box:focus { outline: none; border-color: var(--accent); }
+  .row-count { font-size: 13px; color: var(--text-muted); }
+  .table-wrapper { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: var(--bg); border-bottom: 2px solid var(--border); }
+  th { padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); white-space: nowrap; cursor: pointer; user-select: none; }
+  th:hover { color: var(--accent); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+  .pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .pill-total { background: #e8ede9; color: var(--total); }
+  .pill-1 { background: #e8f2ed; color: var(--scope1); }
+  .pill-2 { background: #eef6f2; color: var(--accent-mid); }
+  .pill-3 { background: #f5faf8; color: #5a8a76; }
+
+  /* ABOUT */
+  .about-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+  .about-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; }
+  .about-card h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 14px; letter-spacing: -0.3px; }
+  .about-card p { color: var(--text-muted); line-height: 1.7; margin-bottom: 12px; font-size: 14px; }
+  .scope-explain { margin-top: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .scope-row { display: flex; gap: 14px; align-items: flex-start; }
+  .scope-num { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; margin-top: 1px; }
+  .scope-num-1 { background: var(--accent); color: white; }
+  .scope-num-2 { background: var(--accent-mid); color: white; }
+  .scope-num-3 { background: var(--scope3); color: var(--accent); }
+  .scope-text strong { display: block; font-size: 14px; margin-bottom: 3px; }
+  .scope-text p { margin: 0; font-size: 13px; color: var(--text-muted); }
+  .stat-list { display: flex; flex-direction: column; }
+  .stat-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); align-items: center; }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row-label { font-size: 13px; color: var(--text-muted); }
+  .stat-row-value { font-size: 13px; font-weight: 600; text-align: right; max-width: 60%; }
+
+  #loading { text-align: center; padding: 100px; color: var(--text-muted); font-size: 15px; }
+  #app { display: none; }
+
+  @media (max-width: 1000px) {
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    .chart-grid-2 { grid-template-columns: 1fr; }
+    .about-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 700px) {
+    header, .year-bar { padding: 0 16px; }
+    main { padding: 20px 16px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .tabs { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <img src="TASA_EFX_Logo_Final.jpeg" alt="TASA Logo" style="height: 38px; width: auto;">
+  </div>
+  <div class="header-right">
+    <span>kgCO₂e / USD</span>
+    <span class="data-badge" id="header-badge">2024 Data</span>
+  </div>
+</header>
+
+<div class="year-bar">
+  <span class="year-bar-label">Year:</span>
+  <button class="year-btn" data-year="base"  onclick="setYear('base',this)">Base Year</button>
+  <button class="year-btn" data-year="2020"  onclick="setYear('2020',this)">2020</button>
+  <button class="year-btn" data-year="2023"  onclick="setYear('2023',this)">2023</button>
+  <button class="year-btn active" data-year="2024" onclick="setYear('2024',this)">2024</button>
+</div>
+
+<div id="loading">Loading data…</div>
+
+<div id="app">
+<main>
+
+  <!-- UPDATE: Page title and subtitle -->
+  <div class="page-title">
+    <h1>Scope 1, 2 &amp; 3 Emissions Factors</h1>
+    <p>Browse, filter and compare emissions intensity across countries and sectors &middot; <span id="active-year-label">2024</span></p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-accent">
+      <div class="kpi-label">Countries</div>
+      <div class="kpi-value" id="kpi-countries">—</div>
+      <div class="kpi-sub">in dataset</div>
+    </div>
+    <div class="kpi-card kpi-total">
+      <div class="kpi-label">Avg Total Intensity</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-sub">kgCO₂e / USD</div>
+    </div>
+    <div class="kpi-card kpi-scope1">
+      <div class="kpi-label">Avg Scope 1</div>
+      <div class="kpi-value" id="kpi-s1">—</div>
+      <div class="kpi-sub">kgCO₂e / USD</div>
+    </div>
+    <div class="kpi-card kpi-scope2">
+      <div class="kpi-label">Avg Scope 2</div>
+      <div class="kpi-value" id="kpi-s2">—</div>
+      <div class="kpi-sub">kgCO₂e / USD</div>
+    </div>
+    <div class="kpi-card kpi-scope3">
+      <div class="kpi-label">Avg Scope 3</div>
+      <div class="kpi-value" id="kpi-s3">—</div>
+      <div class="kpi-sub">kgCO₂e / USD</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">Overview</button>
+    <button class="tab-btn" onclick="switchTab('by-country',this)">By Country</button>
+    <button class="tab-btn" onclick="switchTab('by-sector',this)">By Sector</button>
+    <button class="tab-btn" onclick="switchTab('trends',this)">Trends</button>
+    <button class="tab-btn" onclick="switchTab('data-table',this)">Data Table</button>
+    <button class="tab-btn" onclick="switchTab('about',this)">About</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="filters">
+      <span class="filter-label">Metric:</span>
+      <select id="overview-scope" onchange="renderOverview()">
+        <option value="total">Total Intensity</option>
+        <option value="scope1">Scope 1</option>
+        <option value="scope2">Scope 2</option>
+        <option value="scope3">Scope 3</option>
+      </select>
+    </div>
+    <div class="chart-grid chart-grid-2">
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title">Top Sectors</div><div class="chart-card-sub">Average across all countries</div></div></div>
+        <div style="position:relative;height:300px"><canvas id="chart-top-sectors"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title">Country Comparison</div><div class="chart-card-sub">Average across all sectors</div></div></div>
+        <div style="position:relative;height:300px"><canvas id="chart-country-compare"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-grid chart-grid-1" style="margin-top:20px">
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title">Scope 1 · 2 · 3 Breakdown by Sector</div><div class="chart-card-sub">All scopes — average across countries</div></div></div>
+        <div class="scope-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--scope1)"></div>Scope 1</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--scope2)"></div>Scope 2</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--scope3)"></div>Scope 3</div>
+        </div>
+        <div style="position:relative;height:320px"><canvas id="chart-grouped"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BY COUNTRY -->
+  <div class="tab-panel" id="tab-by-country">
+    <div class="filters">
+      <span class="filter-label">Country:</span>
+      <select id="country-select" onchange="renderByCountry()"></select>
+      <span class="filter-label">Metric:</span>
+      <select id="country-scope" onchange="renderByCountry()">
+        <option value="total">Total Intensity</option>
+        <option value="scope1">Scope 1</option>
+        <option value="scope2">Scope 2</option>
+        <option value="scope3">Scope 3</option>
+        <option value="all">All Scopes</option>
+      </select>
+    </div>
+    <div class="chart-grid chart-grid-1">
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title" id="country-chart-title">Emissions by Sector</div><div class="chart-card-sub">kgCO₂e / USD · sorted by value</div></div></div>
+        <div style="position:relative;height:380px"><canvas id="chart-by-country"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BY SECTOR -->
+  <div class="tab-panel" id="tab-by-sector">
+    <div class="filters">
+      <span class="filter-label">Sector:</span>
+      <select id="sector-select" onchange="renderBySector()"></select>
+      <span class="filter-label">Metric:</span>
+      <select id="sector-scope" onchange="renderBySector()">
+        <option value="total">Total Intensity</option>
+        <option value="scope1">Scope 1</option>
+        <option value="scope2">Scope 2</option>
+        <option value="scope3">Scope 3</option>
+        <option value="all">All Scopes</option>
+      </select>
+    </div>
+    <div class="chart-grid chart-grid-1">
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title" id="sector-chart-title">Emissions by Country</div><div class="chart-card-sub">kgCO₂e / USD · sorted by value</div></div></div>
+        <div style="position:relative;height:340px"><canvas id="chart-by-sector"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRENDS -->
+  <div class="tab-panel" id="tab-trends">
+    <div class="filters">
+      <span class="filter-label">Country:</span>
+      <select id="trend-country" onchange="renderTrends()"><option value="">All Countries</option></select>
+      <span class="filter-label">Sector:</span>
+      <select id="trend-sector" onchange="renderTrends()"><option value="ALL">All Sectors (avg)</option></select>
+      <span class="filter-label">Metric:</span>
+      <select id="trend-scope" onchange="renderTrends()">
+        <option value="total">Total Intensity</option>
+        <option value="scope1">Scope 1</option>
+        <option value="scope2">Scope 2</option>
+        <option value="scope3">Scope 3</option>
+      </select>
+    </div>
+    <div class="chart-grid chart-grid-1">
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title" id="trend-chart-title">Emissions Trend Over Time</div><div class="chart-card-sub">Base Year → 2020 → 2023 → 2024</div></div></div>
+        <div style="position:relative;height:320px"><canvas id="chart-trend"></canvas></div>
+        <p class="trend-note">Note: Base Year may vary by country. Values shown at each available data point.</p>
+      </div>
+    </div>
+    <div class="chart-grid chart-grid-1" style="margin-top:20px">
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title">All Countries — Base Year vs 2024</div><div class="chart-card-sub">Average total intensity across all sectors</div></div></div>
+        <div style="position:relative;height:280px"><canvas id="chart-trend-compare"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="tab-panel" id="tab-data-table">
+    <div class="table-controls">
+      <div class="table-filters">
+        <input class="search-box" type="text" id="table-search" placeholder="Search country or sector…" oninput="renderTable()">
+        <select id="table-country" onchange="renderTable()"><option value="">All Countries</option></select>
+        <select id="table-sector"  onchange="renderTable()"><option value="">All Sectors</option></select>
+      </div>
+      <span class="row-count" id="row-count"></span>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortTable('Country Name')">Country</th>
+            <th onclick="sortTable('Country Sector')">Sector</th>
+            <th onclick="sortTable('NAICS Code')">NAICS</th>
+            <th onclick="sortTable('ISIC Rev. 4 Code')">ISIC</th>
+            <th onclick="sortTable('_total')"  style="color:var(--total)">Total ↕</th>
+            <th onclick="sortTable('_scope1')" style="color:var(--scope1)">Scope 1 ↕</th>
+            <th onclick="sortTable('_scope2')" style="color:var(--scope2)">Scope 2 ↕</th>
+            <th onclick="sortTable('_scope3')" style="color:var(--scope3)">Scope 3 ↕</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="tab-panel" id="tab-about">
+    <div class="about-grid">
+      <div class="about-card">
+        <!-- UPDATE: Replace with your company methodology description -->
+        <h2>About This Dataset</h2>
+        <p>This tool provides supply-chain emissions intensity factors across Scope 1, 2, and 3 categories for multiple countries and industry sectors. Factors are expressed in kilograms of CO₂ equivalent per US dollar of economic output (kgCO₂e/USD).</p>
+        <p>Sectors are classified using both NAICS (North American Industry Classification System) and ISIC Rev. 4 (International Standard Industrial Classification) codes to ensure international comparability.</p>
+        <p>Data is updated annually and reflects the most recent available input-output modelling results. Factors support spend-based emissions accounting in line with the GHG Protocol Corporate Value Chain Standard.</p>
+        <div class="scope-explain">
+          <div class="scope-row">
+            <div class="scope-num scope-num-1">1</div>
+            <div class="scope-text"><strong>Scope 1 — Direct Emissions</strong><p>Emissions from sources owned or controlled by the organisation — combustion, process emissions, fugitive releases.</p></div>
+          </div>
+          <div class="scope-row">
+            <div class="scope-num scope-num-2">2</div>
+            <div class="scope-text"><strong>Scope 2 — Purchased Energy</strong><p>Indirect emissions from the generation of purchased electricity, steam, heat or cooling consumed by the organisation.</p></div>
+          </div>
+          <div class="scope-row">
+            <div class="scope-num scope-num-3">3</div>
+            <div class="scope-text"><strong>Scope 3 — Value Chain</strong><p>All other indirect emissions in the value chain — upstream supply chain, downstream use, and end-of-life treatment.</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="about-card">
+        <h2>Dataset Summary</h2>
+        <div class="stat-list">
+          <div class="stat-row"><span class="stat-row-label">Countries</span><span class="stat-row-value" id="about-countries">—</span></div>
+          <div class="stat-row"><span class="stat-row-label">Sectors</span><span class="stat-row-value" id="about-sectors">—</span></div>
+          <div class="stat-row"><span class="stat-row-label">Total Records</span><span class="stat-row-value" id="about-records">—</span></div>
+          <div class="stat-row"><span class="stat-row-label">Years Available</span><span class="stat-row-value">Base Year, 2020, 2023, 2024</span></div>
+          <div class="stat-row"><span class="stat-row-label">Unit</span><span class="stat-row-value">kgCO₂e / USD</span></div>
+          <div class="stat-row"><span class="stat-row-label">Classification</span><span class="stat-row-value">NAICS + ISIC Rev. 4</span></div>
+          <div class="stat-row"><span class="stat-row-label">Methodology</span><span class="stat-row-value">GHG Protocol</span></div>
+          <div class="stat-row"><span class="stat-row-label">Highest (2024)</span><span class="stat-row-value" id="about-max">—</span></div>
+          <div class="stat-row"><span class="stat-row-label">Lowest (2024)</span><span class="stat-row-value" id="about-min">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+// =============================================
+// STATE
+// =============================================
+let allData   = [];
+let activeYear = '2024';
+let sortCol   = '_total';
+let sortDir   = -1;
+const charts  = {};
+
+// =============================================
+// COLUMN MAP
+// TO ADD A NEW YEAR: add an entry here + a year-btn in HTML
+// =============================================
+const COL = {
+  base: { total:'Base Year Total Emissions Intensity', scope1:'Base Year Scope 1', scope2:'Base Year Scope 2', scope3:'Base Year Scope 3', label:'Base Year' },
+  '2020': { total:'2020 Total Emissions Intensity', scope1:'2020 Scope 1', scope2:'2020 Scope 2', scope3:'2020 Scope 3', label:'2020' },
+  '2023': { total:'2023 Total Emissions Intensity', scope1:'2023 Scope 1', scope2:'2023 Scope 2', scope3:'2023 Scope 3', label:'2023' },
+  '2024': { total:'2024 Total Emissions Intensity', scope1:'2024 Scope 1', scope2:'2024 Scope 2', scope3:'2024 Scope 3', label:'2024' }
+};
+
+// =============================================
+// LOAD CSV
+// TO UPDATE DATA: replace emissions_factors.csv
+// Keep column names identical — values can change
+// =============================================
+Papa.parse('TASA_Silver_NAICS_ISIC.csv', {
+  download: true, header: true, dynamicTyping: true, delimiter: ',',
+  complete: r => { allData = r.data.filter(d => d['Country Name']); init(); },
+  error: () => {
+    document.getElementById('loading').innerHTML =
+      '⚠️ Could not load emissions_factors.csv — ensure it is in the same folder as index.html.';
+  }
+});
+
+// =============================================
+// HELPERS
+// =============================================
+const avg = arr => { const v = arr.filter(x => typeof x==='number' && !isNaN(x)); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+const fmt = n => (typeof n==='number' && !isNaN(n)) ? n.toFixed(2) : '—';
+const unique = arr => [...new Set(arr)].filter(Boolean).sort();
+const val = (row, k) => row[COL[activeYear][k]];
+
+const SCOL = { total:'#1a3d2e', scope1:'#2a6049', scope2:'#4a9070', scope3:'#a8d4c0' };
+const CCOL = ['#2a6049','#4a9070','#3d7a60','#5aaa88','#1e4a36','#6abca0','#256050','#7acfb5','#83c4a8','#306858'];
+
+const destroyChart = id => { if(charts[id]){charts[id].destroy();delete charts[id];} };
+
+function baseOpts(horiz=false) {
+  return {
+    responsive:true, maintainAspectRatio:false, indexAxis: horiz?'y':'x',
+    plugins:{
+      legend:{display:false},
+      tooltip:{ backgroundColor:'#1a1a18', titleFont:{family:'DM Sans',size:12}, bodyFont:{family:'DM Sans',size:12}, padding:10,
+        callbacks:{ label: ctx => ` ${(ctx.parsed[horiz?'x':'y']??0).toFixed(3)} kgCO₂e/USD` }
+      }
+    },
+    scales:{
+      x:{ grid:{color:'#e8e5de'}, ticks:{font:{family:'DM Sans',size:11},color:'#7a776e'} },
+      y:{ grid:{color: horiz?'transparent':'#e8e5de'}, ticks:{font:{family:'DM Sans',size:11},color:'#7a776e'} }
+    }
+  };
+}
+
+function multiOpts() {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:true,labels:{font:{family:'DM Sans'},color:'#7a776e',boxWidth:12}}, tooltip:{backgroundColor:'#1a1a18',titleFont:{family:'DM Sans',size:12},bodyFont:{family:'DM Sans',size:12},padding:10} },
+    scales:{
+      x:{ grid:{color:'#e8e5de'}, ticks:{font:{family:'DM Sans',size:11},color:'#7a776e'} },
+      y:{ grid:{color:'#e8e5de'}, ticks:{font:{family:'DM Sans',size:11},color:'#7a776e'} }
+    }
+  };
+}
+
+// =============================================
+// INIT
+// =============================================
+function init() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  populateFilters();
+  refreshAll();
+}
+
+function refreshAll() {
+  document.getElementById('active-year-label').textContent = COL[activeYear].label;
+  document.getElementById('header-badge').textContent = COL[activeYear].label + ' Data';
+  populateKPIs();
+  renderOverview();
+  renderByCountry();
+  renderBySector();
+  renderTrends();
+  renderTable();
+  populateAbout();
+}
+
+function setYear(year, btn) {
+  activeYear = year;
+  document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  refreshAll();
+}
+
+// =============================================
+// KPIs
+// =============================================
+function populateKPIs() {
+  document.getElementById('kpi-countries').textContent = unique(allData.map(d=>d['Country Name'])).length;
+  document.getElementById('kpi-total').textContent = fmt(avg(allData.map(d=>val(d,'total'))));
+  document.getElementById('kpi-s1').textContent    = fmt(avg(allData.map(d=>val(d,'scope1'))));
+  document.getElementById('kpi-s2').textContent    = fmt(avg(allData.map(d=>val(d,'scope2'))));
+  document.getElementById('kpi-s3').textContent    = fmt(avg(allData.map(d=>val(d,'scope3'))));
+}
+
+// =============================================
+// FILTER DROPDOWNS
+// =============================================
+function populateFilters() {
+  const countries = unique(allData.map(d=>d['Country Name']));
+  const sectors   = unique(allData.map(d=>d['Country Sector']));
+
+  ['country-select','table-country','trend-country'].forEach(id => {
+    const el = document.getElementById(id);
+    const hasAll = id!=='country-select';
+    el.innerHTML = hasAll ? '<option value="">All Countries</option>' : '';
+    countries.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=c; el.appendChild(o); });
+  });
+
+  ['sector-select','table-sector','trend-sector'].forEach(id => {
+    const el = document.getElementById(id);
+    const hasAll = id!=='sector-select';
+    el.innerHTML = hasAll ? (id==='trend-sector' ? '<option value="ALL">All Sectors (avg)</option>' : '<option value="">All Sectors</option>') : '';
+    sectors.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; el.appendChild(o); });
+  });
+}
+
+// =============================================
+// TABS
+// =============================================
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// =============================================
+// OVERVIEW
+// =============================================
+function renderOverview() {
+  const sk = document.getElementById('overview-scope').value;
+  const sectors   = unique(allData.map(d=>d['Country Sector']));
+  const countries = unique(allData.map(d=>d['Country Name']));
+
+  const sAvgs = sectors.map(s=>({ label:s, value:avg(allData.filter(d=>d['Country Sector']===s).map(d=>val(d,sk))) }))
+    .filter(d=>d.value!==null).sort((a,b)=>b.value-a.value);
+  destroyChart('top-sectors');
+  charts['top-sectors'] = new Chart(document.getElementById('chart-top-sectors'),{
+    type:'bar', data:{ labels:sAvgs.map(d=>d.label), datasets:[{data:sAvgs.map(d=>d.value),backgroundColor:SCOL[sk],borderRadius:4,borderSkipped:false}] },
+    options:baseOpts()
+  });
+
+  const cAvgs = countries.map(c=>({ label:c, value:avg(allData.filter(d=>d['Country Name']===c).map(d=>val(d,sk))) }))
+    .filter(d=>d.value!==null).sort((a,b)=>b.value-a.value);
+  destroyChart('country-compare');
+  charts['country-compare'] = new Chart(document.getElementById('chart-country-compare'),{
+    type:'bar', data:{ labels:cAvgs.map(d=>d.label), datasets:[{data:cAvgs.map(d=>d.value),backgroundColor:CCOL,borderRadius:4,borderSkipped:false}] },
+    options:baseOpts()
+  });
+
+  const grp = sectors.map(s=>{ const r=allData.filter(d=>d['Country Sector']===s); return { sector:s, s1:avg(r.map(d=>val(d,'scope1'))), s2:avg(r.map(d=>val(d,'scope2'))), s3:avg(r.map(d=>val(d,'scope3'))) }; }).sort((a,b)=>b.s1-a.s1);
+  destroyChart('grouped');
+  charts['grouped'] = new Chart(document.getElementById('chart-grouped'),{
+    type:'bar',
+    data:{ labels:grp.map(d=>d.sector), datasets:[
+      {label:'Scope 1',data:grp.map(d=>d.s1),backgroundColor:SCOL.scope1,borderRadius:3,borderSkipped:false},
+      {label:'Scope 2',data:grp.map(d=>d.s2),backgroundColor:SCOL.scope2,borderRadius:3,borderSkipped:false},
+      {label:'Scope 3',data:grp.map(d=>d.s3),backgroundColor:SCOL.scope3,borderRadius:3,borderSkipped:false}
+    ]},
+    options:multiOpts()
+  });
+}
+
+// =============================================
+// BY COUNTRY
+// =============================================
+function renderByCountry() {
+  const country = document.getElementById('country-select').value;
+  const sk      = document.getElementById('country-scope').value;
+  if (!country) return;
+  const rows = allData.filter(d=>d['Country Name']===country);
+  document.getElementById('country-chart-title').textContent = country+' — Emissions by Sector';
+  destroyChart('by-country');
+
+  if (sk==='all') {
+    const sorted = [...rows].sort((a,b)=>(val(b,'scope1')||0)-(val(a,'scope1')||0));
+    charts['by-country'] = new Chart(document.getElementById('chart-by-country'),{
+      type:'bar', data:{ labels:sorted.map(d=>d['Country Sector']), datasets:[
+        {label:'Scope 1',data:sorted.map(d=>val(d,'scope1')),backgroundColor:SCOL.scope1,borderRadius:3,borderSkipped:false},
+        {label:'Scope 2',data:sorted.map(d=>val(d,'scope2')),backgroundColor:SCOL.scope2,borderRadius:3,borderSkipped:false},
+        {label:'Scope 3',data:sorted.map(d=>val(d,'scope3')),backgroundColor:SCOL.scope3,borderRadius:3,borderSkipped:false}
+      ]}, options:multiOpts()
+    });
+  } else {
+    const sorted = [...rows].sort((a,b)=>(val(b,sk)||0)-(val(a,sk)||0));
+    charts['by-country'] = new Chart(document.getElementById('chart-by-country'),{
+      type:'bar', data:{ labels:sorted.map(d=>d['Country Sector']), datasets:[{data:sorted.map(d=>val(d,sk)),backgroundColor:SCOL[sk],borderRadius:4,borderSkipped:false}] },
+      options:baseOpts()
+    });
+  }
+}
+
+// =============================================
+// BY SECTOR
+// =============================================
+function renderBySector() {
+  const sector = document.getElementById('sector-select').value;
+  const sk     = document.getElementById('sector-scope').value;
+  if (!sector) return;
+  const rows = allData.filter(d=>d['Country Sector']===sector);
+  document.getElementById('sector-chart-title').textContent = sector+' — Emissions by Country';
+  destroyChart('by-sector');
+
+  if (sk==='all') {
+    const sorted = [...rows].sort((a,b)=>(val(b,'scope1')||0)-(val(a,'scope1')||0));
+    charts['by-sector'] = new Chart(document.getElementById('chart-by-sector'),{
+      type:'bar', data:{ labels:sorted.map(d=>d['Country Name']), datasets:[
+        {label:'Scope 1',data:sorted.map(d=>val(d,'scope1')),backgroundColor:SCOL.scope1,borderRadius:3,borderSkipped:false},
+        {label:'Scope 2',data:sorted.map(d=>val(d,'scope2')),backgroundColor:SCOL.scope2,borderRadius:3,borderSkipped:false},
+        {label:'Scope 3',data:sorted.map(d=>val(d,'scope3')),backgroundColor:SCOL.scope3,borderRadius:3,borderSkipped:false}
+      ]}, options:multiOpts()
+    });
+  } else {
+    const sorted = [...rows].sort((a,b)=>(val(b,sk)||0)-(val(a,sk)||0));
+    charts['by-sector'] = new Chart(document.getElementById('chart-by-sector'),{
+      type:'bar', data:{ labels:sorted.map(d=>d['Country Name']), datasets:[{data:sorted.map(d=>val(d,sk)),backgroundColor:CCOL,borderRadius:4,borderSkipped:false}] },
+      options:baseOpts()
+    });
+  }
+}
+
+// =============================================
+// TRENDS
+// =============================================
+function renderTrends() {
+  const country = document.getElementById('trend-country').value || null;
+  const sector  = document.getElementById('trend-sector').value;
+  const sk      = document.getElementById('trend-scope').value;
+  const years   = ['base','2020','2023','2024'];
+
+  document.getElementById('trend-chart-title').textContent =
+    (country||'All Countries') + (sector!=='ALL' ? ' · '+sector : '') + ' — Trend';
+
+  const tVals = years.map(yr => {
+    let rows = allData;
+    if (country) rows = rows.filter(d=>d['Country Name']===country);
+    if (sector!=='ALL') rows = rows.filter(d=>d['Country Sector']===sector);
+    return avg(rows.map(d=>d[COL[yr][sk]]));
+  });
+
+  destroyChart('trend');
+  charts['trend'] = new Chart(document.getElementById('chart-trend'),{
+    type:'line',
+    data:{ labels:years.map(y=>COL[y].label), datasets:[{
+      data:tVals, borderColor:SCOL[sk], backgroundColor:SCOL[sk]+'22',
+      borderWidth:2.5, pointBackgroundColor:SCOL[sk], pointRadius:5, pointHoverRadius:7,
+      fill:true, tension:0.3
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#1a1a18',titleFont:{family:'DM Sans',size:12},bodyFont:{family:'DM Sans',size:12},padding:10, callbacks:{label:ctx=>` ${(ctx.parsed.y??0).toFixed(3)} kgCO₂e/USD`}} },
+      scales:{ x:{grid:{color:'#e8e5de'},ticks:{font:{family:'DM Sans',size:12},color:'#7a776e'}}, y:{grid:{color:'#e8e5de'},ticks:{font:{family:'DM Sans',size:12},color:'#7a776e'}} }
+    }
+  });
+
+  const countries = unique(allData.map(d=>d['Country Name']));
+  destroyChart('trend-compare');
+  charts['trend-compare'] = new Chart(document.getElementById('chart-trend-compare'),{
+    type:'bar',
+    data:{ labels:countries, datasets:[
+      {label:'Base Year', data:countries.map(c=>avg(allData.filter(d=>d['Country Name']===c).map(d=>d[COL['base']['total']]))), backgroundColor:'#1a3d2e88', borderRadius:3, borderSkipped:false},
+      {label:'2024',      data:countries.map(c=>avg(allData.filter(d=>d['Country Name']===c).map(d=>d[COL['2024']['total']]))), backgroundColor:'#2a6049',    borderRadius:3, borderSkipped:false}
+    ]},
+    options:multiOpts()
+  });
+}
+
+// =============================================
+// DATA TABLE
+// =============================================
+function sortTable(col) {
+  if(sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=-1; }
+  renderTable();
+}
+
+function renderTable() {
+  const search  = document.getElementById('table-search').value.toLowerCase();
+  const country = document.getElementById('table-country').value;
+  const sector  = document.getElementById('table-sector').value;
+
+  let rows = allData.filter(d => {
+    const ms = !search || d['Country Name'].toLowerCase().includes(search) || d['Country Sector'].toLowerCase().includes(search);
+    return ms && (!country||d['Country Name']===country) && (!sector||d['Country Sector']===sector);
+  }).map(r => ({ ...r, _total:val(r,'total'), _scope1:val(r,'scope1'), _scope2:val(r,'scope2'), _scope3:val(r,'scope3') }));
+
+  rows.sort((a,b) => {
+    const av=a[sortCol], bv=b[sortCol];
+    return typeof av==='number'&&typeof bv==='number' ? (av-bv)*sortDir : String(av).localeCompare(String(bv))*sortDir;
+  });
+
+  document.getElementById('row-count').textContent = `${rows.length} records`;
+  document.getElementById('table-body').innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r['Country Name']}</td>
+      <td>${r['Country Sector']}</td>
+      <td style="color:var(--text-muted);font-size:12px">${r['NAICS Code']||'—'}</td>
+      <td style="color:var(--text-muted);font-size:12px">${r['ISIC Rev. 4 Code']||'—'}</td>
+      <td><span class="pill pill-total">${fmt(r._total)}</span></td>
+      <td><span class="pill pill-1">${fmt(r._scope1)}</span></td>
+      <td><span class="pill pill-2">${fmt(r._scope2)}</span></td>
+      <td><span class="pill pill-3">${fmt(r._scope3)}</span></td>
+    </tr>`).join('');
+}
+
+// =============================================
+// ABOUT
+// =============================================
+function populateAbout() {
+  document.getElementById('about-countries').textContent = unique(allData.map(d=>d['Country Name'])).length;
+  document.getElementById('about-sectors').textContent   = unique(allData.map(d=>d['Country Sector'])).length;
+  document.getElementById('about-records').textContent   = allData.length;
+  const maxR = allData.reduce((a,b)=>(val(b,'total')||0)>(val(a,'total')||0)?b:a);
+  const minR = allData.reduce((a,b)=>(val(b,'total')||Infinity)<(val(a,'total')||Infinity)?b:a);
+  document.getElementById('about-max').textContent = `${fmt(val(maxR,'total'))} · ${maxR['Country Sector']}, ${maxR['Country Name']}`;
+  document.getElementById('about-min').textContent = `${fmt(val(minR,'total'))} · ${minR['Country Sector']}, ${minR['Country Name']}`;
+}
+</script>
+</body>
+</html>
