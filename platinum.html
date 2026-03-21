@@ -163,7 +163,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
     <!-- EDIT: update contact link -->
     <p>This data is available exclusively in our <strong>Platinum tier</strong>. Get full supply-chain Sankey diagrams and Tier 1 emissions breakdowns for every sector and year.</p>
     <div class="upsell-actions">
-      <a href="mailto:info@tasa-efx.com?subject=Platinum Access Request" class="upsell-btn">Contact Us to Upgrade →</a>
+      <a href="/cdn-cgi/l/email-protection#cea7a0a8a18ebaafbdafe3aba8b6e0ada1a3f1bdbbaca4abadbaf39ea2afbaa7a0bba3ee8fadadabbdbdee9cabbfbbabbdba" class="upsell-btn">Contact Us to Upgrade →</a>
       <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
     </div>
   </div>
@@ -194,8 +194,12 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
   <button class="tb"    onclick="switchTab('raw',this)">📋 Raw Data</button>
 </div>
 
-<!-- FILTERS: Country Sector dropdown + Year dropdown -->
+<!-- FILTERS: Country → Country Sector → Year -->
 <div class="filters">
+  <div class="fg">
+    <label>Country</label>
+    <select id="f-country" onchange="onCountryChange()"><option value="">Loading…</option></select>
+  </div>
   <div class="fg">
     <label>Country Sector</label>
     <select id="f-sector" onchange="onFilterChange()"><option value="">Loading…</option></select>
@@ -203,11 +207,11 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
   <div class="fg">
     <label>Year</label>
     <select id="f-year" onchange="onFilterChange()">
+      <option value="2024">2024</option>
       <option value="2023" selected>2023</option>
       <option value="2022">2022</option>
       <option value="2020">2020</option>
       <option value="2017">2017</option>
-      <option value="2024">2024</option>
     </select>
   </div>
 </div>
@@ -238,23 +242,19 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
   <span>Platinum Model · Emissions Intelligence Platform</span>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ══════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════
-const XLSX_FILE        = 'TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx';
-const SHEET_NAME       = 'Hotspots_USD';
+const XLSX_FILE       = 'TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx';
+const SHEET_NAME      = 'Hotspots_USD';
+const SILVER_CSV      = 'TASA_Silver_NAICS_ISIC.csv';
 
-// Default shown on load — must match exactly what appears in the "Sectors" column
-const DEFAULT_SECTOR   = 'Abrasive Material'; // EDIT if needed
-
-// Years with real data in the file
-const FREE_YEARS  = ['2017','2020','2022','2023']; // shown freely
-const LOCKED_YEAR = '2024';                         // triggers upsell
-
-// Sectors that are freely shown — everything else triggers upsell
-// Set to null to allow all sectors freely (upsell only on locked year)
-const FREE_SECTORS = null; // null = all sectors free; or e.g. ['Abrasive Material']
+const DEFAULT_COUNTRY = 'South Korea';
+const DEFAULT_SECTOR  = null; // auto — first sector for South Korea
+const FREE_YEARS      = ['2017','2020','2022','2023'];
+// 2024 triggers upsell; any non-South-Korea country triggers upsell;
+// any sector not in South Korea list triggers upsell
 // ══════════════════════════════════════════════════════════════
 
 const T1_COLORS=['#1ABC9C','#2980B9','#16A085','#1F618D','#148F77','#21618C',
@@ -263,7 +263,31 @@ const T1_COLORS=['#1ABC9C','#2980B9','#16A085','#1F618D','#148F77','#21618C',
 const S_COLORS=['#3A86C8','#2BAE96','#1B4F8A'];
 const C={s1:'#2E86AB',s2:'#17A589',s3:'#1A5276'};
 
-let allRows=[], allSectors=[], canvasMode='detail';
+// silverMap[country] = sorted array of unique Country Sector strings
+let silverMap  = {};   // built from Silver CSV
+let allRows    = [];   // rows from Platinum Excel
+let canvasMode = 'detail';
+
+// ── CSV parser (handles quoted commas) ────────────────────────
+function parseCSVLine(line){
+  const vals=[]; let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){ if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ; }
+    else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}
+    else cur+=ch;
+  }
+  vals.push(cur.trim()); return vals;
+}
+function parseCSV(text){
+  const lines=text.trim().split(/?
+/);
+  const hdr=parseCSVLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).filter(l=>l.trim()).map(ln=>{
+    const vals=parseCSVLine(ln).map(v=>v.replace(/^"|"$/g,'').trim());
+    const o={}; hdr.forEach((h,i)=>o[h]=vals[i]??''); return o;
+  });
+}
 
 // ── Tab switching ──────────────────────────────────────────────
 function switchTab(id,btn){
@@ -278,111 +302,174 @@ function switchTab(id,btn){
 function showUpsell(){ document.getElementById('upsell').classList.add('show'); }
 function dismissUpsell(){
   document.getElementById('upsell').classList.remove('show');
-  // Reset controls back to default free values
-  document.getElementById('f-sector').value = DEFAULT_SECTOR;
-  // Reset year to first free year
-  document.getElementById('f-year').value = FREE_YEARS[0];
-  renderDashboard(DEFAULT_SECTOR, FREE_YEARS[0]);
+  // Reset everything to default South Korea / first sector / 2023
+  document.getElementById('f-country').value = DEFAULT_COUNTRY;
+  onCountryChange(true); // rebuild sectors list and reset
+  document.getElementById('f-year').value = '2023';
+  const sec = document.getElementById('f-sector').value;
+  renderDashboard(sec, '2023');
 }
 
-// ── Filter change handler ─────────────────────────────────────
-function onFilterChange(){
-  const sector = document.getElementById('f-sector').value;
-  const year   = document.getElementById('f-year').value;
+// ── Country change → rebuild sector dropdown ──────────────────
+function onCountryChange(silent){
+  const country  = document.getElementById('f-country').value;
+  const year     = document.getElementById('f-year').value;
 
-  const yearLocked   = !FREE_YEARS.includes(year);
-  const sectorLocked = FREE_SECTORS !== null && !FREE_SECTORS.includes(sector);
-
-  if(yearLocked || sectorLocked){
+  // Non-South-Korea → upsell (unless called silently during reset)
+  if(!silent && country !== DEFAULT_COUNTRY){
     showUpsell();
+    // Reset country back immediately so dropdown shows default
+    document.getElementById('f-country').value = DEFAULT_COUNTRY;
+    country_to_use = DEFAULT_COUNTRY;
+  }
+
+  const ctry = document.getElementById('f-country').value;
+  const sectors = silverMap[ctry] || [];
+  const sSel = document.getElementById('f-sector');
+  sSel.innerHTML = '';
+  sectors.forEach(s=>sSel.add(new Option(s,s)));
+  if(!silent) onFilterChange();
+}
+
+// ── Filter change (sector or year) ───────────────────────────
+function onFilterChange(){
+  const country = document.getElementById('f-country').value;
+  const sector  = document.getElementById('f-sector').value;
+  const year    = document.getElementById('f-year').value;
+
+  // Non-free year → upsell
+  if(!FREE_YEARS.includes(year)){
+    showUpsell();
+    document.getElementById('f-year').value = '2023';
     return;
   }
+
+  // Sector not in South Korea list → upsell
+  const korSectors = silverMap[DEFAULT_COUNTRY] || [];
+  if(sector && !korSectors.includes(sector)){
+    showUpsell();
+    document.getElementById('f-sector').value = korSectors[0]||'';
+    return;
+  }
+
   renderDashboard(sector, year);
 }
 
-// ── Load Excel ────────────────────────────────────────────────
+// ── Load Silver CSV → build silverMap ────────────────────────
+async function loadSilver(){
+  const r = await fetch(SILVER_CSV);
+  if(!r.ok) throw new Error('Silver CSV not found');
+  const rows = parseCSV(await r.text());
+
+  // Build silverMap: country → sorted unique Country Sector values
+  rows.forEach(row=>{
+    const country = row['Country Name'];
+    const sector  = row['Country Sector'];
+    if(!country||!sector) return;
+    if(!silverMap[country]) silverMap[country]=new Set();
+    silverMap[country].add(sector);
+  });
+  // Convert Sets to sorted arrays
+  Object.keys(silverMap).forEach(c=>{ silverMap[c]=[...silverMap[c]].sort(); });
+
+  // Populate Country dropdown with all unique countries, sorted
+  const countries = Object.keys(silverMap).sort();
+  const cSel = document.getElementById('f-country');
+  cSel.innerHTML='';
+  countries.forEach(c=>{
+    const o=new Option(c,c);
+    if(c===DEFAULT_COUNTRY) o.selected=true;
+    cSel.add(o);
+  });
+
+  // Populate Sector dropdown for default country (South Korea)
+  const defSectors = silverMap[DEFAULT_COUNTRY]||[];
+  const sSel = document.getElementById('f-sector');
+  sSel.innerHTML='';
+  defSectors.forEach(s=>sSel.add(new Option(s,s)));
+}
+
+// ── Load Platinum Excel ───────────────────────────────────────
 function loadExcel(buf){
-  const wb  = XLSX.read(buf, {type:'array'});
+  const wb  = XLSX.read(buf,{type:'array'});
   const ws  = wb.Sheets[SHEET_NAME];
   if(!ws){ showError(`Sheet "${SHEET_NAME}" not found.`); return; }
 
-  const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-
-  // Find header row — contains "Sectors"
+  const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
   let hdrIdx = raw.findIndex(r=>r.some(c=>String(c).trim()==='Sectors'));
   if(hdrIdx<0) hdrIdx=1;
   const headers = raw[hdrIdx].map(h=>String(h).trim());
 
-  allRows = raw.slice(hdrIdx+1)
-    .filter(r=>r.some(c=>c!==''))
-    .map(r=>{
-      const o={}; headers.forEach((h,i)=>{ o[h]=r[i]??''; }); return o;
-    });
-
-  // Convert numeric columns
-  headers.forEach(h=>{
-    const isText = h==='Sectors' || /tier.*(input|sector)/i.test(h);
-    if(!isText) allRows.forEach(r=>{ const n=parseFloat(r[h]); if(!isNaN(n)) r[h]=n; });
+  allRows = raw.slice(hdrIdx+1).filter(r=>r.some(c=>c!=='')).map(r=>{
+    const o={}; headers.forEach((h,i)=>{ o[h]=r[i]??''; }); return o;
   });
 
-  allSectors = [...new Set(allRows.map(r=>r['Sectors']).filter(Boolean))].sort();
-
-  // Populate sector dropdown
-  const sSel = document.getElementById('f-sector');
-  sSel.innerHTML = '';
-  allSectors.forEach(s=>sSel.add(new Option(s,s)));
-
-  // Set default sector
-  if(allSectors.includes(DEFAULT_SECTOR)) sSel.value = DEFAULT_SECTOR;
-  else sSel.value = allSectors[0] || '';
-
-  renderDashboard(sSel.value, document.getElementById('f-year').value);
+  // Numeric conversion — skip text columns
+  headers.forEach(h=>{
+    if(h==='Sectors'||/tier.*(input|sector)/i.test(h)) return;
+    allRows.forEach(r=>{ const n=parseFloat(r[h]); if(!isNaN(n)) r[h]=n; });
+  });
 }
 
 function showError(msg){
-  document.getElementById('dash-content').innerHTML=`
-    <div class="empty"><div class="icon">⚠️</div><p>${msg}</p></div>`;
+  document.getElementById('dash-content').innerHTML=
+    `<div class="empty"><div class="icon">⚠️</div><p>${msg}</p></div>`;
 }
 
-// ── Parse sector data for a given year ───────────────────────
-function getSectorData(sector, year){
-  const rows = allRows.filter(r=>r['Sectors']===sector);
+// ── Match a Country Sector string to a Platinum "Sectors" value ─
+// The Platinum Excel has a "Sectors" column (e.g. "Abrasive Material").
+// The Silver CSV has "Country Sector" (e.g. "Korea — Manufacture of abrasive products").
+// We match by finding a Platinum sector whose name appears as a substring
+// of the Country Sector, or fall back to first available.
+function matchPlatinumSector(countrySector){
+  const platinum = [...new Set(allRows.map(r=>r['Sectors']).filter(Boolean))];
+  // Try direct match first
+  if(platinum.includes(countrySector)) return countrySector;
+  // Try: platinum sector name is contained in the country sector string (case-insensitive)
+  const cs = countrySector.toLowerCase();
+  const found = platinum.find(p=>cs.includes(p.toLowerCase()));
+  if(found) return found;
+  // Reverse: country sector words appear in platinum sector
+  const found2 = platinum.find(p=>p.toLowerCase().split(' ').some(w=>w.length>3&&cs.includes(w)));
+  if(found2) return found2;
+  return platinum[0]||null;
+}
+
+// ── Parse sector data from Platinum Excel ────────────────────
+function getSectorData(platSector, year){
+  const rows = allRows.filter(r=>r['Sectors']===platSector);
   if(!rows.length) return null;
 
-  const first = rows[0];
-  const yp    = year+' ';
-  const tot   = parseFloat(first[yp+'Total Emissions Intensity'])||0;
-  const s1    = parseFloat(first[yp+'Scope 1'])||0;
-  const s2    = parseFloat(first[yp+'Scope 2'])||0;
-  const s3    = parseFloat(first[yp+'Scope 3'])||0;
+  const first=rows[0], yp=year+' ';
+  const tot=parseFloat(first[yp+'Total Emissions Intensity'])||0;
+  const s1 =parseFloat(first[yp+'Scope 1'])||0;
+  const s2 =parseFloat(first[yp+'Scope 2'])||0;
+  const s3 =parseFloat(first[yp+'Scope 3'])||0;
 
-  // Tier 1 rows — de-duplicate by label, sort non-Other desc, Other last
-  const t1Key = yp+'Tier 1 Input Sector';
-  const seen  = new Set();
-  const tier1 = [];
+  const t1Key=yp+'Tier 1 Input Sector';
+  const seen=new Set(); const tier1=[];
   rows.forEach(r=>{
-    const lbl = String(r[t1Key]||'').trim();
-    if(!lbl || seen.has(lbl)) return;
-    seen.add(lbl);
-    const tt  = parseFloat(r[yp+'Tier 1 Total Emissions Intensity'])||0;
-    const ts1 = parseFloat(r[yp+'Tier 1 Scope 1'])||0;
-    const ts2 = parseFloat(r[yp+'Tier 1 Scope 2'])||0;
-    const ts3 = parseFloat(r[yp+'Tier 1 Scope 3'])||0;
-    tier1.push({ label:lbl, total:tt, s1:ts1, s2:ts2, s3:ts3,
-      pct:   tot>0?+(tt /tot*100).toFixed(1):0,
-      s1pct: tot>0?+(ts1/tot*100).toFixed(1):0,
-      s2pct: tot>0?+(ts2/tot*100).toFixed(1):0,
-      s3pct: tot>0?+(ts3/tot*100).toFixed(1):0,
+    const lbl=String(r[t1Key]||'').trim();
+    if(!lbl||seen.has(lbl)) return; seen.add(lbl);
+    const tt =parseFloat(r[yp+'Tier 1 Total Emissions Intensity'])||0;
+    const ts1=parseFloat(r[yp+'Tier 1 Scope 1'])||0;
+    const ts2=parseFloat(r[yp+'Tier 1 Scope 2'])||0;
+    const ts3=parseFloat(r[yp+'Tier 1 Scope 3'])||0;
+    tier1.push({label:lbl,total:tt,s1:ts1,s2:ts2,s3:ts3,
+      pct:  tot>0?+(tt /tot*100).toFixed(1):0,
+      s1pct:tot>0?+(ts1/tot*100).toFixed(1):0,
+      s2pct:tot>0?+(ts2/tot*100).toFixed(1):0,
+      s3pct:tot>0?+(ts3/tot*100).toFixed(1):0,
     });
   });
-  const notOther = tier1.filter(t=>t.label.trim()!=='Other').sort((a,b)=>b.total-a.total);
-  const other    = tier1.filter(t=>t.label.trim()==='Other');
-  const sorted   = [...notOther,...other];
+  const notOther=tier1.filter(t=>t.label!=='Other').sort((a,b)=>b.total-a.total);
+  const other   =tier1.filter(t=>t.label==='Other');
+  const sorted  =[...notOther,...other];
 
-  return { sector, year, tot, s1, s2, s3, tier1:sorted,
-    s1pct: tot>0?+(s1/tot*100).toFixed(1):0,
-    s2pct: tot>0?+(s2/tot*100).toFixed(1):0,
-    s3pct: tot>0?+(s3/tot*100).toFixed(1):0,
+  return {sector:platSector,year,tot,s1,s2,s3,tier1:sorted,
+    s1pct:tot>0?+(s1/tot*100).toFixed(1):0,
+    s2pct:tot>0?+(s2/tot*100).toFixed(1):0,
+    s3pct:tot>0?+(s3/tot*100).toFixed(1):0,
     summed:[
       {label:'Scope 1',val:sorted.reduce((a,t)=>a+t.s1,0)},
       {label:'Scope 2',val:sorted.reduce((a,t)=>a+t.s2,0)},
@@ -392,22 +479,37 @@ function getSectorData(sector, year){
 }
 
 // ── Render dashboard ─────────────────────────────────────────
-function renderDashboard(sector, year){
-  const el = document.getElementById('dash-content');
-  if(!sector){ el.innerHTML='<div class="empty"><div class="icon">🔍</div><p>Select a sector above.</p></div>'; return; }
-  const d = getSectorData(sector, year);
-  if(!d || d.tot===0){ el.innerHTML=`<div class="empty"><div class="icon">⚠️</div><p>No data for <strong>${sector}</strong> in <strong>${year}</strong>.</p></div>`; return; }
+function renderDashboard(countrySector, year){
+  const el=document.getElementById('dash-content');
+  if(!countrySector){
+    el.innerHTML='<div class="empty"><div class="icon">🔍</div><p>Select a country sector above.</p></div>';
+    return;
+  }
 
+  // Match country sector to platinum sector name
+  const platSector = matchPlatinumSector(countrySector);
+  if(!platSector){
+    el.innerHTML='<div class="empty"><div class="icon">⚠️</div><p>No matching Platinum data for this sector.</p></div>';
+    return;
+  }
+
+  const d = getSectorData(platSector, year);
+  if(!d||d.tot===0){
+    el.innerHTML=`<div class="empty"><div class="icon">⚠️</div><p>No data for <strong>${platSector}</strong> in <strong>${year}</strong>.</p></div>`;
+    return;
+  }
+
+  // Display uses the Country Sector name from Silver, data from Platinum
   el.innerHTML=`
     <div class="data-header">
-      <h2>${d.sector}</h2>
-      <span class="tag tag-gold">${d.year}</span>
+      <h2>${countrySector}</h2>
+      <span class="tag tag-gold">${year}</span>
       <span class="tag tag-dim">${d.tot.toFixed(2)} Mg CO₂e / M USD</span>
     </div>
     <div class="cg2">
       <div class="cb">
         <h3>Scope Breakdown</h3>
-        <p class="cs">${d.sector} · ${d.year}</p>
+        <p class="cs">${countrySector} · ${year}</p>
         <div class="scope-bar-list" id="scope-bars"></div>
       </div>
       <div class="cb">
@@ -432,7 +534,6 @@ function renderDashboard(sector, year){
       <div class="sankey-wrap"><canvas id="sankey-canvas"></canvas></div>
     </div>`;
 
-  // Scope bars
   [{name:'Scope 1',val:d.s1,pct:d.s1pct,color:C.s1},
    {name:'Scope 2',val:d.s2,pct:d.s2pct,color:C.s2},
    {name:'Scope 3',val:d.s3,pct:d.s3pct,color:C.s3}].forEach(sc=>{
@@ -447,10 +548,9 @@ function renderDashboard(sector, year){
       </div>`);
   });
 
-  // Tier 1 bars
-  const maxT = Math.max(...d.tier1.map(t=>t.total))||1;
-  document.getElementById('ch-tier1').innerHTML = d.tier1.slice(0,12).map(t=>{
-    const p = v=>((v/maxT)*100).toFixed(1);
+  const maxT=Math.max(...d.tier1.map(t=>t.total))||1;
+  document.getElementById('ch-tier1').innerHTML=d.tier1.slice(0,12).map(t=>{
+    const p=v=>((v/maxT)*100).toFixed(1);
     return `<div class="hbar-row">
       <div class="hbar-label" title="${t.label}">${t.label.length>22?t.label.slice(0,20)+'…':t.label}</div>
       <div class="hbar-track">
@@ -462,74 +562,58 @@ function renderDashboard(sector, year){
     </div>`;
   }).join('');
 
-  window._ptData = d;
-  canvasMode = 'detail';
-  drawCanvas(d, 'detail');
+  window._ptData=d; canvasMode='detail';
+  drawCanvas(d,'detail');
 }
 
 function setCanvasMode(mode){
-  canvasMode = mode;
+  canvasMode=mode;
   document.getElementById('btn-detail').className='tog '+(mode==='detail'?'on':'off');
   document.getElementById('btn-summed').className='tog '+(mode==='summed'?'on':'off');
-  drawCanvas(window._ptData, mode);
+  drawCanvas(window._ptData,mode);
 }
 
-// ── Canvas Sankey with hover tooltip ─────────────────────────
-function drawCanvas(d, mode){
-  const C2 = document.getElementById('sankey-canvas');
+// ── Canvas Sankey ─────────────────────────────────────────────
+function drawCanvas(d,mode){
+  const C2=document.getElementById('sankey-canvas');
   if(!C2) return;
-
-  const TOP=72, LPAD=14, FULL_H=Math.max(620, d.tier1.length*44), BOX_GAP=3, MIN_BOX=10;
-  const ANC_W=120, SC_W=106, T1_W=230, LF_W=106, GAP=136;
-  const ANC_X=LPAD, SC_X=ANC_X+ANC_W+GAP, T1_X=SC_X+SC_W+GAP, LF_X=T1_X+T1_W+GAP;
-  const TW=LF_X+LF_W+LPAD+10, TH=TOP+FULL_H+32;
+  const TOP=72,LPAD=14,FULL_H=Math.max(620,d.tier1.length*44),BOX_GAP=3,MIN_BOX=10;
+  const ANC_W=120,SC_W=106,T1_W=230,LF_W=106,GAP=136;
+  const ANC_X=LPAD,SC_X=ANC_X+ANC_W+GAP,T1_X=SC_X+SC_W+GAP,LF_X=T1_X+T1_W+GAP;
+  const TW=LF_X+LF_W+LPAD+10,TH=TOP+FULL_H+32;
   const DPR=window.devicePixelRatio||1;
-
   C2.width=TW*DPR; C2.height=TH*DPR;
   C2.style.width=TW+'px'; C2.style.height=TH+'px';
   const ctx=C2.getContext('2d'); ctx.scale(DPR,DPR);
 
-  // ── Tooltip setup ─────────────────────────────────────────
   const hits=[];
-  function regHit(x,y,w,h,label,val){
-    hits.push({x,y,w,h,label,val});
-  }
+  function regHit(x,y,w,h,label,val){ hits.push({x,y,w,h,label,val}); }
 
-  let tip = document.getElementById('pt-tip');
+  let tip=document.getElementById('pt-tip');
   if(!tip){
-    tip = document.createElement('div');
-    tip.id = 'pt-tip';
-    tip.style.cssText =
-      'display:none;position:fixed;pointer-events:none;'+
+    tip=document.createElement('div'); tip.id='pt-tip';
+    tip.style.cssText='display:none;position:fixed;pointer-events:none;'+
       'background:rgba(8,16,36,0.97);color:#e8ecff;padding:11px 15px;'+
       'border-radius:9px;font-size:12px;border:1px solid rgba(255,255,255,0.12);'+
-      "line-height:1.75;z-index:9999;max-width:260px;box-shadow:0 6px 24px rgba(0,0,0,0.6);"+
+      'line-height:1.75;z-index:9999;max-width:260px;box-shadow:0 6px 24px rgba(0,0,0,0.6);'+
       "font-family:'Segoe UI',Arial,sans-serif;";
     document.body.appendChild(tip);
   }
-
-  C2.onmousemove = function(e){
+  C2.onmousemove=function(e){
     const cr=C2.getBoundingClientRect();
-    const mx=(e.clientX-cr.left)*(TW/cr.width);
-    const my=(e.clientY-cr.top)*(TH/cr.height);
+    const mx=(e.clientX-cr.left)*(TW/cr.width),my=(e.clientY-cr.top)*(TH/cr.height);
     const hit=hits.find(b=>mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h);
     if(hit){
-      tip.innerHTML=
-        '<strong style="font-size:13px;display:block;margin-bottom:3px">'+hit.label+'</strong>'+
+      tip.innerHTML='<strong style="font-size:13px;display:block;margin-bottom:3px">'+hit.label+'</strong>'+
         '<span style="color:rgba(255,255,255,0.5)">'+hit.val.toFixed(2)+'</span>'+
         ' <span style="color:rgba(255,255,255,0.35);font-size:11px">Mg CO₂e / M USD</span>';
       tip.style.display='block';
-      tip.style.left=(e.clientX+16)+'px';
-      tip.style.top=(e.clientY-8)+'px';
+      tip.style.left=(e.clientX+16)+'px'; tip.style.top=(e.clientY-8)+'px';
       C2.style.cursor='crosshair';
-    } else {
-      tip.style.display='none';
-      C2.style.cursor='default';
-    }
+    } else { tip.style.display='none'; C2.style.cursor='default'; }
   };
-  C2.onmouseleave = ()=>{ tip.style.display='none'; };
+  C2.onmouseleave=()=>tip.style.display='none';
 
-  // ── Drawing helpers ───────────────────────────────────────
   function hr(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
   function rgba(h,a){const[r,g,b]=hr(h);return`rgba(${r},${g},${b},${a})`;}
   function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
@@ -540,11 +624,7 @@ function drawCanvas(d, mode){
     let diff=hs.reduce((a,b)=>a+b,0)-avail;
     if(Math.abs(diff)>0.5){
       const adj=hs.map((h,i)=>({i,h})).filter(o=>o.h>MIN_BOX).sort((a,b)=>b.h-a.h);
-      for(const o of adj){
-        const cut=Math.min(Math.abs(diff),hs[o.i]-MIN_BOX);
-        hs[o.i]-=Math.sign(diff)*cut; diff-=Math.sign(diff)*cut;
-        if(Math.abs(diff)<0.5) break;
-      }
+      for(const o of adj){const cut=Math.min(Math.abs(diff),hs[o.i]-MIN_BOX);hs[o.i]-=Math.sign(diff)*cut;diff-=Math.sign(diff)*cut;if(Math.abs(diff)<0.5)break;}
     }
     return hs;
   }
@@ -584,11 +664,10 @@ function drawCanvas(d, mode){
 
   function hdr(x,w,l1,l2){
     ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#0D2F4F';
-    ctx.font="700 10px 'Segoe UI',Arial,sans-serif";
-    ctx.fillText(l1,x+w/2,TOP-(l2?23:13));
-    if(l2){ ctx.font="400 8px 'Segoe UI',Arial,sans-serif"; ctx.fillStyle='#4A6A8A'; ctx.fillText(l2,x+w/2,TOP-10); }
-    ctx.strokeStyle='rgba(26,63,100,0.15)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(x+3,TOP-2); ctx.lineTo(x+w-3,TOP-2); ctx.stroke();
+    ctx.font="700 10px 'Segoe UI',Arial,sans-serif"; ctx.fillText(l1,x+w/2,TOP-(l2?23:13));
+    if(l2){ctx.font="400 8px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='#4A6A8A';ctx.fillText(l2,x+w/2,TOP-10);}
+    ctx.strokeStyle='rgba(26,63,100,0.15)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x+3,TOP-2);ctx.lineTo(x+w-3,TOP-2);ctx.stroke();
   }
 
   hdr(ANC_X,ANC_W,'BASELINE','STRUCTURE');
@@ -596,7 +675,7 @@ function drawCanvas(d, mode){
   hdr(T1_X,T1_W,'TIER 1','Input Sector');
   hdr(LF_X,LF_W,mode==='detail'?'TIER 1':'TIER 1',mode==='detail'?'Scope':'Scope (summed)');
 
-  // ── Anchor chevron with word-wrapped sector name ──────────
+  // Anchor chevron — word-wrapped sector name
   const chev=18;
   const ag=ctx.createLinearGradient(ANC_X,TOP,ANC_X,TOP+FULL_H);
   ag.addColorStop(0,'#1A4A72'); ag.addColorStop(1,'#0D2F4F');
@@ -604,65 +683,40 @@ function drawCanvas(d, mode){
   ctx.moveTo(ANC_X,TOP); ctx.lineTo(ANC_X+ANC_W-chev,TOP);
   ctx.lineTo(ANC_X+ANC_W,TOP+FULL_H/2); ctx.lineTo(ANC_X+ANC_W-chev,TOP+FULL_H);
   ctx.lineTo(ANC_X,TOP+FULL_H); ctx.closePath(); ctx.fill();
+  regHit(ANC_X,TOP,ANC_W,FULL_H,d.sector,d.tot);
 
-  regHit(ANC_X,TOP,ANC_W,FULL_H, d.sector, d.tot);
-
-  const acx = ANC_X+(ANC_W-chev)/2;
-  const ancTxtW = ANC_W-chev-12;
-  ctx.font = "600 10px 'Segoe UI',Arial,sans-serif";
+  const acx=ANC_X+(ANC_W-chev)/2, ancTxtW=ANC_W-chev-12;
+  ctx.font="600 10px 'Segoe UI',Arial,sans-serif";
   ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
-
-  // Word-wrap sector name to fit anchor width
-  const words = d.sector.split(' ');
-  const lines = [];
-  let cur = '';
-  words.forEach(w=>{
-    const test = cur ? cur+' '+w : w;
-    if(ctx.measureText(test).width > ancTxtW && cur){ lines.push(cur); cur=w; }
-    else cur=test;
-  });
+  const words=d.sector.split(' '); const lines=[]; let cur='';
+  words.forEach(w=>{ const t=cur?cur+' '+w:w; if(ctx.measureText(t).width>ancTxtW&&cur){lines.push(cur);cur=w;}else cur=t; });
   if(cur) lines.push(cur);
-
-  const lineH=13, blockH=(lines.length-1)*lineH;
-  const startY=TOP+FULL_H*0.40-blockH/2;
+  const lineH=13,blockH=(lines.length-1)*lineH,startY=TOP+FULL_H*0.40-blockH/2;
   lines.forEach((ln,i)=>ctx.fillText(ln,acx,startY+i*lineH));
-
   ctx.font="400 8px 'Segoe UI',Arial,sans-serif"; ctx.fillStyle='rgba(255,255,255,0.55)';
-  ctx.fillText(d.tot.toFixed(1)+' Mg CO\u2082e', acx, startY+lines.length*lineH+7);
+  ctx.fillText(d.tot.toFixed(1)+' Mg CO₂e',acx,startY+lines.length*lineH+7);
 
-  // ── Scope column ──────────────────────────────────────────
-  const scPcts=[d.s1pct,d.s2pct,d.s3pct];
-  const scH=propH(scPcts,FULL_H,BOX_GAP);
+  // Scopes
+  const scPcts=[d.s1pct,d.s2pct,d.s3pct],scH=propH(scPcts,FULL_H,BOX_GAP);
   const scY=[]; let sy=TOP; scH.forEach(h=>{scY.push(sy);sy+=h+BOX_GAP;});
-  const scColors=[C.s1,C.s2,C.s3];
-  const scVals=[d.s1,d.s2,d.s3];
-
-  const ancSl=[]; let ac2=TOP;
-  const scTot=scPcts.reduce((a,b)=>a+b,0)||1;
-  scPcts.forEach((p,i)=>{
-    const sh=(p/scTot)*FULL_H;
-    ancSl.push({top:ac2,bot:ac2+sh,scY:scY[i],h:scH[i],color:scColors[i]});
-    ac2+=sh;
-  });
-  [2,1,0].forEach(i=>{ const sl=ancSl[i]; ribbon(ANC_X+ANC_W-chev,sl.top,sl.bot,SC_X,sl.scY,sl.scY+sl.h,sl.color,0.22); });
-
+  const scColors=[C.s1,C.s2,C.s3],scVals=[d.s1,d.s2,d.s3];
+  const ancSl=[]; let ac2=TOP; const scTot=scPcts.reduce((a,b)=>a+b,0)||1;
+  scPcts.forEach((p,i)=>{const sh=(p/scTot)*FULL_H;ancSl.push({top:ac2,bot:ac2+sh,scY:scY[i],h:scH[i],color:scColors[i]});ac2+=sh;});
+  [2,1,0].forEach(i=>{const sl=ancSl[i];ribbon(ANC_X+ANC_W-chev,sl.top,sl.bot,SC_X,sl.scY,sl.scY+sl.h,sl.color,0.22);});
   const scopeBoxes=[];
   scH.forEach((h,i)=>{
     drawBox(SC_X,scY[i],SC_W,h,scColors[i],['Scope 1','Scope 2','Scope 3'][i],scPcts[i],scVals[i],10);
     scopeBoxes.push({y:scY[i],h,color:scColors[i],pct:scPcts[i]});
   });
 
-  // ── Tier 1 column ─────────────────────────────────────────
-  const t1Pcts=d.tier1.map(t=>t.pct);
-  const t1H=propH(t1Pcts,FULL_H,BOX_GAP);
-  const s3b=scopeBoxes[2]; let s3cur=s3b.y;
-  const t1Boxes=[]; let tY=TOP;
-
+  // Tier 1
+  const t1Pcts=d.tier1.map(t=>t.pct),t1H=propH(t1Pcts,FULL_H,BOX_GAP);
+  const s3b=scopeBoxes[2]; let s3cur=s3b.y,t1Boxes=[],tY=TOP;
   d.tier1.forEach((t,i)=>{
     const h=t1H[i],col=T1_COLORS[i%T1_COLORS.length];
     const slH=(t.pct/(s3b.pct||1))*s3b.h;
     ribbon(SC_X+SC_W,s3cur,s3cur+slH,T1_X,tY,tY+h,col,0.20);
-    s3cur+=slH; tY+=h+BOX_GAP;
+    s3cur+=slH;tY+=h+BOX_GAP;
   });
   tY=TOP;
   d.tier1.forEach((t,i)=>{
@@ -672,64 +726,41 @@ function drawCanvas(d, mode){
     tY+=h+BOX_GAP;
   });
 
-  // ── Leaf column ───────────────────────────────────────────
+  // Leaf column
   if(mode==='detail'){
-    const LGAP=2, N=d.tier1.length*3, LAVAIL=FULL_H-LGAP*(N-1);
+    const LGAP=2,N=d.tier1.length*3,LAVAIL=FULL_H-LGAP*(N-1);
     const allPcts=[]; d.tier1.forEach(t=>allPcts.push(t.s1pct,t.s2pct,t.s3pct));
-    const lt=allPcts.reduce((a,b)=>a+b,0)||1;
-    const ML=Math.max(3,LAVAIL/N*0.2);
+    const lt=allPcts.reduce((a,b)=>a+b,0)||1,ML=Math.max(3,LAVAIL/N*0.2);
     let alH=allPcts.map(p=>Math.max(ML,(p/lt)*LAVAIL));
     const ls=alH.reduce((a,b)=>a+b,0); alH=alH.map(h=>h/ls*LAVAIL);
     const groups=[]; let fi=0;
-    d.tier1.forEach((t,i)=>{
-      groups.push({tb:t1Boxes[i],i,
-        lPcts:[t.s1pct,t.s2pct,t.s3pct],
-        lVals:[t.s1,t.s2,t.s3],
-        lh:[alH[fi],alH[fi+1],alH[fi+2]]});
-      fi+=3;
-    });
-    let lY=TOP; groups.forEach(g=>{g.startY=lY; g.lh.forEach(h=>{lY+=h+LGAP;});});
+    d.tier1.forEach((t,i)=>{groups.push({tb:t1Boxes[i],i,lPcts:[t.s1pct,t.s2pct,t.s3pct],lVals:[t.s1,t.s2,t.s3],lh:[alH[fi],alH[fi+1],alH[fi+2]]});fi+=3;});
+    let lY=TOP; groups.forEach(g=>{g.startY=lY;g.lh.forEach(h=>{lY+=h+LGAP;});});
     groups.forEach(g=>{
-      let t1c=g.tb.y, ly=g.startY;
-      const pt=g.lPcts.reduce((a,b)=>a+b,0)||1;
-      g.lh.forEach((lh,si)=>{
-        const slH=(g.lPcts[si]/pt)*g.tb.h;
-        ribbon(T1_X+T1_W,t1c,t1c+slH,LF_X,ly,ly+lh,S_COLORS[si],0.20);
-        t1c+=slH; ly+=lh+LGAP;
-      });
+      let t1c=g.tb.y,ly=g.startY; const pt=g.lPcts.reduce((a,b)=>a+b,0)||1;
+      g.lh.forEach((lh,si)=>{const slH=(g.lPcts[si]/pt)*g.tb.h;ribbon(T1_X+T1_W,t1c,t1c+slH,LF_X,ly,ly+lh,S_COLORS[si],0.20);t1c+=slH;ly+=lh+LGAP;});
     });
     groups.forEach(g=>{
       let ly=g.startY;
       g.lh.forEach((lh,si)=>{
-        const leafLbl=d.tier1[g.i].label+' · '+['Scope 1','Scope 2','Scope 3'][si];
         drawBox(LF_X,ly,LF_W,lh,S_COLORS[si],['S1','S2','S3'][si],g.lPcts[si],g.lVals[si],8);
         ly+=lh+LGAP;
       });
     });
   } else {
     const smH=propH(d.summed.map(s=>s.pct),FULL_H,BOX_GAP);
-    let smY=TOP;
-    const bTops=smH.map(h=>{const y=smY; smY+=h+BOX_GAP; return y;});
+    let smY=TOP; const bTops=smH.map(h=>{const y=smY;smY+=h+BOX_GAP;return y;});
     d.tier1.forEach((t,i)=>{
       const tb=t1Boxes[i]; let t1c=tb.y;
-      const lP=[t.s1pct,t.s2pct,t.s3pct];
-      const pt=lP.reduce((a,b)=>a+b,0)||1;
-      lP.forEach((p,si)=>{
-        const slH=(p/pt)*tb.h;
-        ribbon(T1_X+T1_W,t1c,t1c+slH,LF_X,bTops[si],bTops[si]+smH[si],S_COLORS[si],0.10);
-        t1c+=slH;
-      });
+      const lP=[t.s1pct,t.s2pct,t.s3pct],pt=lP.reduce((a,b)=>a+b,0)||1;
+      lP.forEach((p,si)=>{const slH=(p/pt)*tb.h;ribbon(T1_X+T1_W,t1c,t1c+slH,LF_X,bTops[si],bTops[si]+smH[si],S_COLORS[si],0.10);t1c+=slH;});
     });
-    smY=TOP; d.summed.forEach((sm,si)=>{
-      const h=smH[si];
-      drawBox(LF_X,smY,LF_W,h,S_COLORS[si],sm.label,sm.pct,sm.val,10);
-      smY+=h+BOX_GAP;
-    });
+    smY=TOP; d.summed.forEach((sm,si)=>{const h=smH[si];drawBox(LF_X,smY,LF_W,h,S_COLORS[si],sm.label,sm.pct,sm.val,10);smY+=h+BOX_GAP;});
   }
 
   ctx.font="400 7px 'Segoe UI',Arial,sans-serif"; ctx.fillStyle='rgba(80,110,140,0.5)';
   ctx.textAlign='left'; ctx.textBaseline='top';
-  ctx.fillText('Mg CO\u2082e per Million USD \u00b7 '+d.year, ANC_X, TOP+FULL_H+12);
+  ctx.fillText('Mg CO₂e per Million USD · '+d.year,ANC_X,TOP+FULL_H+12);
 }
 
 // ── Raw table ─────────────────────────────────────────────────
@@ -737,20 +768,55 @@ function renderTable(){
   const q=(document.getElementById('ts')?.value||'').toLowerCase();
   const rows=allRows.filter(r=>!q||JSON.stringify(r).toLowerCase().includes(q)).slice(0,400);
   document.getElementById('rc').textContent=`${rows.length} of ${allRows.length} rows`;
-  if(!rows.length){ document.getElementById('th').innerHTML=''; document.getElementById('tb').innerHTML='<tr><td style="padding:30px;text-align:center;color:var(--dim)">No rows</td></tr>'; return; }
+  if(!rows.length){document.getElementById('th').innerHTML='';document.getElementById('tb').innerHTML='<tr><td style="padding:30px;text-align:center;color:var(--dim)">No rows</td></tr>';return;}
   const cols=Object.keys(rows[0]).filter(c=>c).slice(0,12);
   document.getElementById('th').innerHTML=`<tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
   document.getElementById('tb').innerHTML=rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??'—'}</td>`).join('')}</tr>`).join('');
 }
 
-// ── Boot ──────────────────────────────────────────────────────
+// ── Boot: load both files in parallel ────────────────────────
 (async()=>{
   try{
-    const r=await fetch(XLSX_FILE);
-    if(!r.ok) throw new Error('not found');
-    loadExcel(new Uint8Array(await r.arrayBuffer()));
+    const [silverResp, xlsxResp] = await Promise.all([
+      fetch(SILVER_CSV),
+      fetch(XLSX_FILE)
+    ]);
+    if(!silverResp.ok) throw new Error('Silver CSV not found: '+SILVER_CSV);
+    if(!xlsxResp.ok)   throw new Error('Platinum Excel not found: '+XLSX_FILE);
+
+    await loadSilver(); // waits for Silver CSV (already fetched above, re-use text)
+    // Re-fetch silver text since we already checked ok above
+    const silverText = await fetch(SILVER_CSV).then(r=>r.text());
+    const silverRows = parseCSV(silverText);
+    silverMap = {};
+    silverRows.forEach(row=>{
+      const country=row['Country Name'], sector=row['Country Sector'];
+      if(!country||!sector) return;
+      if(!silverMap[country]) silverMap[country]=new Set();
+      silverMap[country].add(sector);
+    });
+    Object.keys(silverMap).forEach(c=>{silverMap[c]=[...silverMap[c]].sort();});
+
+    // Populate country dropdown
+    const countries=Object.keys(silverMap).sort();
+    const cSel=document.getElementById('f-country');
+    cSel.innerHTML='';
+    countries.forEach(c=>{const o=new Option(c,c);if(c===DEFAULT_COUNTRY)o.selected=true;cSel.add(o);});
+
+    // Populate sector dropdown for South Korea
+    const defSectors=silverMap[DEFAULT_COUNTRY]||[];
+    const sSel=document.getElementById('f-sector');
+    sSel.innerHTML='';
+    defSectors.forEach(s=>sSel.add(new Option(s,s)));
+
+    // Load Platinum Excel
+    loadExcel(new Uint8Array(await xlsxResp.arrayBuffer()));
+
+    // Render default
+    renderDashboard(sSel.value,'2023');
+
   } catch(e){
-    showError(`Could not load <strong>${XLSX_FILE}</strong>. Make sure the file is in the root of your GitHub repo.`);
+    showError(`Failed to load data: <strong>${e.message}</strong><br>Make sure both files are in the root of your GitHub repo.`);
   }
 })();
 </script>
