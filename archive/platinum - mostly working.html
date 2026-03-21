@@ -251,7 +251,7 @@ const SHEET_NAME      = 'Hotspots_USD';
 const SILVER_CSV      = 'TASA_Silver_NAICS_ISIC.csv';
 
 const DEFAULT_COUNTRY = 'South Korea';
-const DEFAULT_SECTOR  = 'South Korea — Abrasive Material'; // EDIT: the one free sector
+const DEFAULT_SECTOR  = null; // auto — first sector for South Korea
 const FREE_YEARS      = ['2017','2020','2022','2023'];
 // 2024 triggers upsell; any non-South-Korea country triggers upsell;
 // any sector not in South Korea list triggers upsell
@@ -302,12 +302,12 @@ function switchTab(id,btn){
 function showUpsell(){ document.getElementById('upsell').classList.add('show'); }
 function dismissUpsell(){
   document.getElementById('upsell').classList.remove('show');
-  // Reset all controls to defaults
+  // Reset everything to default South Korea / first sector / 2023
   document.getElementById('f-country').value = DEFAULT_COUNTRY;
-  onCountryChange(true);
-  document.getElementById('f-sector').value = DEFAULT_SECTOR;
+  onCountryChange(true); // rebuild sectors list and reset
   document.getElementById('f-year').value = '2023';
-  renderDashboard(DEFAULT_SECTOR, '2023');
+  const sec = document.getElementById('f-sector').value;
+  renderDashboard(sec, '2023');
 }
 
 // ── Country change → rebuild sector dropdown ──────────────────
@@ -333,20 +333,22 @@ function onCountryChange(silent){
 
 // ── Filter change (sector or year) ───────────────────────────
 function onFilterChange(){
-  const sector = document.getElementById('f-sector').value;
-  const year   = document.getElementById('f-year').value;
-
-  // Any sector other than the default → upsell
-  if(sector && sector !== DEFAULT_SECTOR){
-    showUpsell();
-    document.getElementById('f-sector').value = DEFAULT_SECTOR;
-    return;
-  }
+  const country = document.getElementById('f-country').value;
+  const sector  = document.getElementById('f-sector').value;
+  const year    = document.getElementById('f-year').value;
 
   // Non-free year → upsell
   if(!FREE_YEARS.includes(year)){
     showUpsell();
     document.getElementById('f-year').value = '2023';
+    return;
+  }
+
+  // Sector not in South Korea list → upsell
+  const korSectors = silverMap[DEFAULT_COUNTRY] || [];
+  if(sector && !korSectors.includes(sector)){
+    showUpsell();
+    document.getElementById('f-sector').value = korSectors[0]||'';
     return;
   }
 
@@ -809,11 +811,8 @@ function renderTable(){
     loadExcel(new Uint8Array(xlsxBuf));
 
     console.time('[PT] renderDashboard');
-    // Set sector dropdown to DEFAULT_SECTOR if it exists, else first option
-    const sSel = document.getElementById('f-sector');
-    const defOpt = [...sSel.options].find(o=>o.value===DEFAULT_SECTOR);
-    if(defOpt) sSel.value = DEFAULT_SECTOR;
-    renderDashboard(sSel.value, '2023');
+    const firstSector = document.getElementById('f-sector').value;
+    renderDashboard(firstSector, '2023');
     console.timeEnd('[PT] renderDashboard');
 
     console.timeEnd('[PT] total boot');
