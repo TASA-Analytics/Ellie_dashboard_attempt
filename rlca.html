@@ -419,10 +419,16 @@ function loadExcel(wb) {
   tierSel.innerHTML = '<option value="total">Total — all tiers summed</option>';
   tierOptions.forEach(t => tierSel.add(new Option(t.label, t.s1col)));
 
-  // Populate chart sector dropdown
+  // Populate chart sector dropdown — sorted by total S1+S2 descending
   const chartSel = document.getElementById('chart-sector');
   chartSel.innerHTML = '<option value="all">All Sectors (aggregated)</option>';
-  tableData.forEach(r => chartSel.add(new Option(r.sector, r.sector)));
+  [...tableData]
+    .map(r => ({
+      sector: r.sector,
+      total: s1Cols.reduce((a,c)=>a+(r.s1[c]||0),0) + s2Cols.reduce((a,c)=>a+(r.s2[c]||0),0)
+    }))
+    .sort((a,b) => b.total - a.total)
+    .forEach(r => chartSel.add(new Option(r.sector, r.sector)));
 
   // Sheet 2: Sector Emissions Factors
   const wsEF = wb.Sheets[EF_SHEET];
@@ -525,7 +531,8 @@ function renderTierBarChart() {
 
   tierTotals.forEach((t, i) => {
     const gx  = i * grpW;
-    const lbl = t.label.replace(' · Focal Sector','');
+    const lbl = t.label === 'Tier 0 · Focal Sector' ? 'Tier 0'
+              : t.label.replace(' · Focal Sector','');
 
     if (scopeFilter === 'total') {
       const h1 = Math.max(1,(t.s1/maxVal)*chartH);
@@ -603,26 +610,38 @@ function drawDonut(svgId, segs, total, legendId) {
   const svg = document.getElementById(svgId);
   svg.innerHTML = '';
   const cx=48, cy=48, R=42, r=26, TAU=2*Math.PI;
-  const tot = segs.reduce((a,s)=>a+s.val,0)||1;
-  let angle = -Math.PI/2;
-  segs.forEach(seg => {
-    const sweep=(seg.val/tot)*TAU; if(sweep<0.001) return;
-    const large=sweep>Math.PI?1:0;
-    const x1=cx+R*Math.cos(angle), y1=cy+R*Math.sin(angle);
-    const a2=angle+sweep;
-    const x2=cx+R*Math.cos(a2), y2=cy+R*Math.sin(a2);
-    const ix1=cx+r*Math.cos(angle), iy1=cy+r*Math.sin(angle);
-    const ix2=cx+r*Math.cos(a2),   iy2=cy+r*Math.sin(a2);
-    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
-    p.setAttribute('d',`M${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${r},${r} 0 ${large},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z`);
-    p.setAttribute('fill',seg.color); p.setAttribute('opacity','0.9');
-    svg.appendChild(p); angle+=sweep;
-  });
+  const activeSegs = segs.filter(s => s.val > 0);
+  const tot = activeSegs.reduce((a,s)=>a+s.val,0)||1;
+
+  if (activeSegs.length === 1) {
+    // Single active segment — draw a solid full ring
+    const outer = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    outer.setAttribute('cx',cx); outer.setAttribute('cy',cy); outer.setAttribute('r',R);
+    outer.setAttribute('fill',activeSegs[0].color); outer.setAttribute('opacity','0.9');
+    svg.appendChild(outer);
+  } else {
+    let angle = -Math.PI/2;
+    activeSegs.forEach(seg => {
+      const sweep=(seg.val/tot)*TAU; if(sweep<0.001) return;
+      const large=sweep>Math.PI?1:0;
+      const x1=cx+R*Math.cos(angle), y1=cy+R*Math.sin(angle);
+      const a2=angle+sweep;
+      const x2=cx+R*Math.cos(a2), y2=cy+R*Math.sin(a2);
+      const ix1=cx+r*Math.cos(angle), iy1=cy+r*Math.sin(angle);
+      const ix2=cx+r*Math.cos(a2),   iy2=cy+r*Math.sin(a2);
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d',`M${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${r},${r} 0 ${large},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z`);
+      p.setAttribute('fill',seg.color); p.setAttribute('opacity','0.9');
+      svg.appendChild(p); angle+=sweep;
+    });
+  }
+
+  // Center hole
   const hole=document.createElementNS('http://www.w3.org/2000/svg','circle');
   hole.setAttribute('cx',cx); hole.setAttribute('cy',cy); hole.setAttribute('r',r-1);
   hole.setAttribute('fill','rgba(18,21,34,0.97)'); svg.appendChild(hole);
 
-  document.getElementById(legendId).innerHTML = segs.map(s => {
+  document.getElementById(legendId).innerHTML = activeSegs.map(s => {
     const pct=(s.val/tot*100).toFixed(1);
     return `<div class="donut-leg-row">
       <div class="donut-leg-swatch" style="background:${s.color}"></div>
