@@ -382,40 +382,33 @@ function buildSilverMap(csvText){
 
 // ── Load Platinum Excel ───────────────────────────────────────
 function loadExcel(buf){
-  console.time('[PT] XLSX.read');
-  const wb = XLSX.read(buf,{
+  // Parse only the one sheet needed, skip styles/formulas — much faster on large files
+  const wb  = XLSX.read(buf,{
     type:'array',
     sheets: SHEET_NAME,
-    cellStyles:false, cellFormula:false, cellHTML:false, cellNF:false, sheetStubs:false
+    cellStyles: false,
+    cellFormula: false,
+    cellHTML: false,
+    cellNF: false,
+    sheetStubs: false
   });
-  console.timeEnd('[PT] XLSX.read');
+  const ws  = wb.Sheets[SHEET_NAME];
+  if(!ws){ showError(`Sheet "${SHEET_NAME}" not found.`); return; }
 
-  const ws = wb.Sheets[SHEET_NAME];
-  if(!ws){ showError(`Sheet "${SHEET_NAME}" not found. Available: ${wb.SheetNames.join(', ')}`); return; }
-
-  console.time('[PT] sheet_to_json');
   const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  console.timeEnd('[PT] sheet_to_json');
-  console.log('[PT] raw rows:', raw.length);
-
   let hdrIdx = raw.findIndex(r=>r.some(c=>String(c).trim()==='Sectors'));
   if(hdrIdx<0) hdrIdx=1;
   const headers = raw[hdrIdx].map(h=>String(h).trim());
-  console.log('[PT] header row at index', hdrIdx, '| columns:', headers.length);
 
-  console.time('[PT] build allRows');
   allRows = raw.slice(hdrIdx+1).filter(r=>r.some(c=>c!=='')).map(r=>{
     const o={}; headers.forEach((h,i)=>{ o[h]=r[i]??''; }); return o;
   });
-  console.timeEnd('[PT] build allRows');
-  console.log('[PT] allRows:', allRows.length);
 
-  console.time('[PT] numeric conversion');
+  // Numeric conversion — skip text columns
   headers.forEach(h=>{
     if(h==='Sectors'||/tier.*(input|sector)/i.test(h)) return;
     allRows.forEach(r=>{ const n=parseFloat(r[h]); if(!isNaN(n)) r[h]=n; });
   });
-  console.timeEnd('[PT] numeric conversion');
 }
 
 function showError(msg){
@@ -784,39 +777,29 @@ function renderTable(){
 // ── Boot: fetch each file exactly once ───────────────────────
 (async()=>{
   try{
-    console.time('[PT] total boot');
-
-    console.time('[PT] fetch both files');
+    // Fetch both files in parallel — each fetched exactly once
     const [silverResp, xlsxResp] = await Promise.all([
       fetch(SILVER_CSV),
       fetch(XLSX_FILE)
     ]);
-    console.timeEnd('[PT] fetch both files');
-
     if(!silverResp.ok) throw new Error('Silver CSV not found: '+SILVER_CSV);
     if(!xlsxResp.ok)   throw new Error('Platinum Excel not found: '+XLSX_FILE);
 
-    console.time('[PT] read response bodies');
+    // Process both responses
     const [silverText, xlsxBuf] = await Promise.all([
       silverResp.text(),
       xlsxResp.arrayBuffer()
     ]);
-    console.timeEnd('[PT] read response bodies');
-    console.log('[PT] Silver text size:', silverText.length, 'bytes');
-    console.log('[PT] Excel buffer size:', xlsxBuf.byteLength, 'bytes');
 
-    console.time('[PT] buildSilverMap');
+    // Build Silver dropdown data
     buildSilverMap(silverText);
-    console.timeEnd('[PT] buildSilverMap');
 
+    // Parse Platinum Excel
     loadExcel(new Uint8Array(xlsxBuf));
 
-    console.time('[PT] renderDashboard');
+    // Render default view
     const firstSector = document.getElementById('f-sector').value;
     renderDashboard(firstSector, '2023');
-    console.timeEnd('[PT] renderDashboard');
-
-    console.timeEnd('[PT] total boot');
 
   } catch(e){
     showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure both files are in the root of your GitHub repo.');
