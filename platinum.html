@@ -5,127 +5,99 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Platinum Model — TASA EFX</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --primary:    #0045AB;
-  --primary-lt: #A7CCE7;
-  --accent-blue:#3FA9F6;
-  --orange:     #FFBB00;
-  --bg:         #050d1a;
-  --bg2:        #081222;
-  --panel:      #0a1628;
-  --panel2:     #0d1c35;
-  --border:     rgba(0,69,171,0.22);
-  --border-hi:  rgba(0,69,171,0.45);
-  --dim:        rgba(255,255,255,0.48);
-  --mid:        rgba(255,255,255,0.28);
-  --white:      #e8f0ff;
-  --s1: #3FA9F6;
-  --s2: #A7F3D0;
-  --s3: #0045AB;
+  --navy:#050d1a; --navy2:#0a1628; --panel2:#0d1c35;
+  --primary:#0045AB; --primary-lt:#A7CCE7; --accent:#3FA9F6;
+  --orange:#FFBB00;
+  --s1:#3FA9F6; --s2:#A7F3D0; --s3:#0045AB;
+  --dim:rgba(255,255,255,0.48); --bdr:rgba(0,69,171,0.22);
+  --mid:rgba(255,255,255,0.28);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--white);min-height:100vh;}
+body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--navy);color:#e8f0ff;min-height:100vh;}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-/* NAV */
 nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px;height:58px;
-    background:rgba(5,13,26,0.97);border-bottom:1px solid var(--border);
-    position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
-.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--white);}
-.nav-logo-icon{height:36px;width:auto;display:block;flex-shrink:0;}
+    background:rgba(5,13,26,0.97);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:#e8f0ff;}
+.nav-logo img{height:36px;width:auto;display:block;}
 .logo-text{font-size:15px;font-weight:700;letter-spacing:-0.01em;}
 .logo-text em{color:var(--orange);font-style:normal;}
 .nav-links{display:flex;gap:4px;}
 .nav-links a{color:var(--dim);text-decoration:none;font-size:13px;font-weight:500;
   padding:6px 12px;border-radius:6px;transition:background .15s,color .15s;}
-.nav-links a:hover{color:var(--white);background:rgba(255,255,255,0.06);}
-.nav-links a.active{color:var(--white);background:rgba(0,69,171,0.25);}
+.nav-links a:hover{color:#e8f0ff;background:rgba(255,255,255,0.06);}
+.nav-links a.active{color:#e8f0ff;background:rgba(0,69,171,0.25);}
 
-/* PAGE HEADER */
-.ph{margin:20px 24px 0;background:var(--panel);border:1px solid var(--border);border-radius:12px;
-    padding:20px 24px 16px;border-left:3px solid var(--orange);}
-.ph-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;
-  font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
-  background:rgba(255,187,0,0.12);color:var(--orange);border:1px solid rgba(255,187,0,0.25);margin-bottom:8px;}
-.ph-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
-.ph-title{font-size:20px;font-weight:800;color:var(--white);letter-spacing:-0.02em;margin-bottom:4px;}
-.ph-sub{font-size:12px;color:var(--mid);max-width:540px;line-height:1.6;}
+.ph{padding:24px 36px 16px;border-bottom:1px solid var(--bdr);}
+.ph .ey{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:7px;font-weight:600;}
+.ph h1{font-size:24px;font-weight:800;margin-bottom:5px;letter-spacing:-0.02em;}
+.ph p{font-size:13px;color:var(--dim);line-height:1.6;max-width:540px;}
 
-/* TABS */
-.tabs{display:flex;padding:0 24px;border-bottom:1px solid var(--border);margin-top:16px;}
-.tb{padding:11px 18px;background:none;border:none;border-bottom:2px solid transparent;
+.tabs{display:flex;padding:0 36px;border-bottom:1px solid var(--bdr);}
+.tb{padding:13px 20px;background:none;border:none;border-bottom:2.5px solid transparent;
     color:var(--dim);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;
     transition:color .2s,border-color .2s;margin-bottom:-1px;}
-.tb:hover{color:var(--white);}
-.tb.on{color:var(--white);border-bottom-color:var(--orange);}
+.tb:hover{color:#e8f0ff;}.tb.on{color:#e8f0ff;border-bottom-color:var(--orange);}
 .pane{display:none;}.pane.on{display:block;}
 
-/* Controls bar */
-.filters{background:var(--panel);border:1px solid var(--border);border-radius:10px;
-         display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;
-         padding:14px 20px;margin:12px 24px 0;}
+.filters{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;
+         padding:18px 36px;border-bottom:1px solid var(--bdr);}
 .fg{display:flex;flex-direction:column;gap:4px;}
-.fg label{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--accent-blue);font-weight:700;}
-.fg select{background:var(--bg);border:1.5px solid var(--border);
-  color:var(--white);border-radius:8px;padding:7px 12px;font-size:13px;font-family:inherit;
+.fg label{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--accent);font-weight:700;}
+.fg select{background:rgba(5,13,26,0.8);border:1.5px solid var(--bdr);
+  color:#e8f0ff;border-radius:7px;padding:7px 12px;font-size:13px;font-family:inherit;
   min-width:220px;appearance:none;cursor:pointer;transition:border-color .2s;}
 .fg select:focus{outline:none;border-color:var(--primary-lt);}
-.fg select option{background:var(--panel);}
+.fg select option{background:#0a1628;}
 
-.main{padding:20px 24px;}
+.main{padding:24px 36px;}
 
-/* Upsell overlay */
-.upsell-overlay{position:fixed;inset:0;background:rgba(2,6,16,0.93);backdrop-filter:blur(12px);
+.upsell-overlay{position:fixed;inset:0;background:rgba(2,6,16,0.93);backdrop-filter:blur(10px);
   z-index:500;display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .35s;}
 .upsell-overlay.show{opacity:1;pointer-events:all;}
-.upsell-card{background:linear-gradient(145deg,var(--panel2),var(--bg));
+.upsell-card{background:linear-gradient(145deg,var(--navy2),var(--navy));
   border:2px solid var(--orange);border-radius:20px;
   padding:52px 48px;max-width:480px;width:92%;text-align:center;
   transform:translateY(24px) scale(0.97);transition:transform .35s cubic-bezier(0.34,1.56,0.64,1);}
 .upsell-overlay.show .upsell-card{transform:translateY(0) scale(1);}
 .upsell-icon{font-size:48px;margin-bottom:18px;display:block;}
-.upsell-card h2{font-size:24px;font-weight:800;margin-bottom:10px;letter-spacing:-.02em;}
+.upsell-card h2{font-size:26px;font-weight:800;margin-bottom:10px;letter-spacing:-.02em;}
 .upsell-card h2 span{color:var(--orange);}
 .upsell-card p{font-size:14px;color:var(--dim);line-height:1.7;margin-bottom:32px;}
 .upsell-card p strong{color:rgba(255,255,255,0.85);}
 .upsell-actions{display:flex;flex-direction:column;align-items:center;gap:12px;}
-.upsell-btn{display:inline-block;background:var(--orange);color:var(--bg);
+.upsell-btn{display:inline-block;background:var(--orange);color:var(--navy);
   padding:14px 36px;border-radius:10px;font-weight:800;text-decoration:none;font-size:15px;
   transition:transform .15s,box-shadow .15s;cursor:pointer;border:none;font-family:inherit;}
-.upsell-btn:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(255,187,0,0.35);}
+.upsell-btn:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(255,187,0,0.45);}
 .upsell-dismiss{font-size:13px;color:rgba(255,255,255,0.35);cursor:pointer;
   background:none;border:none;font-family:inherit;transition:color .2s;padding:4px;}
 .upsell-dismiss:hover{color:rgba(255,255,255,0.7);}
 
-/* Layout */
 .cg2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
 .cg1{margin-bottom:18px;}
-.cb{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:18px;}
-.cb h3{font-size:12px;font-weight:700;color:rgba(255,255,255,0.72);margin-bottom:2px;}
+.cb{background:var(--navy2);border:1px solid var(--bdr);border-radius:11px;padding:18px;}
+.cb h3{font-size:12px;font-weight:600;color:rgba(255,255,255,0.72);margin-bottom:2px;}
 .cb .cs{font-size:11px;color:var(--dim);margin-bottom:14px;}
 
 .data-header{display:flex;align-items:baseline;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
 .data-header h2{font-size:18px;font-weight:700;}
-.tag{padding:3px 10px;border-radius:5px;font-size:12px;font-weight:600;}
-.tag-gold{background:rgba(255,187,0,0.12);border:1px solid rgba(255,187,0,0.3);color:var(--orange);}
-.tag-dim{background:rgba(255,255,255,0.06);border:1px solid var(--border);color:rgba(255,255,255,0.6);}
+.tag{padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;}
+.tag-gold{background:rgba(255,187,0,0.15);border:1px solid rgba(255,187,0,0.35);color:var(--orange);}
+.tag-dim{background:rgba(255,255,255,0.07);border:1px solid var(--bdr);color:rgba(255,255,255,0.6);}
 
-/* Scope bars */
 .scope-bar-list{display:flex;flex-direction:column;gap:12px;}
 .scope-item-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
 .sn{font-size:13px;font-weight:600;}.sv{font-size:12px;color:var(--dim);}.sp{font-size:12px;font-weight:600;}
 .bar-track{height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:5px;transition:width .5s ease;}
 
-/* Sankey */
 .sankey-wrap{overflow-x:auto;border-radius:8px;background:linear-gradient(135deg,#e8f0f7,#f0f5f9);padding:16px;}
 .sankey-wrap canvas{display:block;}
 
-/* Horiz bars */
 .hbar-chart{display:flex;flex-direction:column;gap:7px;}
 .hbar-row{display:flex;align-items:center;gap:8px;font-size:11px;}
 .hbar-label{width:170px;flex-shrink:0;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -136,26 +108,24 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);}
 .ld{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 
-/* Toggle */
 .toggle-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;}
 .toggle-lbl{font-size:11px;color:var(--dim);}
-.tog{padding:5px 14px;border-radius:20px;border:2px solid var(--primary);cursor:pointer;
+.tog{padding:5px 14px;border-radius:20px;border:2px solid var(--s3);cursor:pointer;
   font-size:11px;font-family:inherit;font-weight:600;transition:.2s;}
-.tog.on{background:var(--primary);color:#fff;border-color:var(--primary);}
+.tog.on{background:var(--s3);color:#fff;border-color:var(--s3);}
 .tog.off{background:transparent;color:var(--primary-lt);}
 
-/* Table */
 .tc{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
-.tc input{background:rgba(255,255,255,0.06);border:1.5px solid var(--border);
-  color:var(--white);border-radius:7px;padding:7px 11px;font-size:13px;font-family:inherit;width:260px;}
+.tc input{background:rgba(255,255,255,0.07);border:1.5px solid var(--bdr);
+  color:#e8f0ff;border-radius:7px;padding:7px 11px;font-size:13px;font-family:inherit;width:260px;}
 .tc input::placeholder{color:var(--mid);}
 .tc input:focus{outline:none;border-color:var(--orange);}
 .rc{font-size:12px;color:var(--dim);margin-left:auto;}
-.tw{overflow-x:auto;border-radius:9px;border:1px solid var(--border);}
+.tw{overflow-x:auto;border-radius:9px;border:1px solid var(--bdr);}
 table.raw{width:100%;border-collapse:collapse;font-size:12px;}
 table.raw thead{background:rgba(0,69,171,0.08);}
 table.raw th{padding:10px 13px;text-align:left;font-size:10px;text-transform:uppercase;
-  letter-spacing:.10em;color:var(--primary-lt);border-bottom:1px solid var(--border);white-space:nowrap;font-weight:600;}
+  letter-spacing:.10em;color:var(--primary-lt);border-bottom:1px solid var(--bdr);white-space:nowrap;font-weight:600;}
 table.raw td{padding:9px 13px;border-bottom:1px solid rgba(255,255,255,0.04);
   color:rgba(255,255,255,0.78);font-variant-numeric:tabular-nums;}
 table.raw tr:last-child td{border-bottom:none;}
@@ -171,11 +141,11 @@ table.raw tbody tr:hover td{background:rgba(0,69,171,0.06);}
 .empty p{font-size:14px;line-height:1.6;max-width:360px;}
 .empty strong{color:rgba(255,255,255,0.75);}
 
-footer{border-top:1px solid var(--border);padding:18px 36px;display:flex;justify-content:space-between;
+footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-content:space-between;
   align-items:center;color:var(--mid);font-size:12px;margin-top:40px;}
 @media(max-width:780px){
   nav,footer{padding:12px 16px;}
-  .ph,.filters,.main{margin-left:12px;margin-right:12px;padding-left:16px;padding-right:16px;}
+  .ph,.filters,.main{padding-left:16px;padding-right:16px;}
   .tabs{padding:0 16px;}.cg2{grid-template-columns:1fr;}
 }
 </style>
@@ -187,9 +157,10 @@ footer{border-top:1px solid var(--border);padding:18px 36px;display:flex;justify
   <div class="upsell-card">
     <span class="upsell-icon">🌟</span>
     <h2>Unlock <span>Platinum</span> Access</h2>
+    <!-- EDIT: update contact link -->
     <p>This data is available exclusively in our <strong>Platinum tier</strong>. Get full supply-chain Sankey diagrams and Tier 1 emissions breakdowns for every sector and year.</p>
     <div class="upsell-actions">
-      <a href="/cdn-cgi/l/email-protection#bad3d4dcd5facedbc9dbdbd4dbd6c3ced3d9c994d9d5d7" class="upsell-btn">Contact Us to Upgrade →</a>
+      <a href="/cdn-cgi/l/email-protection#cea7a0a8a18ebaafbdafe3aba8b6e0ada1a3f1bdbbaca4abadbaf39ea2afbaa7a0bba3ee8fadadabbdbdee9cabbfbbabbdba" class="upsell-btn">Contact Us to Upgrade →</a>
       <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
     </div>
   </div>
@@ -197,7 +168,7 @@ footer{border-top:1px solid var(--border);padding:18px 36px;display:flex;justify
 
 <nav>
   <a class="nav-logo" href="index.html">
-    <img class="nav-logo-icon" src="TASA Logo Blue copy.png" alt="TASA Analytics">
+    <img src="TASA Logo Blue copy.png" alt="TASA EFX">
     <div class="logo-text">TASA <em>EFX</em></div>
   </a>
   <div class="nav-links">
@@ -209,16 +180,18 @@ footer{border-top:1px solid var(--border);padding:18px 36px;display:flex;justify
 </nav>
 
 <div class="ph">
-  <div class="ph-badge">Platinum</div>
-  <div class="ph-title">Sankey Emissions Flow Dashboard</div>
-  <div class="ph-sub">Trace emissions through Tier 1 input sectors using Korea country-sector data. Select a sector and year to explore the supply-chain breakdown.</div>
+  <p class="ey">Platinum Model · Supply-Chain Analysis</p>
+  <h1>Sankey Emissions Flow Dashboard</h1>
+  <!-- EDIT: update description -->
+  <p>Trace emissions through Tier 1 input sectors using Korea country-sector data. Select a sector and year to explore the supply-chain breakdown.</p>
 </div>
 
 <div class="tabs">
-  <button class="tb on" onclick="switchTab('dash',this)">Dashboard</button>
-  <button class="tb"    onclick="switchTab('raw',this)">Raw Data</button>
+  <button class="tb on" onclick="switchTab('dash',this)">📊 Dashboard</button>
+  <button class="tb"    onclick="switchTab('raw',this)">📋 Raw Data</button>
 </div>
 
+<!-- FILTERS: Country → Country Sector → Year -->
 <div class="filters">
   <div class="fg">
     <label>Country</label>
@@ -261,8 +234,9 @@ footer{border-top:1px solid var(--border);padding:18px 36px;display:flex;justify
 </div>
 
 <footer>
-  <span>TASA <em style="color:var(--orange);font-style:normal">EFX</em> · Platinum Model · Emissions Intelligence</span>
-  <span>© 2025 TASA Analytics. All rights reserved.</span>
+  <!-- EDIT: update copyright / contact -->
+  <span>© 2025 TASA EFX. All rights reserved.</span>
+  <span>Platinum Model · Emissions Intelligence Platform</span>
 </footer>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
@@ -276,18 +250,22 @@ const SILVER_CSV      = 'TASA_Silver_NAICS_ISIC.csv';
 const DEFAULT_COUNTRY = 'South Korea';
 const DEFAULT_SECTOR  = 'South Korea — Abrasive Material'; // EDIT: the one free sector
 const FREE_YEARS      = ['2017','2020','2022','2023'];
+// 2024 triggers upsell; any non-South-Korea country triggers upsell;
+// any sector not in South Korea list triggers upsell
 // ══════════════════════════════════════════════════════════════
 
-const T1_COLORS=['#3FA9F6','#A7CCE7','#0045AB','#8C5ACC','#B98EFF','#A7F3D0',
-  '#D4AF37','#FFBB00','#FF66B3','#3FA9F6','#A7CCE7','#0045AB',
-  '#8C5ACC','#B98EFF','#A7F3D0','#D4AF37','#FFBB00','#FF66B3','#3FA9F6','#A7CCE7','#0045AB'];
-const S_COLORS=['#3FA9F6','#A7F3D0','#0045AB'];
-const C={s1:'#3FA9F6',s2:'#A7F3D0',s3:'#0045AB'};
+const T1_COLORS=['#1ABC9C','#2980B9','#16A085','#1F618D','#148F77','#21618C',
+  '#0E6655','#1A7BBF','#117A65','#154360','#0B5345','#1B4F72','#0E6251',
+  '#1A5276','#117864','#145A32','#1B2631','#0A3D62','#1C6EA4','#186A3B','#1F3A93'];
+const S_COLORS=['#3A86C8','#2BAE96','#1B4F8A'];
+const C={s1:'#2E86AB',s2:'#17A589',s3:'#1A5276'};
 
-let silverMap  = {};
-let allRows    = [];
+// silverMap[country] = sorted array of unique Country Sector strings
+let silverMap  = {};   // built from Silver CSV
+let allRows    = [];   // rows from Platinum Excel
 let canvasMode = 'detail';
 
+// ── CSV parser (handles quoted commas) ────────────────────────
 function parseCSVLine(line){
   const vals=[]; let cur='',inQ=false;
   for(let i=0;i<line.length;i++){
@@ -300,6 +278,7 @@ function parseCSVLine(line){
 }
 function parseCSV(text){
   const lines=text.trim().split("\n");
+
   const hdr=parseCSVLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
   return lines.slice(1).filter(l=>l.trim()).map(ln=>{
     const vals=parseCSVLine(ln).map(v=>v.replace(/^"|"$/g,'').trim());
@@ -307,6 +286,7 @@ function parseCSV(text){
   });
 }
 
+// ── Tab switching ──────────────────────────────────────────────
 function switchTab(id,btn){
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
@@ -315,23 +295,31 @@ function switchTab(id,btn){
   if(id==='raw') renderTable();
 }
 
+// ── Upsell ────────────────────────────────────────────────────
 function showUpsell(){ document.getElementById('upsell').classList.add('show'); }
 
+// Find the actual option value in the sector dropdown that matches DEFAULT_SECTOR
+// (handles cases where exact string may differ slightly)
 function findDefaultSectorOption(){
   const sSel = document.getElementById('f-sector');
   const opts = [...sSel.options].map(o=>o.value);
+  // Exact match first
   if(opts.includes(DEFAULT_SECTOR)) return DEFAULT_SECTOR;
+  // Fallback: find option containing "Abrasive Material" (case-insensitive)
   const fuzzy = opts.find(o=>o.toLowerCase().includes('abrasive material'));
   if(fuzzy) return fuzzy;
+  // Last resort: first option
   return opts[0] || '';
 }
 
 function resetToDefault(){
   document.getElementById('f-country').value = DEFAULT_COUNTRY;
+  // Rebuild sector list for South Korea without triggering upsell
   const sectors = silverMap[DEFAULT_COUNTRY] || [];
   const sSel = document.getElementById('f-sector');
   sSel.innerHTML = '';
   sectors.forEach(s=>sSel.add(new Option(s,s)));
+  // Now find and select the default
   const defVal = findDefaultSectorOption();
   sSel.value = defVal;
   document.getElementById('f-year').value = '2023';
@@ -344,12 +332,19 @@ function dismissUpsell(){
   renderDashboard(defVal, '2023');
 }
 
+// ── Country change → rebuild sector dropdown ──────────────────
 function onCountryChange(silent){
   const country  = document.getElementById('f-country').value;
+  const year     = document.getElementById('f-year').value;
+
+  // Non-South-Korea → upsell (unless called silently during reset)
   if(!silent && country !== DEFAULT_COUNTRY){
     showUpsell();
+    // Reset country back immediately so dropdown shows default
     document.getElementById('f-country').value = DEFAULT_COUNTRY;
+    country_to_use = DEFAULT_COUNTRY;
   }
+
   const ctry = document.getElementById('f-country').value;
   const sectors = silverMap[ctry] || [];
   const sSel = document.getElementById('f-sector');
@@ -358,23 +353,31 @@ function onCountryChange(silent){
   if(!silent) onFilterChange();
 }
 
+// ── Filter change (sector or year) ───────────────────────────
 function onFilterChange(){
   const sector = document.getElementById('f-sector').value;
   const year   = document.getElementById('f-year').value;
+
+  // Any sector other than the default → upsell
   if(sector && sector !== DEFAULT_SECTOR && !sector.toLowerCase().includes('abrasive material')){
     showUpsell();
+    // Reset sector dropdown back to Abrasive Material immediately
     const defVal = findDefaultSectorOption();
     document.getElementById('f-sector').value = defVal;
     return;
   }
+
+  // Non-free year → upsell
   if(!FREE_YEARS.includes(year)){
     showUpsell();
     document.getElementById('f-year').value = '2023';
     return;
   }
+
   renderDashboard(sector, year);
 }
 
+// ── Build silverMap from pre-fetched text ─────────────────────
 function buildSilverMap(csvText){
   const rows = parseCSV(csvText);
   silverMap = {};
@@ -385,33 +388,55 @@ function buildSilverMap(csvText){
     silverMap[country].add(sector);
   });
   Object.keys(silverMap).forEach(c=>{ silverMap[c]=[...silverMap[c]].sort(); });
+
+  // Country dropdown
   const countries=Object.keys(silverMap).sort();
   const cSel=document.getElementById('f-country');
   cSel.innerHTML='';
   countries.forEach(c=>{ const o=new Option(c,c); if(c===DEFAULT_COUNTRY) o.selected=true; cSel.add(o); });
+
+  // Sector dropdown for default country
   const sSel=document.getElementById('f-sector');
   sSel.innerHTML='';
   (silverMap[DEFAULT_COUNTRY]||[]).forEach(s=>sSel.add(new Option(s,s)));
 }
 
+// ── Load Platinum Excel ───────────────────────────────────────
 function loadExcel(buf){
+  console.time('[PT] XLSX.read');
   const wb = XLSX.read(buf,{
-    type:'array', sheets: SHEET_NAME,
+    type:'array',
+    sheets: SHEET_NAME,
     cellStyles:false, cellFormula:false, cellHTML:false, cellNF:false, sheetStubs:false
   });
+  console.timeEnd('[PT] XLSX.read');
+
   const ws = wb.Sheets[SHEET_NAME];
   if(!ws){ showError(`Sheet "${SHEET_NAME}" not found. Available: ${wb.SheetNames.join(', ')}`); return; }
+
+  console.time('[PT] sheet_to_json');
   const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  console.timeEnd('[PT] sheet_to_json');
+  console.log('[PT] raw rows:', raw.length);
+
   let hdrIdx = raw.findIndex(r=>r.some(c=>String(c).trim()==='Sectors'));
   if(hdrIdx<0) hdrIdx=1;
   const headers = raw[hdrIdx].map(h=>String(h).trim());
+  console.log('[PT] header row at index', hdrIdx, '| columns:', headers.length);
+
+  console.time('[PT] build allRows');
   allRows = raw.slice(hdrIdx+1).filter(r=>r.some(c=>c!=='')).map(r=>{
     const o={}; headers.forEach((h,i)=>{ o[h]=r[i]??''; }); return o;
   });
+  console.timeEnd('[PT] build allRows');
+  console.log('[PT] allRows:', allRows.length);
+
+  console.time('[PT] numeric conversion');
   headers.forEach(h=>{
     if(h==='Sectors'||/tier.*(input|sector)/i.test(h)) return;
     allRows.forEach(r=>{ const n=parseFloat(r[h]); if(!isNaN(n)) r[h]=n; });
   });
+  console.timeEnd('[PT] numeric conversion');
 }
 
 function showError(msg){
@@ -419,25 +444,36 @@ function showError(msg){
     `<div class="empty"><div class="icon">⚠️</div><p>${msg}</p></div>`;
 }
 
+// ── Match a Country Sector string to a Platinum "Sectors" value ─
+// The Platinum Excel has a "Sectors" column (e.g. "Abrasive Material").
+// The Silver CSV has "Country Sector" (e.g. "Korea — Manufacture of abrasive products").
+// We match by finding a Platinum sector whose name appears as a substring
+// of the Country Sector, or fall back to first available.
 function matchPlatinumSector(countrySector){
   const platinum = [...new Set(allRows.map(r=>r['Sectors']).filter(Boolean))];
+  // Try direct match first
   if(platinum.includes(countrySector)) return countrySector;
+  // Try: platinum sector name is contained in the country sector string (case-insensitive)
   const cs = countrySector.toLowerCase();
   const found = platinum.find(p=>cs.includes(p.toLowerCase()));
   if(found) return found;
+  // Reverse: country sector words appear in platinum sector
   const found2 = platinum.find(p=>p.toLowerCase().split(' ').some(w=>w.length>3&&cs.includes(w)));
   if(found2) return found2;
   return platinum[0]||null;
 }
 
+// ── Parse sector data from Platinum Excel ────────────────────
 function getSectorData(platSector, year){
   const rows = allRows.filter(r=>r['Sectors']===platSector);
   if(!rows.length) return null;
+
   const first=rows[0], yp=year+' ';
   const tot=parseFloat(first[yp+'Total Emissions Intensity'])||0;
   const s1 =parseFloat(first[yp+'Scope 1'])||0;
   const s2 =parseFloat(first[yp+'Scope 2'])||0;
   const s3 =parseFloat(first[yp+'Scope 3'])||0;
+
   const t1Key=yp+'Tier 1 Input Sector';
   const seen=new Set(); const tier1=[];
   rows.forEach(r=>{
@@ -457,6 +493,7 @@ function getSectorData(platSector, year){
   const notOther=tier1.filter(t=>t.label!=='Other').sort((a,b)=>b.total-a.total);
   const other   =tier1.filter(t=>t.label==='Other');
   const sorted  =[...notOther,...other];
+
   return {sector:platSector,year,tot,s1,s2,s3,tier1:sorted,
     s1pct:tot>0?+(s1/tot*100).toFixed(1):0,
     s2pct:tot>0?+(s2/tot*100).toFixed(1):0,
@@ -469,22 +506,28 @@ function getSectorData(platSector, year){
   };
 }
 
+// ── Render dashboard ─────────────────────────────────────────
 function renderDashboard(countrySector, year){
   const el=document.getElementById('dash-content');
   if(!countrySector){
     el.innerHTML='<div class="empty"><div class="icon">🔍</div><p>Select a country sector above.</p></div>';
     return;
   }
+
+  // Match country sector to platinum sector name
   const platSector = matchPlatinumSector(countrySector);
   if(!platSector){
     el.innerHTML='<div class="empty"><div class="icon">⚠️</div><p>No matching Platinum data for this sector.</p></div>';
     return;
   }
+
   const d = getSectorData(platSector, year);
   if(!d||d.tot===0){
     el.innerHTML=`<div class="empty"><div class="icon">⚠️</div><p>No data for <strong>${platSector}</strong> in <strong>${year}</strong>.</p></div>`;
     return;
   }
+
+  // Display uses the Country Sector name from Silver, data from Platinum
   el.innerHTML=`
     <div class="data-header">
       <h2>${countrySector}</h2>
@@ -558,6 +601,7 @@ function setCanvasMode(mode){
   drawCanvas(window._ptData,mode);
 }
 
+// ── Canvas Sankey ─────────────────────────────────────────────
 function drawCanvas(d,mode){
   const C2=document.getElementById('sankey-canvas');
   if(!C2) return;
@@ -577,10 +621,10 @@ function drawCanvas(d,mode){
   if(!tip){
     tip=document.createElement('div'); tip.id='pt-tip';
     tip.style.cssText='display:none;position:fixed;pointer-events:none;'+
-      'background:rgba(5,13,26,0.97);color:#e8f0ff;padding:11px 15px;'+
-      'border-radius:9px;font-size:12px;border:1px solid rgba(0,69,171,0.35);'+
+      'background:rgba(8,16,36,0.97);color:#e8ecff;padding:11px 15px;'+
+      'border-radius:9px;font-size:12px;border:1px solid rgba(255,255,255,0.12);'+
       'line-height:1.75;z-index:9999;max-width:260px;box-shadow:0 6px 24px rgba(0,0,0,0.6);'+
-      "font-family:'Inter','Segoe UI',sans-serif;";
+      "font-family:'Segoe UI',Arial,sans-serif;";
     document.body.appendChild(tip);
   }
   C2.onmousemove=function(e){
@@ -625,15 +669,15 @@ function drawCanvas(d,mode){
     if(h<7) return;
     ctx.textBaseline='middle'; ctx.textAlign='left';
     if(h>=20){
-      ctx.font=`600 ${fs}px 'Inter',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.95)';
+      ctx.font=`600 ${fs}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.95)';
       let txt=label; const mW=w-8;
       while(ctx.measureText(txt).width>mW&&txt.length>3) txt=txt.slice(0,-1);
       if(txt!==label) txt=txt.slice(0,-1)+'…';
       ctx.fillText(txt,x+5,y+h*0.36);
-      ctx.font=`${fs-1}px 'Inter',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.62)';
+      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.62)';
       ctx.fillText(pct+'%',x+5,y+h*0.68);
     } else {
-      ctx.font=`${fs-1}px 'Inter',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.85)';
+      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.85)';
       ctx.fillText(pct+'%',x+5,y+h/2);
     }
   }
@@ -647,10 +691,10 @@ function drawCanvas(d,mode){
   }
 
   function hdr(x,w,l1,l2){
-    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#1A3A6A';
-    ctx.font="700 10px 'Inter',Arial,sans-serif"; ctx.fillText(l1,x+w/2,TOP-(l2?23:13));
-    if(l2){ctx.font="400 8px 'Inter',Arial,sans-serif";ctx.fillStyle='#4A6A9A';ctx.fillText(l2,x+w/2,TOP-10);}
-    ctx.strokeStyle='rgba(0,69,171,0.15)';ctx.lineWidth=1;
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#0D2F4F';
+    ctx.font="700 10px 'Segoe UI',Arial,sans-serif"; ctx.fillText(l1,x+w/2,TOP-(l2?23:13));
+    if(l2){ctx.font="400 8px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='#4A6A8A';ctx.fillText(l2,x+w/2,TOP-10);}
+    ctx.strokeStyle='rgba(26,63,100,0.15)';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(x+3,TOP-2);ctx.lineTo(x+w-3,TOP-2);ctx.stroke();
   }
 
@@ -659,9 +703,10 @@ function drawCanvas(d,mode){
   hdr(T1_X,T1_W,'TIER 1','Input Sector');
   hdr(LF_X,LF_W,mode==='detail'?'TIER 1':'TIER 1',mode==='detail'?'Scope':'Scope (summed)');
 
+  // Anchor chevron — word-wrapped sector name
   const chev=18;
   const ag=ctx.createLinearGradient(ANC_X,TOP,ANC_X,TOP+FULL_H);
-  ag.addColorStop(0,'#0a2a5e'); ag.addColorStop(1,'#041535');
+  ag.addColorStop(0,'#1A4A72'); ag.addColorStop(1,'#0D2F4F');
   ctx.fillStyle=ag; ctx.beginPath();
   ctx.moveTo(ANC_X,TOP); ctx.lineTo(ANC_X+ANC_W-chev,TOP);
   ctx.lineTo(ANC_X+ANC_W,TOP+FULL_H/2); ctx.lineTo(ANC_X+ANC_W-chev,TOP+FULL_H);
@@ -669,16 +714,17 @@ function drawCanvas(d,mode){
   regHit(ANC_X,TOP,ANC_W,FULL_H,d.sector,d.tot);
 
   const acx=ANC_X+(ANC_W-chev)/2, ancTxtW=ANC_W-chev-12;
-  ctx.font="600 10px 'Inter',Arial,sans-serif";
+  ctx.font="600 10px 'Segoe UI',Arial,sans-serif";
   ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
   const words=d.sector.split(' '); const lines=[]; let cur='';
   words.forEach(w=>{ const t=cur?cur+' '+w:w; if(ctx.measureText(t).width>ancTxtW&&cur){lines.push(cur);cur=w;}else cur=t; });
   if(cur) lines.push(cur);
   const lineH=13,blockH=(lines.length-1)*lineH,startY=TOP+FULL_H*0.40-blockH/2;
   lines.forEach((ln,i)=>ctx.fillText(ln,acx,startY+i*lineH));
-  ctx.font="400 8px 'Inter',Arial,sans-serif"; ctx.fillStyle='rgba(255,255,255,0.55)';
+  ctx.font="400 8px 'Segoe UI',Arial,sans-serif"; ctx.fillStyle='rgba(255,255,255,0.55)';
   ctx.fillText(d.tot.toFixed(1)+' Mg CO₂e',acx,startY+lines.length*lineH+7);
 
+  // Scopes
   const scPcts=[d.s1pct,d.s2pct,d.s3pct],scH=propH(scPcts,FULL_H,BOX_GAP);
   const scY=[]; let sy=TOP; scH.forEach(h=>{scY.push(sy);sy+=h+BOX_GAP;});
   const scColors=[C.s1,C.s2,C.s3],scVals=[d.s1,d.s2,d.s3];
@@ -691,6 +737,7 @@ function drawCanvas(d,mode){
     scopeBoxes.push({y:scY[i],h,color:scColors[i],pct:scPcts[i]});
   });
 
+  // Tier 1
   const t1Pcts=d.tier1.map(t=>t.pct),t1H=propH(t1Pcts,FULL_H,BOX_GAP);
   const s3b=scopeBoxes[2]; let s3cur=s3b.y,t1Boxes=[],tY=TOP;
   d.tier1.forEach((t,i)=>{
@@ -707,6 +754,7 @@ function drawCanvas(d,mode){
     tY+=h+BOX_GAP;
   });
 
+  // Leaf column
   if(mode==='detail'){
     const LGAP=2,N=d.tier1.length*3,LAVAIL=FULL_H-LGAP*(N-1);
     const allPcts=[]; d.tier1.forEach(t=>allPcts.push(t.s1pct,t.s2pct,t.s3pct));
@@ -738,11 +786,12 @@ function drawCanvas(d,mode){
     smY=TOP; d.summed.forEach((sm,si)=>{const h=smH[si];drawBox(LF_X,smY,LF_W,h,S_COLORS[si],sm.label,sm.pct,sm.val,10);smY+=h+BOX_GAP;});
   }
 
-  ctx.font="400 7px 'Inter',Arial,sans-serif"; ctx.fillStyle='rgba(0,69,171,0.4)';
+  ctx.font="400 7px 'Segoe UI',Arial,sans-serif"; ctx.fillStyle='rgba(80,110,140,0.5)';
   ctx.textAlign='left'; ctx.textBaseline='top';
   ctx.fillText('Mg CO₂e per Million USD · '+d.year,ANC_X,TOP+FULL_H+12);
 }
 
+// ── Raw table ─────────────────────────────────────────────────
 function renderTable(){
   const q=(document.getElementById('ts')?.value||'').toLowerCase();
   const rows=allRows.filter(r=>!q||JSON.stringify(r).toLowerCase().includes(q)).slice(0,400);
@@ -753,27 +802,49 @@ function renderTable(){
   document.getElementById('tb').innerHTML=rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??'—'}</td>`).join('')}</tr>`).join('');
 }
 
+// ── Boot: fetch each file exactly once ───────────────────────
 (async()=>{
   try{
+    console.time('[PT] total boot');
+
+    console.time('[PT] fetch both files');
     const [silverResp, xlsxResp] = await Promise.all([
       fetch(SILVER_CSV),
       fetch(XLSX_FILE)
     ]);
+    console.timeEnd('[PT] fetch both files');
+
     if(!silverResp.ok) throw new Error('Silver CSV not found: '+SILVER_CSV);
     if(!xlsxResp.ok)   throw new Error('Platinum Excel not found: '+XLSX_FILE);
 
+    console.time('[PT] read response bodies');
     const [silverText, xlsxBuf] = await Promise.all([
       silverResp.text(),
       xlsxResp.arrayBuffer()
     ]);
+    console.timeEnd('[PT] read response bodies');
+    console.log('[PT] Silver text size:', silverText.length, 'bytes');
+    console.log('[PT] Excel buffer size:', xlsxBuf.byteLength, 'bytes');
 
+    console.time('[PT] buildSilverMap');
     buildSilverMap(silverText);
+    console.timeEnd('[PT] buildSilverMap');
+
     loadExcel(new Uint8Array(xlsxBuf));
 
+    console.time('[PT] renderDashboard');
+    // Set sector dropdown to DEFAULT_SECTOR if it exists, else first option
     const sSel = document.getElementById('f-sector');
     const defOpt = [...sSel.options].find(o=>o.value===DEFAULT_SECTOR);
     if(defOpt) sSel.value = DEFAULT_SECTOR;
     renderDashboard(sSel.value, '2023');
+    console.timeEnd('[PT] renderDashboard');
+
+    console.timeEnd('[PT] total boot');
 
   } catch(e){
-    showError(
+    showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure both files are in the root of your GitHub repo.');
+  }
+})();
+</script>
+</body>

@@ -7,81 +7,64 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
-  --primary:    #0045AB;
-  --primary-lt: #A7CCE7;
-  --accent-blue:#3FA9F6;
-  --orange:     #FFBB00;
-  --teal:       #A7F3D0;
-  --teal-dark:  #1ABC9C;
-  --bg:         #050d1a;
-  --bg2:        #081222;
-  --panel:      #0a1628;
-  --panel2:     #0d1c35;
-  --border:     rgba(0,69,171,0.22);
-  --border-hi:  rgba(0,69,171,0.45);
-  --dim:        rgba(255,255,255,0.48);
-  --mid:        rgba(255,255,255,0.28);
-  --white:      #e8f0ff;
-  --s1: #FF66B3;
-  --s2: #FFBB00;
+  --navy:  #050d1a;
+  --navy2: #0a1628;
+  --panel: #0d1c35;
+  --primary:#0045AB; --primary-lt:#A7CCE7; --accent:#3FA9F6;
+  --orange: #FFBB00;
+  --white: #e8f0ff;
+  --s1:    #FF66B3;
+  --s2:    #FFBB00;
+  --teal:  #1ABC9C;
+  --dim:   rgba(255,255,255,0.40);
+  --bdr:   rgba(0,69,171,0.22);
+  --mid:   rgba(255,255,255,0.28);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--white);min-height:100vh;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--white);min-height:100vh;}
 
-/* NAV */
 nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:58px;
-    background:rgba(5,13,26,0.97);border-bottom:1px solid var(--border);
-    position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+    background:rgba(5,13,26,0.97);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100;}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--white);}
-.nav-logo-icon{height:36px;width:auto;display:block;flex-shrink:0;}
-.logo-text{font-size:15px;font-weight:700;letter-spacing:-0.01em;}
+.nav-logo img{height:36px;width:auto;display:block;}
+.logo-text{font-size:15px;font-weight:800;letter-spacing:-.01em;}
 .logo-text em{color:var(--orange);font-style:normal;}
 .nav-links{display:flex;gap:4px;}
-.nav-links a{color:var(--dim);text-decoration:none;font-size:13px;font-weight:500;
+.nav-links a{color:var(--dim);text-decoration:none;font-size:14px;font-weight:500;
   padding:6px 12px;border-radius:6px;transition:background .15s,color .15s;}
 .nav-links a:hover{color:var(--white);background:rgba(255,255,255,0.06);}
 .nav-links a.active{color:var(--white);background:rgba(0,69,171,0.25);}
 
-/* PAGE HEADER */
-.ph{background:var(--panel);border:1px solid var(--border);border-radius:12px;
-    padding:20px 24px 16px;margin:20px 24px 0;
-    display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;
-    border-left:3px solid var(--teal);}
-.ph-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;
-  font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
-  background:rgba(167,243,208,0.12);color:var(--teal);border:1px solid rgba(167,243,208,0.2);margin-bottom:8px;}
-.ph-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
-.ph-title{font-size:20px;font-weight:800;color:var(--white);letter-spacing:-0.02em;margin-bottom:4px;}
+.ph{background:var(--navy2);border:1px solid var(--bdr);border-radius:12px;
+    padding:20px 24px 16px;margin:20px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+.ph-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:rgba(26,188,156,0.15);color:var(--teal);margin-bottom:8px;}
+.ph-title{font-size:22px;font-weight:800;color:var(--white);letter-spacing:-0.02em;margin-bottom:4px;}
 .ph-sub{font-size:12px;color:var(--mid);max-width:600px;line-height:1.6;}
-.ph-stats{display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap;align-items:flex-start;}
-.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;
-  padding:10px 16px;text-align:center;min-width:68px;}
+.ph-stats{display:flex;gap:12px;flex-shrink:0;flex-wrap:wrap;align-items:flex-start;}
+.stat-box{background:var(--panel);border:1px solid var(--bdr);border-radius:8px;padding:10px 16px;text-align:center;min-width:68px;}
 .stat-val{font-size:20px;font-weight:800;color:var(--teal);}
 .stat-lbl{font-size:10px;color:var(--mid);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;}
 
-/* FILTER BAR */
-.filter-bar{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+.filter-bar{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;
   margin:12px 24px 0;padding:14px 20px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;}
 .fg{display:flex;flex-direction:column;gap:5px;}
-.fg label{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--accent-blue);text-transform:uppercase;}
-.fg select{background:var(--bg);color:var(--white);border:1.5px solid var(--border);
+.fg label{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--primary-lt);text-transform:uppercase;}
+.fg select{background:var(--navy);color:var(--white);border:1.5px solid var(--bdr);
   border-radius:8px;padding:7px 12px;font-family:inherit;font-size:13px;
   appearance:none;cursor:pointer;min-width:160px;transition:border-color .2s;}
 .fg select:focus{outline:none;border-color:var(--teal);}
-.fg select option{background:var(--panel);}
+.fg select option{background:var(--navy2);}
 .filter-free-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:4px;
   font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
-  background:rgba(167,243,208,0.10);border:1px solid rgba(167,243,208,0.25);color:var(--teal);
+  background:rgba(26,188,156,0.12);border:1px solid rgba(26,188,156,0.3);color:var(--teal);
   align-self:flex-end;margin-bottom:1px;}
 
-/* UPSELL OVERLAY */
-.upsell-overlay{position:fixed;inset:0;background:rgba(2,6,16,0.93);backdrop-filter:blur(12px);
+.upsell-overlay{position:fixed;inset:0;background:rgba(5,10,25,0.93);backdrop-filter:blur(10px);
   z-index:500;display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .3s;}
 .upsell-overlay.show{opacity:1;pointer-events:all;}
-.upsell-card{background:linear-gradient(145deg,var(--panel2),var(--bg));
-  border:2px solid var(--orange);border-radius:20px;
-  padding:48px 44px;max-width:460px;width:92%;text-align:center;
+.upsell-card{background:linear-gradient(145deg,var(--navy2),var(--navy));border:2px solid var(--orange);
+  border-radius:20px;padding:48px 44px;max-width:460px;width:92%;text-align:center;
   transform:translateY(20px) scale(0.97);transition:transform .35s cubic-bezier(0.34,1.56,0.64,1);}
 .upsell-overlay.show .upsell-card{transform:translateY(0) scale(1);}
 .upsell-icon{font-size:44px;margin-bottom:16px;display:block;}
@@ -91,37 +74,35 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px
 .upsell-card p{font-size:13px;color:var(--dim);line-height:1.75;margin-bottom:28px;}
 .upsell-card p strong{color:rgba(255,255,255,0.85);}
 .upsell-actions{display:flex;flex-direction:column;align-items:center;gap:10px;}
-.upsell-btn{display:inline-block;background:var(--orange);color:var(--bg);padding:13px 34px;
+.upsell-btn{display:inline-block;background:var(--orange);color:#050d1a;padding:13px 34px;
   border-radius:10px;font-weight:800;text-decoration:none;font-size:14px;
   transition:transform .15s,box-shadow .15s;cursor:pointer;border:none;font-family:inherit;}
-.upsell-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(255,187,0,0.35);}
+.upsell-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(255,187,0,0.4);}
 .upsell-dismiss{font-size:12px;color:rgba(255,255,255,0.32);cursor:pointer;
   background:none;border:none;font-family:inherit;transition:color .2s;padding:4px;}
 .upsell-dismiss:hover{color:rgba(255,255,255,0.65);}
 
-/* CONTROLS */
-.controls{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+.controls{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;
   padding:14px 20px;margin:14px 24px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;}
 .ctrl-group{display:flex;flex-direction:column;gap:5px;}
 .ctrl-label{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--teal);text-transform:uppercase;}
-select{background:var(--bg);color:var(--white);border:1.5px solid var(--border);
+select{background:var(--navy);color:var(--white);border:1.5px solid var(--bdr);
   border-radius:8px;padding:7px 12px;font-family:inherit;font-size:13px;
   appearance:none;cursor:pointer;transition:border-color .2s;min-width:180px;}
 select:focus{outline:none;border-color:var(--teal);}
-select option{background:var(--panel);color:var(--white);}
+select option{background:var(--navy2);color:var(--white);}
 .ctrl-hint{font-size:10px;color:var(--mid);}
 
-/* INSIGHT ROW */
 .insight-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:0 24px 14px;}
-.callout-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+.callout-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;
   padding:20px 22px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
 .callout-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--teal);}
 .callout-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--mid);margin-bottom:8px;}
 .callout-val{font-size:36px;font-weight:800;color:var(--teal);letter-spacing:-0.03em;line-height:1;}
 .callout-unit{font-size:12px;color:var(--mid);margin-top:6px;}
-.callout-sub{font-size:11px;color:var(--mid);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.5;}
+.callout-sub{font-size:11px;color:var(--mid);margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr);line-height:1.5;}
 .callout-sub strong{color:var(--white);}
-.donut-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.donut-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;padding:16px 18px;}
 .donut-panel-title{font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px;}
 .donut-panel-sub{font-size:10px;color:var(--mid);}
 .donut-wrap{display:flex;align-items:center;gap:14px;margin-top:12px;}
@@ -132,19 +113,17 @@ select option{background:var(--panel);color:var(--white);}
 .donut-leg-val{font-size:11px;font-weight:700;color:var(--white);}
 .donut-leg-pct{font-size:10px;color:var(--mid);}
 
-/* SCOPE PILLS */
 .scope-pills{display:flex;gap:6px;flex-wrap:wrap;}
 .scope-pill{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;
-  border:1.5px solid var(--border);color:var(--dim);cursor:pointer;
+  border:1.5px solid var(--bdr);color:var(--dim);cursor:pointer;
   transition:all .2s;background:none;font-family:inherit;letter-spacing:0.04em;}
 .scope-pill:hover{border-color:var(--white);color:var(--white);}
-.scope-pill.active-total{background:rgba(167,243,208,0.15);border-color:var(--teal);color:var(--teal);}
-.scope-pill.active-s1{background:rgba(255,102,179,0.15);border-color:var(--s1);color:var(--s1);}
-.scope-pill.active-s2{background:rgba(255,187,0,0.15);border-color:var(--s2);color:var(--s2);}
+.scope-pill.active-total{background:rgba(26,188,156,0.18);border-color:var(--teal);color:var(--teal);}
+.scope-pill.active-s1{background:rgba(255,102,179,0.18);border-color:var(--s1);color:var(--s1);}
+.scope-pill.active-s2{background:rgba(255,187,0,0.18);border-color:var(--s2);color:var(--s2);}
 
-/* TIER BAR CHART PANEL */
-.chart-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin:0 24px 14px;overflow:hidden;}
-.chart-hdr{padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.chart-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 14px;overflow:hidden;}
+.chart-hdr{padding:14px 18px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
 .chart-title{font-size:14px;font-weight:700;color:var(--white);}
 .chart-sub{font-size:11px;color:var(--mid);margin-top:2px;}
 .legend-inline{display:flex;gap:14px;align-items:center;flex-shrink:0;}
@@ -152,14 +131,13 @@ select option{background:var(--panel);color:var(--white);}
 .leg-swatch{width:10px;height:10px;border-radius:2px;}
 .chart-scroll{overflow-x:auto;overflow-y:hidden;padding:16px 18px 8px;}
 
-/* SECTOR TABLE PANEL */
-.table-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin:0 24px 24px;overflow:hidden;}
-.table-hdr{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.table-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 24px;overflow:hidden;}
+.table-hdr{padding:12px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
 .table-title{font-size:13px;font-weight:700;color:var(--white);}
 .tbl-scroll{overflow-x:auto;}
 table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:520px;}
 table.dt thead th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
-  color:var(--primary-lt);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);
+  color:var(--primary-lt);padding:8px 12px;text-align:left;border-bottom:1px solid var(--bdr);
   cursor:pointer;user-select:none;white-space:nowrap;}
 table.dt thead th:hover{color:var(--white);}
 table.dt thead th.sort-asc::after{content:" ↑";}
@@ -170,14 +148,13 @@ table.dt tbody tr:hover td{background:rgba(0,69,171,0.06);}
 .mini-bar-bg{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;width:80px;flex-shrink:0;}
 .mini-bar-fill{height:100%;border-radius:3px;}
 
-/* LOADING */
 @keyframes spin{to{transform:rotate(360deg);}}
-.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.1);border-top-color:var(--orange);
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.1);border-top-color:var(--teal);
   border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
 #loading-state{display:flex;align-items:center;justify-content:center;min-height:280px;
   gap:10px;color:var(--mid);font-size:13px;padding:24px;flex-wrap:wrap;text-align:center;}
 
-footer{border-top:1px solid var(--border);padding:18px 24px;display:flex;justify-content:space-between;
+footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-content:space-between;
   align-items:center;color:var(--mid);font-size:12px;margin-top:4px;}
 @media(max-width:900px){.insight-row{grid-template-columns:1fr;}}
 @media(max-width:700px){
@@ -196,7 +173,7 @@ footer{border-top:1px solid var(--border);padding:18px 24px;display:flex;justify
     <h2>Unlock <span>Full rLCA</span> Access</h2>
     <p id="upsell-msg">rLCA reports for additional countries, sectors, and years are available through TASA EFX. <strong>Contact us</strong> to get access to the full dataset.</p>
     <div class="upsell-actions">
-      <a href="/cdn-cgi/l/email-protection#dab3b4bcb59aaebba9bbbbb4bbb6a3aeb3b9a9f4b9b5b7" class="upsell-btn">Contact TASA EFX →</a>
+      <a href="#" onclick="window.location.href='mai'+'lto:info@tasa-efx.com';return false;" class="upsell-btn">Contact TASA EFX →</a>
       <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
     </div>
   </div>
@@ -204,8 +181,8 @@ footer{border-top:1px solid var(--border);padding:18px 24px;display:flex;justify
 
 <nav>
   <a class="nav-logo" href="index.html">
-    <img class="nav-logo-icon" src="TASA Logo Blue copy.png" alt="TASA Analytics">
-    <div class="logo-text">TASA <em>EFX</em></div>
+    <img src="TASA Logo Blue copy.png" alt="TASA EFX">
+    <span class="logo-text">TASA <em>EFX</em></span>
   </a>
   <div class="nav-links">
     <a href="index.html">Home</a>
@@ -261,12 +238,14 @@ footer{border-top:1px solid var(--border);padding:18px 24px;display:flex;justify
 
 <!-- INSIGHT ROW: EI callout + 2 donuts -->
 <div class="insight-row" style="margin-top:14px">
+
   <div class="callout-panel">
     <div class="callout-eyebrow">🌿 Total Emissions Intensity</div>
     <div class="callout-val" id="total-ei">—</div>
     <div class="callout-unit">Mg CO₂e / Million USD</div>
     <div class="callout-sub" id="total-ei-sub">Abrasive Materials · South Korea · 2023</div>
   </div>
+
   <div class="donut-panel">
     <div class="donut-panel-title">Scope Split</div>
     <div class="donut-panel-sub" id="donut-scope-sub">S1 vs S2 · all sectors</div>
@@ -275,6 +254,7 @@ footer{border-top:1px solid var(--border);padding:18px 24px;display:flex;justify
       <div class="donut-legend" id="donut-scope-legend"></div>
     </div>
   </div>
+
   <div class="donut-panel">
     <div class="donut-panel-title">Tier Depth</div>
     <div class="donut-panel-sub" id="donut-tier-sub">Near-term (T0–T3) vs deep (T4–T10)</div>
@@ -283,6 +263,7 @@ footer{border-top:1px solid var(--border);padding:18px 24px;display:flex;justify
       <div class="donut-legend" id="donut-tier-legend"></div>
     </div>
   </div>
+
 </div>
 
 <!-- CHART FILTERS: scope + input sector -->
@@ -308,7 +289,7 @@ footer{border-top:1px solid var(--border);padding:18px 24px;display:flex;justify
   <div class="chart-hdr">
     <div>
       <div class="chart-title">Lifecycle Emissions by Tier</div>
-      <div class="chart-sub" id="chart-sub-text">Scope 1 (pink) and Scope 2 (gold) · all input sectors · each upstream tier</div>
+      <div class="chart-sub" id="chart-sub-text">Scope 1 (red) and Scope 2 (amber) · all input sectors · each upstream tier</div>
     </div>
     <div class="legend-inline">
       <div class="leg-item"><div class="leg-swatch" style="background:var(--s1)"></div>Scope 1 · Direct</div>
@@ -369,11 +350,11 @@ footer{border-top:1px solid var(--border);padding:18px 24px;display:flex;justify
 </div><!-- /main-content -->
 
 <footer>
-  <span>TASA <em style="color:var(--orange);font-style:normal">EFX</em> · rLCA · Abrasive Materials · South Korea 2023</span>
-  <span>© 2025 TASA Analytics. All rights reserved.</span>
+  <span>© 2025 TASA EFX. All rights reserved.</span>
+  <span>rLCA · Abrasive Materials · South Korea 2023</span>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
@@ -386,9 +367,9 @@ const DEFAULT_SECTOR  = 'South Korea — Abrasive Material';
 const FREE_YEAR       = '2023';
 // ══════════════════════════════════════════════════════
 
-const S1_COLOR = '#FF66B3';
-const S2_COLOR = '#FFBB00';
-const TEAL_COL = '#A7F3D0';
+const S1_COLOR = '#e8534a';
+const S2_COLOR = '#f0a500';
+const TEAL_COL = '#1ABC9C';
 
 let tableData   = [];
 let s1Cols      = [];
@@ -398,9 +379,11 @@ let efData      = {};
 let silverMap   = {};
 let sortCol     = 'combined';
 let sortDir     = 'desc';
-let scopeFilter = 'total';
+let scopeFilter = 'total'; // 'total' | 's1' | 's2'
 
+// ── Excel loader ──────────────────────────────────────
 function loadExcel(wb) {
+  // Sheet 1: tier data
   const ws = wb.Sheets[SHEET_NAME];
   if (!ws) { showError(`Sheet "${SHEET_NAME}" not found. Available: ${wb.SheetNames.join(', ')}`); return; }
 
@@ -432,6 +415,7 @@ function loadExcel(wb) {
   tierSel.innerHTML = '<option value="total">Total — all tiers summed</option>';
   tierOptions.forEach(t => tierSel.add(new Option(t.label, t.s1col)));
 
+  // Populate chart sector dropdown — sorted by total S1+S2 descending
   const chartSel = document.getElementById('chart-sector');
   chartSel.innerHTML = '<option value="all">All Sectors (aggregated)</option>';
   [...tableData]
@@ -442,6 +426,7 @@ function loadExcel(wb) {
     .sort((a,b) => b.total - a.total)
     .forEach(r => chartSel.add(new Option(r.sector, r.sector)));
 
+  // Sheet 2: Sector Emissions Factors
   const wsEF = wb.Sheets[EF_SHEET];
   if (wsEF) {
     const efRaw = XLSX.utils.sheet_to_json(wsEF, {defval:''});
@@ -464,7 +449,7 @@ function loadExcel(wb) {
 
 function showError(msg) {
   document.getElementById('loading-state').innerHTML =
-    `<div style="color:#FF66B3;text-align:center;font-size:13px;line-height:1.8;max-width:480px">
+    `<div style="color:#e8534a;text-align:center;font-size:13px;line-height:1.8;max-width:480px">
       <div style="font-size:32px;margin-bottom:10px">⚠️</div>
       <strong>Could not load data</strong><br>${msg}<br>
       <span style="color:var(--mid);font-size:11px">Ensure
@@ -473,6 +458,7 @@ function showError(msg) {
     </div>`;
 }
 
+// ── Callout ───────────────────────────────────────────
 function renderCallout() {
   const ei = efData['Total Emissions Intensity'];
   document.getElementById('total-ei').textContent =
@@ -485,15 +471,20 @@ function renderCallout() {
     document.getElementById('total-ei-sub').innerHTML = parts.join(' &nbsp;·&nbsp; ');
 }
 
+// ── Scope pill handler ────────────────────────────────
 function setScopeFilter(scope, btn) {
   scopeFilter = scope;
-  document.querySelectorAll('.scope-pill').forEach(b => { b.className = 'scope-pill'; });
+  document.querySelectorAll('.scope-pill').forEach(b => {
+    b.className = 'scope-pill';
+  });
   btn.classList.add('active-' + scope);
   renderTierBarChart();
 }
 
+// ── Tier bar chart ────────────────────────────────────
 function renderTierBarChart() {
   const container  = document.getElementById('tier-chart-scroll');
+  const chartSub   = document.getElementById('chart-sub-text');
   const n = tierOptions.length;
   if (!n || !tableData.length) return;
 
@@ -502,12 +493,14 @@ function renderTierBarChart() {
     ? tableData
     : tableData.filter(r => r.sector === selectedSector);
 
+  // Build per-tier totals respecting scope filter
   const tierTotals = tierOptions.map(t => {
     const s1 = srcRows.reduce((a,r) => a+(r.s1[t.s1col]||0), 0);
     const s2 = t.s2col ? srcRows.reduce((a,r) => a+(r.s2[t.s2col]||0), 0) : 0;
     return { label: t.label, s1, s2 };
   });
 
+  // Determine what to render per bar based on scope filter
   const showS1 = scopeFilter !== 's2';
   const showS2 = scopeFilter !== 's1';
   const BAR_W  = scopeFilter === 'total' ? 34 : 48;
@@ -528,8 +521,8 @@ function renderTierBarChart() {
 
   for (let g=0; g<=5; g++) {
     const yy=(g/5)*chartH, val=maxVal*(1-g/5);
-    o += `<line x1="0" y1="${yy.toFixed(1)}" x2="${chartW}" y2="${yy.toFixed(1)}" stroke="rgba(0,69,171,0.15)" stroke-width="1"/>`;
-    o += `<text x="-5" y="${(yy+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">${fmtAxis(val)}</text>`;
+    o += `<line x1="0" y1="${yy.toFixed(1)}" x2="${chartW}" y2="${yy.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+    o += `<text x="-5" y="${(yy+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${fmtAxis(val)}</text>`;
   }
 
   tierTotals.forEach((t, i) => {
@@ -540,43 +533,48 @@ function renderTierBarChart() {
     if (scopeFilter === 'total') {
       const h1 = Math.max(1,(t.s1/maxVal)*chartH);
       o += `<rect x="${gx}" y="${(chartH-h1).toFixed(1)}" width="${BAR_W}" height="${h1.toFixed(1)}" fill="${S1_COLOR}" rx="2" opacity="0.88"/>`;
-      if(h1>16) o += `<text x="${(gx+BAR_W/2).toFixed(1)}" y="${(chartH-h1-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="Inter,sans-serif">${fmtAxis(t.s1)}</text>`;
+      if(h1>16) o += `<text x="${(gx+BAR_W/2).toFixed(1)}" y="${(chartH-h1-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s1)}</text>`;
       const h2 = Math.max(1,(t.s2/maxVal)*chartH);
       o += `<rect x="${(gx+BAR_W+BAR_GAP).toFixed(1)}" y="${(chartH-h2).toFixed(1)}" width="${BAR_W}" height="${h2.toFixed(1)}" fill="${S2_COLOR}" rx="2" opacity="0.88"/>`;
-      if(h2>16) o += `<text x="${(gx+BAR_W+BAR_GAP+BAR_W/2).toFixed(1)}" y="${(chartH-h2-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="Inter,sans-serif">${fmtAxis(t.s2)}</text>`;
+      if(h2>16) o += `<text x="${(gx+BAR_W+BAR_GAP+BAR_W/2).toFixed(1)}" y="${(chartH-h2-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s2)}</text>`;
       const mid = gx+BAR_W+BAR_GAP/2;
-      o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="Inter,sans-serif">${lbl}</text>`;
+      o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${lbl}</text>`;
     } else {
       const val = scopeFilter==='s1' ? t.s1 : t.s2;
       const col = scopeFilter==='s1' ? S1_COLOR : S2_COLOR;
       const bh  = Math.max(1,(val/maxVal)*chartH);
       const mid = gx+BAR_W/2;
       o += `<rect x="${gx}" y="${(chartH-bh).toFixed(1)}" width="${BAR_W}" height="${bh.toFixed(1)}" fill="${col}" rx="2" opacity="0.88"/>`;
-      if(bh>16) o += `<text x="${mid.toFixed(1)}" y="${(chartH-bh-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="Inter,sans-serif">${fmtAxis(val)}</text>`;
-      o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="Inter,sans-serif">${lbl}</text>`;
+      if(bh>16) o += `<text x="${mid.toFixed(1)}" y="${(chartH-bh-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(val)}</text>`;
+      o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${lbl}</text>`;
     }
   });
 
-  o += `<line x1="0" y1="${chartH}" x2="${chartW}" y2="${chartH}" stroke="rgba(0,69,171,0.2)" stroke-width="1"/>`;
+  o += `<line x1="0" y1="${chartH}" x2="${chartW}" y2="${chartH}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
   o += `</g></svg>`;
   container.innerHTML = o;
 
+  // Update chart subtitle
   const scopeLbl = scopeFilter==='s1' ? 'Scope 1 · Direct only'
                  : scopeFilter==='s2' ? 'Scope 2 · Electricity only'
-                 : 'Scope 1 (pink) and Scope 2 (gold)';
+                 : 'Scope 1 (red) and Scope 2 (amber)';
   const secLbl   = selectedSector==='all' ? 'all input sectors' : selectedSector;
-  document.getElementById('chart-sub-text').textContent = `${scopeLbl} · ${secLbl} · each upstream tier`;
+  document.getElementById('chart-sub-text').textContent =
+    `${scopeLbl} · ${secLbl} · each upstream tier`;
 
   renderDonuts(tierTotals, selectedSector);
 }
 
+// ── Donuts ────────────────────────────────────────────
 function renderDonuts(tierTotals, selectedSector) {
   const showS1 = scopeFilter !== 's2';
   const showS2 = scopeFilter !== 's1';
+
   const allS1 = showS1 ? tierTotals.reduce((a,t)=>a+t.s1,0) : 0;
   const allS2 = showS2 ? tierTotals.reduce((a,t)=>a+t.s2,0) : 0;
   const grand = allS1+allS2;
 
+  // Scope split donut
   const scopeSegs = scopeFilter === 'total'
     ? [{label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR},
        {label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}]
@@ -585,13 +583,19 @@ function renderDonuts(tierTotals, selectedSector) {
     : [{label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}];
   drawDonut('donut-scope', scopeSegs, grand, 'donut-scope-legend');
 
-  const early = tierTotals.slice(0,4).reduce((a,t) => a + (showS1?t.s1:0) + (showS2?t.s2:0), 0);
-  const late  = tierTotals.slice(4).reduce((a,t)  => a + (showS1?t.s1:0) + (showS2?t.s2:0), 0);
+  // Tier depth donut — early (T0-T3) vs late (T4-T10), using active scope
+  const early = tierTotals.slice(0,4).reduce((a,t) => {
+    return a + (showS1?t.s1:0) + (showS2?t.s2:0);
+  }, 0);
+  const late  = tierTotals.slice(4).reduce((a,t) => {
+    return a + (showS1?t.s1:0) + (showS2?t.s2:0);
+  }, 0);
   drawDonut('donut-tier',[
     {label:'Tiers 0–3 · Near-term',   val:early, color:TEAL_COL},
-    {label:'Tiers 4–10 · Deep chain', val:late,  color:'#8C5ACC'}
+    {label:'Tiers 4–10 · Deep chain', val:late,  color:'#7c5cbf'}
   ], grand, 'donut-tier-legend');
 
+  // Update donut subtitles
   const secLbl = (!selectedSector || selectedSector==='all') ? 'all sectors' : selectedSector;
   const scpLbl = scopeFilter==='s1'?'S1 only':scopeFilter==='s2'?'S2 only':'S1+S2';
   document.getElementById('donut-scope-sub').textContent = `${scpLbl} · ${secLbl}`;
@@ -606,6 +610,7 @@ function drawDonut(svgId, segs, total, legendId) {
   const tot = activeSegs.reduce((a,s)=>a+s.val,0)||1;
 
   if (activeSegs.length === 1) {
+    // Single active segment — draw a solid full ring
     const outer = document.createElementNS('http://www.w3.org/2000/svg','circle');
     outer.setAttribute('cx',cx); outer.setAttribute('cy',cy); outer.setAttribute('r',R);
     outer.setAttribute('fill',activeSegs[0].color); outer.setAttribute('opacity','0.9');
@@ -627,9 +632,10 @@ function drawDonut(svgId, segs, total, legendId) {
     });
   }
 
+  // Center hole
   const hole=document.createElementNS('http://www.w3.org/2000/svg','circle');
   hole.setAttribute('cx',cx); hole.setAttribute('cy',cy); hole.setAttribute('r',r-1);
-  hole.setAttribute('fill','rgba(5,13,26,0.97)'); svg.appendChild(hole);
+  hole.setAttribute('fill','rgba(18,21,34,0.97)'); svg.appendChild(hole);
 
   document.getElementById(legendId).innerHTML = activeSegs.map(s => {
     const pct=(s.val/tot*100).toFixed(1);
@@ -644,6 +650,7 @@ function drawDonut(svgId, segs, total, legendId) {
   }).join('');
 }
 
+// ── Row values helper ─────────────────────────────────
 function getRowValues(row, tierKey) {
   if (tierKey === 'total') {
     return { s1:s1Cols.reduce((a,c)=>a+row.s1[c],0), s2:s2Cols.reduce((a,c)=>a+row.s2[c],0) };
@@ -652,6 +659,7 @@ function getRowValues(row, tierKey) {
   return { s1:t?(row.s1[t.s1col]||0):0, s2:(t&&t.s2col)?(row.s2[t.s2col]||0):0 };
 }
 
+// ── Format helpers ────────────────────────────────────
 function fmt(v) {
   if(v===0) return '0'; const a=Math.abs(v);
   if(a>=1000) return (v/1000).toFixed(2)+'k';
@@ -667,6 +675,7 @@ function fmtAxis(v) {
   return v.toExponential(2);
 }
 
+// ── Render (table) ────────────────────────────────────
 function render() {
   const tierKey = document.getElementById('f-tier').value;
   const sortBy  = document.getElementById('f-sort').value;
@@ -685,10 +694,10 @@ function render() {
   if (topN>0) rows=rows.slice(0,topN);
   const totS1=rows.reduce((a,r)=>a+r.s1,0);
   const totS2=rows.reduce((a,r)=>a+r.s2,0);
-
   renderTable(rows, totS1, totS2);
 }
 
+// ── Table ─────────────────────────────────────────────
 function renderTable(rows, totS1, totS2) {
   const maxS1=Math.max(...rows.map(r=>r.s1),1e-10);
   const maxS2=Math.max(...rows.map(r=>r.s2),1e-10);
@@ -723,6 +732,7 @@ function sortTable(col) {
   render();
 }
 
+// ── Silver CSV / filter bar ───────────────────────────
 function parseCSV(text) {
   function parseLine(line) {
     const vals=[]; let cur='',inQ=false;
@@ -797,6 +807,7 @@ function showUpsell(what,msg){
 function dismissUpsell(){ document.getElementById('upsell').classList.remove('show'); }
 document.getElementById('upsell').addEventListener('click',function(e){if(e.target===this)dismissUpsell();});
 
+// ── Boot ──────────────────────────────────────────────
 (async () => {
   try {
     const [silverResp, xlsxResp] = await Promise.all([
@@ -820,3 +831,14 @@ document.getElementById('upsell').addEventListener('click',function(e){if(e.targ
       cellNF:       false,
       sheetStubs:   false
     });
+
+    loadExcel(wb);
+    buildSilverMap(silverText);
+
+  } catch(e) {
+    showError(`<strong>${e.message}</strong>`);
+  }
+})();
+</script>
+</body>
+</html>

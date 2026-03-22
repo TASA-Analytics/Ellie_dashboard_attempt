@@ -4,231 +4,84 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>TASA EFX — Emissions Intelligence Platform</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    /* TASA Analytics Brand Colors */
-    --primary:    #0045AB;
-    --primary-lt: #A7CCE7;
-    --accent-blue:#3FA9F6;
-    --orange:     #FFBB00;
-    --gray-bg:    #F4F5F5;
-
-    /* Graph / Accent Palette */
-    --lavender:   #8C5ACC;
-    --mint:       #A7F3D0;
-    --warm-gold:  #D4AF37;
-    --hi-lav:     #B98EFF;
-    --pink:       #FF66B3;
-
-    /* Dark Theme */
-    --bg:         #050d1a;
-    --bg2:        #081222;
+    --navy:       #050d1a;
     --panel:      #0a1628;
     --panel2:     #0d1c35;
-    --border:     rgba(0, 69, 171, 0.22);
-    --border-hi:  rgba(0, 69, 171, 0.45);
+    --primary:    #0045AB;
+    --primary-lt: #A7CCE7;
+    --accent:     #3FA9F6;
+    --orange:     #FFBB00;
+    --border:     rgba(0,69,171,0.22);
     --dim:        rgba(255,255,255,0.48);
     --mid:        rgba(255,255,255,0.28);
-
-    /* Scope Colors */
-    --s1: #FF66B3;
-    --s2: #FFBB00;
-    --s3: #3FA9F6;
   }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body {
-    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    background: var(--bg);
-    color: #e8f0ff;
-    min-height: 100vh;
-  }
+  body { font-family:'Inter','Segoe UI',Arial,sans-serif; background:var(--navy); color:#e8f0ff; min-height:100vh; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-  /* ── NAV ── */
   nav {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 36px; height: 58px;
-    background: rgba(5,13,26,0.97);
-    border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 100;
-    backdrop-filter: blur(12px);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 36px; height:58px;
+    background:rgba(5,13,26,0.97); border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:100; backdrop-filter:blur(12px);
   }
-  .nav-logo { display:flex; align-items:center; gap:11px; text-decoration:none; color:#e8f0ff; }
-  .nav-logo-icon {
-    height: 36px; width: auto;
-    display: block; flex-shrink: 0;
-  }
-  .nav-logo-text { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
-  .nav-logo-text em { color: var(--orange); font-style: normal; }
-  .nav-links { display: flex; gap: 4px; }
-  .nav-links a {
-    color: var(--dim); text-decoration: none; font-size: 13px; font-weight: 500;
-    padding: 6px 12px; border-radius: 6px;
-    transition: background 0.15s, color 0.15s;
-  }
-  .nav-links a:hover { color: #e8f0ff; background: rgba(255,255,255,0.06); }
-  .nav-links a.active { color: #e8f0ff; background: rgba(0,69,171,0.25); }
+  .nav-logo { display:flex; align-items:center; gap:12px; text-decoration:none; color:#e8f0ff; }
+  .nav-logo img { height:36px; width:auto; display:block; }
+  .nav-logo span { font-size:15px; font-weight:700; letter-spacing:-0.01em; }
+  .nav-logo span em { color:var(--orange); font-style:normal; }
+  .nav-links { display:flex; gap:4px; }
+  .nav-links a { color:var(--dim); text-decoration:none; font-size:13px; font-weight:500;
+    padding:6px 12px; border-radius:6px; transition:background .15s,color .15s; }
+  .nav-links a:hover { color:#e8f0ff; background:rgba(255,255,255,0.06); }
+  .nav-links a.active { color:#e8f0ff; background:rgba(0,69,171,0.25); }
 
-  /* ── HERO ── */
-  .hero {
-    padding: 80px 36px 56px;
-    max-width: 1140px; margin: 0 auto;
-    position: relative;
-  }
-  .hero::before {
-    content: '';
-    position: absolute; top: 0; left: -100px; right: -100px;
-    height: 360px;
-    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(0,69,171,0.18) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .eyebrow {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
-    color: var(--orange); font-weight: 600; margin-bottom: 20px;
-  }
-  .eyebrow::before {
-    content: '';
-    width: 18px; height: 2px; background: var(--orange); border-radius: 2px;
-  }
-  .hero h1 {
-    font-size: clamp(34px, 5.5vw, 62px);
-    font-weight: 800; letter-spacing: -0.03em; line-height: 1.06;
-    margin-bottom: 22px;
-  }
-  .hero h1 span { color: var(--orange); }
-  .hero p {
-    font-size: 16px; line-height: 1.75; color: var(--dim);
-    max-width: 540px; margin-bottom: 44px;
-  }
-  .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
-  .btn-primary {
-    background: var(--orange); color: #050d1a;
-    padding: 13px 28px; border-radius: 8px;
-    font-weight: 700; text-decoration: none; font-size: 14px;
-    transition: transform 0.15s, box-shadow 0.15s;
-    letter-spacing: 0.01em;
-  }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,187,0,0.32); }
-  .btn-ghost {
-    border: 1.5px solid rgba(0,69,171,0.45); color: var(--primary-lt);
-    padding: 13px 28px; border-radius: 8px;
-    font-weight: 500; text-decoration: none; font-size: 14px;
-    transition: border-color 0.2s, color 0.2s, background 0.2s;
-  }
-  .btn-ghost:hover { border-color: var(--orange); color: var(--orange); background: rgba(255,187,0,0.05); }
+  .hero { padding:80px 36px 60px; max-width:1100px; margin:0 auto; }
+  .hero .eyebrow { font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; font-weight:600; }
+  .hero h1 { font-size:clamp(32px,5vw,58px); font-weight:800; letter-spacing:-0.03em; line-height:1.08; margin-bottom:20px; }
+  .hero h1 span { color:var(--orange); }
+  .hero p { font-size:16px; line-height:1.7; color:var(--dim); max-width:520px; margin-bottom:40px; }
+  .hero-btns { display:flex; gap:14px; flex-wrap:wrap; }
+  .btn-primary { background:var(--orange); color:var(--navy); padding:13px 30px; border-radius:8px; font-weight:700; text-decoration:none; font-size:14px; transition:transform 0.15s,box-shadow 0.15s; }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,187,0,0.35); }
+  .btn-ghost { border:1.5px solid rgba(0,69,171,0.4); color:var(--primary-lt); padding:13px 30px; border-radius:8px; font-weight:500; text-decoration:none; font-size:14px; transition:border-color 0.2s,color 0.2s; }
+  .btn-ghost:hover { border-color:var(--orange); color:var(--orange); }
 
-  /* ── STAT BAR ── */
-  .stat-bar {
-    max-width: 1140px; margin: 0 auto 72px;
-    padding: 0 36px;
-  }
-  .stat-row {
-    display: flex; gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden;
-  }
-  .stat-item {
-    flex: 1; padding: 20px 24px;
-    background: var(--panel);
-    display: flex; flex-direction: column; gap: 4px;
-    transition: background 0.2s;
-  }
-  .stat-item:hover { background: var(--panel2); }
-  .stat-num {
-    font-size: 26px; font-weight: 800; letter-spacing: -0.03em;
-    color: var(--accent-blue);
-  }
-  .stat-lbl {
-    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
-    color: var(--mid); font-weight: 600;
-  }
-
-  /* ── CARDS ── */
-  .cards-section {
-    padding: 0 36px 80px;
-    max-width: 1140px; margin: 0 auto;
-  }
-  .section-lbl {
-    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
-    color: rgba(0,69,171,0.7); margin-bottom: 24px; font-weight: 700;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .section-lbl::after {
-    content: ''; flex: 1; height: 1px; background: var(--border);
-  }
-  .cards-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .cards-section { padding:0 36px 80px; max-width:1100px; margin:0 auto; }
+  .section-lbl { font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:rgba(0,69,171,0.7); margin-bottom:32px; font-weight:700; }
+  .cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
 
   .card {
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 14px; padding: 28px 24px 72px;
-    text-decoration: none; color: inherit; display: block;
-    position: relative; overflow: hidden;
-    transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:30px 26px 72px; text-decoration:none; color:inherit; display:block;
+    position:relative; overflow:hidden;
+    transition:transform 0.2s, border-color 0.2s, background 0.2s;
   }
-  .card::before {
-    content: ''; position: absolute;
-    top: 0; left: 0; right: 0; height: 2px;
-    background: var(--card-accent, var(--primary));
-    transform: scaleX(0); transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-  .card:hover {
-    transform: translateY(-4px);
-    border-color: var(--border-hi);
-    background: var(--panel2);
-  }
-  .card:hover::before { transform: scaleX(1); }
+  .card::after { content:''; position:absolute; top:0;left:0;right:0; height:3px; background:var(--accent-bar,var(--primary-lt)); transform:scaleX(0); transform-origin:left; transition:transform 0.3s; }
+  .card:hover { transform:translateY(-4px); border-color:rgba(0,69,171,0.45); background:var(--panel2); }
+  .card:hover::after { transform:scaleX(1); }
 
-  .card-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 3px 10px; border-radius: 20px;
-    font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-    margin-bottom: 18px;
-  }
-  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-  .badge-silver  { background: rgba(167,204,231,0.12); color: #A7CCE7; border: 1px solid rgba(167,204,231,0.2); }
-  .badge-plat    { background: rgba(255,187,0,0.12); color: var(--orange); border: 1px solid rgba(255,187,0,0.2); }
-  .badge-rlca    { background: rgba(167,243,208,0.12); color: #A7F3D0; border: 1px solid rgba(167,243,208,0.2); }
+  .card-badge { display:inline-block; padding:3px 11px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; margin-bottom:16px; }
+  .badge-silver { background:rgba(167,204,231,0.12); color:#A7CCE7; border:1px solid rgba(167,204,231,0.2); }
+  .badge-plat   { background:rgba(255,187,0,0.12); color:var(--orange); border:1px solid rgba(255,187,0,0.2); }
+  .badge-rlca   { background:rgba(167,243,208,0.12); color:#A7F3D0; border:1px solid rgba(167,243,208,0.2); }
 
-  .card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; line-height: 1.3; letter-spacing: -0.01em; }
-  .card p  { font-size: 13px; line-height: 1.65; color: var(--dim); margin-bottom: 20px; }
-  .card-pills { display: flex; gap: 7px; flex-wrap: wrap; }
-  .pill {
-    padding: 3px 9px; border-radius: 5px; font-size: 11px;
-    background: rgba(0,69,171,0.12); color: rgba(167,204,231,0.7);
-    border: 1px solid rgba(0,69,171,0.2);
-  }
+  .card h3 { font-size:19px; font-weight:700; margin-bottom:10px; line-height:1.25; }
+  .card p  { font-size:13px; line-height:1.6; color:var(--dim); margin-bottom:24px; }
+  .card-pills { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { padding:3px 9px; border-radius:4px; font-size:11px; background:rgba(0,69,171,0.12); color:rgba(167,204,231,0.7); border:1px solid rgba(0,69,171,0.2); }
 
-  .card-arrow {
-    position: absolute; bottom: 24px; right: 24px;
-    width: 34px; height: 34px; border-radius: 8px;
-    border: 1.5px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.2s, border-color 0.2s;
-  }
-  .card:hover .card-arrow { background: var(--orange); border-color: var(--orange); }
-  .card:hover .card-arrow path { stroke: #050d1a; }
+  .card-arrow { position:absolute; bottom:26px; right:26px; width:32px; height:32px; border-radius:8px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; transition:background 0.2s,border-color 0.2s; }
+  .card:hover .card-arrow { background:var(--orange); border-color:var(--orange); }
+  .card:hover .card-arrow path { stroke:#050d1a; }
 
-  /* ── FOOTER ── */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 20px 36px;
-    display: flex; justify-content: space-between; align-items: center;
-    color: var(--mid); font-size: 12px;
-  }
-  .footer-logo { display: flex; align-items: center; gap: 8px; }
-  .footer-logo span { font-weight: 700; font-size: 13px; color: rgba(255,255,255,0.4); }
-  .footer-logo em { color: var(--orange); font-style: normal; }
+  footer { border-top:1px solid var(--border); padding:22px 36px; display:flex; justify-content:space-between; align-items:center; color:var(--mid); font-size:12px; }
 
   @media(max-width:800px){
-    nav, footer { padding: 12px 16px; }
-    .hero, .stat-bar, .cards-section { padding-left: 16px; padding-right: 16px; }
-    .cards-grid { grid-template-columns: 1fr; }
-    .stat-row { flex-direction: column; }
+    nav,footer{padding:12px 16px;}
+    .hero,.cards-section{padding-left:16px;padding-right:16px;}
+    .cards-grid{grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -236,8 +89,8 @@
 
 <nav>
   <a class="nav-logo" href="index.html">
-    <img class="nav-logo-icon" src="TASA Logo Blue copy.png" alt="TASA Analytics">
-    <div class="nav-logo-text">TASA <em>EFX</em></div>
+    <img src="TASA Logo Blue copy.png" alt="TASA EFX">
+    <span>TASA <em>EFX</em></span>
   </a>
   <div class="nav-links">
     <a href="index.html" class="active">Home</a>
@@ -248,51 +101,30 @@
 </nav>
 
 <section class="hero">
-  <p class="eyebrow">TASA Analytics · Emissions Intelligence</p>
+  <!-- PLACEHOLDER: update eyebrow / tagline / description -->
+  <p class="eyebrow">TASA EFX · Emissions Intelligence</p>
   <h1>Sector Carbon Data<br><span>You Can Act On</span></h1>
   <p>
     From NAICS/ISIC silver benchmarks to platinum supply-chain Sankeys and rapid lifecycle assessments — TASA EFX delivers emissions intelligence for every stage of your analysis.
   </p>
   <div class="hero-btns">
-    <a href="silver.html" class="btn-primary">Explore Silver Model →</a>
-    <a href="platinum.html" class="btn-ghost">Platinum Model</a>
-    <a href="rlca.html" class="btn-ghost">rLCA Model</a>
+    <a href="silver.html" class="btn-primary">Explore Silver Model</a>
+    <a href="platinum.html" class="btn-ghost">Explore Platinum Model</a>
+    <a href="rlca.html" class="btn-ghost">Explore rLCA Model</a>
   </div>
 </section>
-
-<div class="stat-bar">
-  <div class="stat-row">
-    <div class="stat-item">
-      <div class="stat-num">190+</div>
-      <div class="stat-lbl">Countries Covered</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-num">500+</div>
-      <div class="stat-lbl">ISIC Sectors</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-num">2020–2024</div>
-      <div class="stat-lbl">Year Range</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-num">3</div>
-      <div class="stat-lbl">Scope Breakdowns</div>
-    </div>
-  </div>
-</div>
 
 <section class="cards-section">
   <p class="section-lbl">Platform Tools</p>
   <div class="cards-grid">
 
-    <a href="silver.html" class="card" style="--card-accent:#A7CCE7;">
-      <span class="card-badge badge-silver"><span class="badge-dot"></span>Silver</span>
+    <a href="silver.html" class="card" style="--accent:#6B88B4;">
+      <span class="card-badge badge-silver">Silver</span>
       <h3>NAICS / ISIC<br>Emissions Tables</h3>
+      <!-- PLACEHOLDER: update card descriptions -->
       <p>Benchmark Scope 1, 2 &amp; 3 emissions intensity across industry sectors and countries for 2020–2024.</p>
       <div class="card-pills">
-        <span class="pill">Scope 1/2/3</span>
-        <span class="pill">2020–2024</span>
-        <span class="pill">NAICS · ISIC</span>
+        <span class="pill">Scope 1/2/3</span><span class="pill">2020–2024</span><span class="pill">NAICS · ISIC</span>
       </div>
       <div class="card-arrow">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -301,14 +133,12 @@
       </div>
     </a>
 
-    <a href="platinum.html" class="card" style="--card-accent:#FFBB00;">
-      <span class="card-badge badge-plat"><span class="badge-dot"></span>Platinum</span>
+    <a href="platinum.html" class="card" style="--accent:#F5A623;">
+      <span class="card-badge badge-plat">Platinum</span>
       <h3>Supply-Chain<br>Sankey Analysis</h3>
-      <p>Trace emissions through Tier 1 input sectors with an interactive Sankey flow diagram and deep-dive breakdowns.</p>
+      <p>Trace emissions through Tier 1 input sectors with an interactive Sankey flow diagram.</p>
       <div class="card-pills">
-        <span class="pill">Sankey Flow</span>
-        <span class="pill">Tier 1 Inputs</span>
-        <span class="pill">Deep Dive</span>
+        <span class="pill">Sankey Flow</span><span class="pill">Tier 1 Inputs</span><span class="pill">Deep Dive</span>
       </div>
       <div class="card-arrow">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -317,14 +147,12 @@
       </div>
     </a>
 
-    <a href="rlca.html" class="card" style="--card-accent:#A7F3D0;">
-      <span class="card-badge badge-rlca"><span class="badge-dot"></span>rLCA</span>
+    <a href="rlca.html" class="card" style="--accent:#1ABC9C;">
+      <span class="card-badge badge-rlca">rLCA</span>
       <h3>Rapid Lifecycle<br>Assessment</h3>
-      <p>Baseline emissions structure at the sector level — scope breakdown, Tier 1 hotspots, and full lifecycle flow.</p>
+      <p>Baseline emissions structure at the sector level — scope breakdown, Tier 1 hotspots, and lifecycle flow.</p>
       <div class="card-pills">
-        <span class="pill">Lifecycle</span>
-        <span class="pill">Hotspot View</span>
-        <span class="pill">Baseline</span>
+        <span class="pill">Lifecycle</span><span class="pill">Hotspot View</span><span class="pill">Baseline</span>
       </div>
       <div class="card-arrow">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -337,10 +165,9 @@
 </section>
 
 <footer>
-  <div class="footer-logo">
-    <span>TASA <em>EFX</em> · Emissions Intelligence Platform</span>
-  </div>
-  <span>© 2025 TASA Analytics. All rights reserved.</span>
+  <!-- PLACEHOLDER: update copyright / contact -->
+  <span>© 2025 TASA EFX. All rights reserved.</span>
+  <span>Emissions Intelligence Platform</span>
 </footer>
 
 </body>
