@@ -47,15 +47,17 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .nav-links a.active{color:var(--white);background:rgba(0,69,171,0.25);}
 
 /* PAGE HEADER */
-.ph{padding:28px 36px 20px;border-bottom:1px solid var(--border);}
-.ph .ey{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:7px;
-  display:inline-flex;align-items:center;gap:8px;font-weight:600;}
-.ph .ey::before{content:'';width:16px;height:2px;background:var(--orange);border-radius:2px;}
-.ph h1{font-size:22px;font-weight:800;margin-bottom:5px;letter-spacing:-0.02em;}
-.ph p{font-size:13px;color:var(--dim);line-height:1.6;max-width:540px;}
+.ph{margin:20px 24px 0;background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:20px 24px 16px;border-left:3px solid var(--orange);}
+.ph-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;
+  font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  background:rgba(255,187,0,0.12);color:var(--orange);border:1px solid rgba(255,187,0,0.25);margin-bottom:8px;}
+.ph-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
+.ph-title{font-size:20px;font-weight:800;color:var(--white);letter-spacing:-0.02em;margin-bottom:4px;}
+.ph-sub{font-size:12px;color:var(--mid);max-width:540px;line-height:1.6;}
 
 /* TABS */
-.tabs{display:flex;padding:0 36px;border-bottom:1px solid var(--border);}
+.tabs{display:flex;padding:0 24px;border-bottom:1px solid var(--border);margin-top:16px;}
 .tb{padding:11px 18px;background:none;border:none;border-bottom:2px solid transparent;
     color:var(--dim);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;
     transition:color .2s,border-color .2s;margin-bottom:-1px;}
@@ -64,8 +66,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .pane{display:none;}.pane.on{display:block;}
 
 /* Controls bar */
-.filters{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;
-         padding:18px 36px;border-bottom:1px solid var(--border);}
+.filters{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+         display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;
+         padding:14px 20px;margin:12px 24px 0;}
 .fg{display:flex;flex-direction:column;gap:4px;}
 .fg label{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--accent-blue);font-weight:700;}
 .fg select{background:var(--bg);border:1.5px solid var(--border);
@@ -74,7 +77,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .fg select:focus{outline:none;border-color:var(--primary-lt);}
 .fg select option{background:var(--panel);}
 
-.main{padding:24px 36px;}
+.main{padding:20px 24px;}
 
 /* Upsell overlay */
 .upsell-overlay{position:fixed;inset:0;background:rgba(2,6,16,0.93);backdrop-filter:blur(12px);
@@ -174,7 +177,7 @@ footer{border-top:1px solid var(--border);padding:18px 36px;display:flex;justify
   align-items:center;color:var(--mid);font-size:12px;margin-top:40px;}
 @media(max-width:780px){
   nav,footer{padding:12px 16px;}
-  .ph,.filters,.main{padding-left:16px;padding-right:16px;}
+  .ph,.filters,.main{margin-left:12px;margin-right:12px;padding-left:16px;padding-right:16px;}
   .tabs{padding:0 16px;}.cg2{grid-template-columns:1fr;}
 }
 </style>
@@ -188,7 +191,7 @@ footer{border-top:1px solid var(--border);padding:18px 36px;display:flex;justify
     <h2>Unlock <span>Platinum</span> Access</h2>
     <p>This data is available exclusively in our <strong>Platinum tier</strong>. Get full supply-chain Sankey diagrams and Tier 1 emissions breakdowns for every sector and year.</p>
     <div class="upsell-actions">
-      <a href="mailto:info@tasaanalytics.com" class="upsell-btn">Contact Us to Upgrade →</a>
+      <a href="/cdn-cgi/l/email-protection#bad3d4dcd5facedbc9dbdbd4dbd6c3ced3d9c994d9d5d7" class="upsell-btn">Contact Us to Upgrade →</a>
       <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
     </div>
   </div>
@@ -208,9 +211,9 @@ footer{border-top:1px solid var(--border);padding:18px 36px;display:flex;justify
 </nav>
 
 <div class="ph">
-  <p class="ey">Platinum Model · Supply-Chain Analysis</p>
-  <h1>Sankey Emissions Flow Dashboard</h1>
-  <p>Trace emissions through Tier 1 input sectors using Korea country-sector data. Select a sector and year to explore the supply-chain breakdown.</p>
+  <div class="ph-badge">Platinum</div>
+  <div class="ph-title">Sankey Emissions Flow Dashboard</div>
+  <div class="ph-sub">Trace emissions through Tier 1 input sectors using Korea country-sector data. Select a sector and year to explore the supply-chain breakdown.</div>
 </div>
 
 <div class="tabs">
@@ -264,7 +267,7 @@ footer{border-top:1px solid var(--border);padding:18px 36px;display:flex;justify
   <span>© 2025 TASA Analytics. All rights reserved.</span>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ══════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════
@@ -775,9 +778,4 @@ function renderTable(){
     renderDashboard(sSel.value, '2023');
 
   } catch(e){
-    showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure both files are in the root of your GitHub repo.');
-  }
-})();
-</script>
-</body>
-</html>
+    showError(
