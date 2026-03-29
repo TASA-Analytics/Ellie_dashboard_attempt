@@ -64,7 +64,7 @@ select option:checked{background:#0a2a5e;color:var(--primary-lt);}
              border-radius:10px;overflow:hidden;min-height:200px;}
 
 .chart-scroll{overflow-x:auto;width:100%;}
-svg.chart{display:block;overflow:visible;}
+svg.chart{display:block;overflow:visible;min-width:100%;}
 
 .state-msg{display:flex;align-items:center;justify-content:center;min-height:300px;
   padding:40px;text-align:center;color:var(--mid);font-size:14px;
@@ -384,16 +384,24 @@ function render(){
   const maxY   = Math.max(...agg.map(r=>r.Total)) * 1.08 || 1;
 
   // ── SVG dimensions ──
-  // Map numeric x-position to pixels
+  // Fill the full container width; only scroll when content is wider
   const LPAD=64, RPAD=24, TPAD=52, BPAD=180;
-  const UNIT = BAR_W + BAR_GAP; // pixels per x-unit
-  const chartW = LPAD + RPAD + (maxX + 1) * UNIT;
+  const containerW = document.getElementById('chart-area').clientWidth || 900;
+  const naturalW   = LPAD + RPAD + (maxX + 1) * (BAR_W + BAR_GAP);
+  // If natural width is smaller than container, scale UNIT up to fill evenly
+  const totalBars  = maxX + 1;
+  const availW     = Math.max(naturalW, containerW);
+  const UNIT       = (availW - LPAD - RPAD) / totalBars;
+  const chartW     = availW;
   const chartH = 520;
   const plotH  = chartH - TPAD - BPAD;
   const plotW  = chartW - LPAD - RPAD;
 
-  const px = x => LPAD + x * UNIT + UNIT/2 - BAR_W/2;  // left edge of bar at x-pos
-  const py = v => TPAD + plotH - (v / maxY) * plotH;    // y pixel for value v
+  // Recalculate bar width proportionally — cap so bars don't get too fat
+  const scaledBarW = Math.min(60, Math.max(BAR_W, UNIT * 0.55));
+
+  const px = x => LPAD + x * UNIT + UNIT/2 - scaledBarW/2;  // left edge of bar at x-pos
+  const py = v => TPAD + plotH - (v / maxY) * plotH;         // y pixel for value v
 
   // Y grid lines
   const yTicks = 5;
@@ -438,7 +446,7 @@ function render(){
       const bx    = px(row.xPos).toFixed(1);
       const by    = py(below+val).toFixed(1);
       const bh    = Math.max(1, ((val/maxY)*plotH)).toFixed(1);
-      const bw    = BAR_W;
+      const bw    = scaledBarW;
       // Tooltip data embedded as data-* attributes
       bars += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}"
         fill="${SCOPE_COLORS[scope]}" opacity="0.92" rx="1"
@@ -456,7 +464,7 @@ function render(){
   // X tick labels (year, below each bar)
   let xTicks = '';
   tickVals.forEach((xv,i)=>{
-    const cx = (px(xv) + BAR_W/2).toFixed(1);
+    const cx = (px(xv) + scaledBarW/2).toFixed(1);
     xTicks += `<text x="${cx}" y="${(TPAD+plotH+14).toFixed(1)}" text-anchor="middle"
       fill="#A7CCE7" font-size="10" font-family="DM Sans,Segoe UI,sans-serif">${tickTexts[i]}</text>`;
   });
@@ -465,7 +473,7 @@ function render(){
   let secLabels = '';
   Object.entries(sectorLabelPos).forEach(([key, midX])=>{
     const [,sec] = key.split('|||');
-    const cx = (px(midX) + BAR_W/2).toFixed(1);
+    const cx = (px(midX) + scaledBarW/2).toFixed(1);
     const words = sec.split(/\s+/);
     // wrap to ~16 chars per line
     const lines = [];
@@ -485,7 +493,7 @@ function render(){
   // Country labels (bottom) — matches Python annotation at y=-0.58
   let ctyLabels = '';
   Object.entries(countryLabelPos).forEach(([country, midX])=>{
-    const cx = (px(midX) + BAR_W/2).toFixed(1);
+    const cx = (px(midX) + scaledBarW/2).toFixed(1);
     ctyLabels += `<text x="${cx}" y="${(TPAD+plotH+110).toFixed(1)}" text-anchor="middle"
       fill="#A7CCE7" font-size="13" font-weight="bold" font-family="DM Sans,Segoe UI,sans-serif">${escSVG(country)}</text>`;
   });
@@ -495,7 +503,7 @@ function render(){
   const validCountries = countries.filter(c=>agg.some(r=>r.country===c));
   validCountries.slice(0,-1).forEach(country=>{
     const lastX = Math.max(...agg.filter(r=>r.country===country).map(r=>r.xPos));
-    const sepX  = (px(lastX) + BAR_W + (GAP_SECTOR/2+GAP_COUNTRY/3)*UNIT).toFixed(1);
+    const sepX  = (px(lastX) + scaledBarW + (GAP_SECTOR/2+GAP_COUNTRY/3)*UNIT).toFixed(1);
     separators += `<line x1="${sepX}" y1="${TPAD}" x2="${sepX}" y2="${(TPAD+plotH).toFixed(1)}"
       stroke="#0045AB" stroke-width="1" stroke-dasharray="4,3"/>`;
   });
@@ -546,6 +554,10 @@ function render(){
 }
 
 function escSVG(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Re-render chart on window resize
+let _resizeTimer;
+window.addEventListener('resize', ()=>{ clearTimeout(_resizeTimer); _resizeTimer=setTimeout(render, 120); });
 
 // Raw data table
 function renderTable(){
