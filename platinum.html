@@ -95,8 +95,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .bar-track{height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:5px;transition:width .5s ease;}
 
-.sankey-wrap{overflow-x:auto;border-radius:8px;background:linear-gradient(135deg,#e8f0f7,#f0f5f9);padding:16px;}
-.sankey-wrap canvas{display:block;}
+.sankey-wrap{overflow-x:auto;border-radius:8px;background:#0a1628;padding:0;width:100%;}
+.sankey-wrap canvas{display:block;width:100% !important;}
 
 .hbar-chart{display:flex;flex-direction:column;gap:7px;}
 .hbar-row{display:flex;align-items:center;gap:8px;font-size:11px;}
@@ -254,9 +254,13 @@ const FREE_YEARS      = ['2017','2020','2022','2023'];
 // any sector not in South Korea list triggers upsell
 // ══════════════════════════════════════════════════════════════
 
-const T1_COLORS=['#0045AB','#8C5ACC','#3FA9F6','#A7F3D0','#B98EFF','#A7CCE7',
-  '#D4AF37','#FF66B3','#0045AB','#8C5ACC','#3FA9F6','#A7F3D0','#B98EFF',
-  '#A7CCE7','#D4AF37','#FF66B3','#0045AB','#8C5ACC','#3FA9F6','#A7F3D0','#B98EFF'];
+const T1_COLORS=[
+  '#0045AB','#1a5cbf','#2e6fd4','#0d3d8a','#163f7a',
+  '#8C5ACC','#7a48bb','#6a3aab','#5a2d99','#4a2080',
+  '#3FA9F6','#2a94e0','#1a80cc','#0f6ab8','#0a55a0',
+  '#A7CCE7','#8ab8d8','#6da4c8','#5090b8','#3478a0',
+  '#D4AF37','#b89a2a'
+];
 const S_COLORS=['#B98EFF','#3FA9F6','#A7F3D0'];
 const C={s1:'#B98EFF',s2:'#3FA9F6',s3:'#A7F3D0'};
 
@@ -601,18 +605,38 @@ function setCanvasMode(mode){
   drawCanvas(window._ptData,mode);
 }
 
+let _ptResizeTimer;
+window.addEventListener('resize',()=>{
+  clearTimeout(_ptResizeTimer);
+  _ptResizeTimer=setTimeout(()=>{ if(window._ptData) drawCanvas(window._ptData,canvasMode); },120);
+});
+
 // ── Canvas Sankey ─────────────────────────────────────────────
 function drawCanvas(d,mode){
   const C2=document.getElementById('sankey-canvas');
   if(!C2) return;
-  const TOP=72,LPAD=14,FULL_H=Math.max(620,d.tier1.length*44),BOX_GAP=3,MIN_BOX=10;
-  const ANC_W=120,SC_W=106,T1_W=230,LF_W=106,GAP=136;
+
+  // Fill the full container width
+  const wrap = C2.parentElement;
+  const containerW = wrap ? wrap.clientWidth : 900;
+
+  const TOP=72,LPAD=20,FULL_H=Math.max(620,d.tier1.length*44),BOX_GAP=3,MIN_BOX=10;
+  // Distribute column widths proportionally to fill containerW
+  const ANC_W=Math.round(containerW*0.10);
+  const SC_W =Math.round(containerW*0.09);
+  const T1_W =Math.round(containerW*0.22);
+  const LF_W =Math.round(containerW*0.09);
+  const GAP  =Math.round(containerW*0.10);
   const ANC_X=LPAD,SC_X=ANC_X+ANC_W+GAP,T1_X=SC_X+SC_W+GAP,LF_X=T1_X+T1_W+GAP;
-  const TW=LF_X+LF_W+LPAD+10,TH=TOP+FULL_H+32;
+  const TW=Math.max(containerW, LF_X+LF_W+LPAD),TH=TOP+FULL_H+32;
   const DPR=window.devicePixelRatio||1;
   C2.width=TW*DPR; C2.height=TH*DPR;
   C2.style.width=TW+'px'; C2.style.height=TH+'px';
   const ctx=C2.getContext('2d'); ctx.scale(DPR,DPR);
+
+  // Dark canvas background
+  ctx.fillStyle='#0a1628';
+  ctx.fillRect(0,0,TW,TH);
 
   const hits=[];
   function regHit(x,y,w,h,label,val){ hits.push({x,y,w,h,label,val}); }
@@ -691,10 +715,10 @@ function drawCanvas(d,mode){
   }
 
   function hdr(x,w,l1,l2){
-    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#002d6e';
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#A7CCE7';
     ctx.font="700 10px 'Segoe UI',Arial,sans-serif"; ctx.fillText(l1,x+w/2,TOP-(l2?23:13));
-    if(l2){ctx.font="400 8px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='#A7CCE7';ctx.fillText(l2,x+w/2,TOP-10);}
-    ctx.strokeStyle='rgba(26,63,100,0.15)';ctx.lineWidth=1;
+    if(l2){ctx.font="400 8px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='rgba(167,204,231,0.55)';ctx.fillText(l2,x+w/2,TOP-10);}
+    ctx.strokeStyle='rgba(0,69,171,0.3)';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(x+3,TOP-2);ctx.lineTo(x+w-3,TOP-2);ctx.stroke();
   }
 
@@ -786,7 +810,7 @@ function drawCanvas(d,mode){
     smY=TOP; d.summed.forEach((sm,si)=>{const h=smH[si];drawBox(LF_X,smY,LF_W,h,S_COLORS[si],sm.label,sm.pct,sm.val,10);smY+=h+BOX_GAP;});
   }
 
-  ctx.font="400 7px 'Segoe UI',Arial,sans-serif"; ctx.fillStyle='rgba(80,110,140,0.5)';
+  ctx.font="400 7px 'Segoe UI',Arial,sans-serif"; ctx.fillStyle='rgba(167,204,231,0.45)';
   ctx.textAlign='left'; ctx.textBaseline='top';
   ctx.fillText('Mg CO₂e per Million USD · '+d.year,ANC_X,TOP+FULL_H+12);
 }
