@@ -9,7 +9,7 @@
   --navy:#050d1a; --navy2:#0a1628; --panel:#0d1c35;
   --primary:#0045AB; --primary-lt:#A7CCE7; --accent:#3FA9F6;
   --orange:#FFBB00; --white:#F4F5F5;
-  --s1:#FF66B3; --s2:#D4AF37; --s3:#3FA9F6;
+  --s1:#B98EFF; --s2:#3FA9F6; --s3:#A7F3D0;
   --dim:rgba(244,245,245,0.40); --bdr:rgba(0,69,171,0.22);
   --mid:rgba(255,255,255,0.28);
 }
@@ -183,7 +183,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 const CSV_URL = 'TASA_open_silver_stacked_output_all.csv';
 // ══════════════════════════════════════════
 
-const SCOPE_COLORS = {'Scope 1':'#FF66B3','Scope 2':'#D4AF37','Scope 3':'#3FA9F6'};
+const SCOPE_COLORS = {'Scope 1':'#B98EFF','Scope 2':'#3FA9F6','Scope 3':'#A7F3D0'};
 const GAP_SECTOR   = 0.6;   // gap between country-sectors within a country (matches Python)
 const GAP_COUNTRY  = 1.8;   // gap between countries (matches Python)
 const BAR_W        = 28;    // pixel width per bar unit
@@ -532,9 +532,9 @@ function render(){
         <span style="color:#A7CCE7">${d.sector} · ${d.year}</span><br><br>
         <b>Total: ${d.total}</b><br>
         <span style="color:#0045AB">──────────────</span><br>
-        <span style="color:#FF66B3">▮</span> Scope 1 &nbsp; ${d.s1}<br>
-        <span style="color:#D4AF37">▮</span> Scope 2 &nbsp; ${d.s2}<br>
-        <span style="color:#3FA9F6">▮</span> Scope 3 &nbsp; ${d.s3}`;
+        <span style="color:#B98EFF">▮</span> Scope 1 &nbsp; ${d.s1}<br>
+        <span style="color:#3FA9F6">▮</span> Scope 2 &nbsp; ${d.s2}<br>
+        <span style="color:#A7F3D0">▮</span> Scope 3 &nbsp; ${d.s3}`;
       tip.style.display='block';
     });
     rect.addEventListener('mousemove', e=>{
