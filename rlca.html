@@ -12,13 +12,13 @@
   --panel: #0d1c35;
   --primary:#0045AB; --primary-lt:#A7CCE7; --accent:#3FA9F6;
   --orange: #FFBB00;
-  --white: #e8f0ff;
-  --s1:    #FF66B3;
-  --s2:    #FFBB00;
-  --teal:  #1ABC9C;
-  --dim:   rgba(255,255,255,0.40);
+  --white: #F4F5F5;
+  --s1:    #B98EFF;
+  --s2:    #3FA9F6;
+  --teal:  #A7F3D0;
+  --dim:   rgba(244,245,245,0.40);
   --bdr:   rgba(0,69,171,0.22);
-  --mid:   rgba(255,255,255,0.28);
+  --mid:   rgba(244,245,245,0.28);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--white);min-height:100vh;}
@@ -37,7 +37,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px
 
 .ph{background:var(--navy2);border:1px solid var(--bdr);border-radius:12px;
     padding:20px 24px 16px;margin:20px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
-.ph-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:rgba(26,188,156,0.15);color:var(--teal);margin-bottom:8px;}
+.ph-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:rgba(167,243,208,0.15);color:var(--teal);margin-bottom:8px;}
 .ph-title{font-size:22px;font-weight:800;color:var(--white);letter-spacing:-0.02em;margin-bottom:4px;}
 .ph-sub{font-size:12px;color:var(--mid);max-width:600px;line-height:1.6;}
 .ph-stats{display:flex;gap:12px;flex-shrink:0;flex-wrap:wrap;align-items:flex-start;}
@@ -56,7 +56,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px
 .fg select option{background:var(--navy2);}
 .filter-free-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:4px;
   font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
-  background:rgba(26,188,156,0.12);border:1px solid rgba(26,188,156,0.3);color:var(--teal);
+  background:rgba(167,243,208,0.12);border:1px solid rgba(167,243,208,0.3);color:var(--teal);
   align-self:flex-end;margin-bottom:1px;}
 
 .upsell-overlay{position:fixed;inset:0;background:rgba(5,10,25,0.93);backdrop-filter:blur(10px);
@@ -118,9 +118,9 @@ select option{background:var(--navy2);color:var(--white);}
   border:1.5px solid var(--bdr);color:var(--dim);cursor:pointer;
   transition:all .2s;background:none;font-family:inherit;letter-spacing:0.04em;}
 .scope-pill:hover{border-color:var(--white);color:var(--white);}
-.scope-pill.active-total{background:rgba(26,188,156,0.18);border-color:var(--teal);color:var(--teal);}
-.scope-pill.active-s1{background:rgba(255,102,179,0.18);border-color:var(--s1);color:var(--s1);}
-.scope-pill.active-s2{background:rgba(255,187,0,0.18);border-color:var(--s2);color:var(--s2);}
+.scope-pill.active-total{background:rgba(167,243,208,0.18);border-color:var(--teal);color:var(--teal);}
+.scope-pill.active-s1{background:rgba(185,142,255,0.18);border-color:var(--s1);color:var(--s1);}
+.scope-pill.active-s2{background:rgba(63,169,246,0.18);border-color:var(--s2);color:var(--s2);}
 
 .chart-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 14px;overflow:hidden;}
 .chart-hdr{padding:14px 18px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
@@ -173,7 +173,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
     <h2>Unlock <span>Full rLCA</span> Access</h2>
     <p id="upsell-msg">rLCA reports for additional countries, sectors, and years are available through TASA EFX. <strong>Contact us</strong> to get access to the full dataset.</p>
     <div class="upsell-actions">
-      <a href="#" onclick="window.location.href='mai'+'lto:info@tasa-efx.com';return false;" class="upsell-btn">Contact TASA EFX →</a>
+      <a href="https://tasa-efx.com/rlca/" class="upsell-btn" target="_blank" rel="noopener">Contact TASA EFX →</a>
       <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
     </div>
   </div>
@@ -361,15 +361,15 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 const XLSX_FILE  = 'TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx';
 const SHEET_NAME = '10 Tiers_all_sectors';
 const EF_SHEET   = 'Sector Emissions Factors';
-const SILVER_CSV = 'TASA_Silver_NAICS_ISIC.csv';
+const SILVER_CSV = 'TASA_open_silver_stacked_output_all.csv';
 const DEFAULT_COUNTRY = 'South Korea';
 const DEFAULT_SECTOR  = 'South Korea — Abrasive Material';
 const FREE_YEAR       = '2023';
 // ══════════════════════════════════════════════════════
 
-const S1_COLOR = '#e8534a';
-const S2_COLOR = '#f0a500';
-const TEAL_COL = '#1ABC9C';
+const S1_COLOR = '#B98EFF';
+const S2_COLOR = '#3FA9F6';
+const TEAL_COL = '#A7F3D0';
 
 let tableData   = [];
 let s1Cols      = [];
@@ -449,7 +449,7 @@ function loadExcel(wb) {
 
 function showError(msg) {
   document.getElementById('loading-state').innerHTML =
-    `<div style="color:#e8534a;text-align:center;font-size:13px;line-height:1.8;max-width:480px">
+    `<div style="color:#B98EFF;text-align:center;font-size:13px;line-height:1.8;max-width:480px">
       <div style="font-size:32px;margin-bottom:10px">⚠️</div>
       <strong>Could not load data</strong><br>${msg}<br>
       <span style="color:var(--mid);font-size:11px">Ensure
@@ -557,7 +557,7 @@ function renderTierBarChart() {
   // Update chart subtitle
   const scopeLbl = scopeFilter==='s1' ? 'Scope 1 · Direct only'
                  : scopeFilter==='s2' ? 'Scope 2 · Electricity only'
-                 : 'Scope 1 (red) and Scope 2 (amber)';
+                 : 'Scope 1 (lavender) and Scope 2 (blue)';
   const secLbl   = selectedSector==='all' ? 'all input sectors' : selectedSector;
   document.getElementById('chart-sub-text').textContent =
     `${scopeLbl} · ${secLbl} · each upstream tier`;
@@ -591,8 +591,8 @@ function renderDonuts(tierTotals, selectedSector) {
     return a + (showS1?t.s1:0) + (showS2?t.s2:0);
   }, 0);
   drawDonut('donut-tier',[
-    {label:'Tiers 0–3 · Near-term',   val:early, color:TEAL_COL},
-    {label:'Tiers 4–10 · Deep chain', val:late,  color:'#7c5cbf'}
+    {label:'Tiers 0–3 · Near-term',   val:early, color:'#D4AF37'},
+    {label:'Tiers 4–10 · Deep chain', val:late,  color:'#FF66B3'}
   ], grand, 'donut-tier-legend');
 
   // Update donut subtitles
@@ -756,7 +756,7 @@ function buildSilverMap(csvText) {
   const rows=parseCSV(csvText);
   silverMap={};
   rows.forEach(row=>{
-    const c=row['Country Name'],s=row['Country Sector'];
+    const c=row['Country'],s=row['Country Sectors'];
     if(!c||!s) return;
     if(!silverMap[c]) silverMap[c]=new Set();
     silverMap[c].add(s);

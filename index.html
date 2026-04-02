@@ -14,11 +14,11 @@
     --accent:     #3FA9F6;
     --orange:     #FFBB00;
     --border:     rgba(0,69,171,0.22);
-    --dim:        rgba(255,255,255,0.48);
-    --mid:        rgba(255,255,255,0.28);
+    --dim:        rgba(244,245,245,0.48);
+    --mid:        rgba(244,245,245,0.28);
   }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:'Inter','Segoe UI',Arial,sans-serif; background:var(--navy); color:#e8f0ff; min-height:100vh; }
+  body { font-family:'Inter','Segoe UI',Arial,sans-serif; background:var(--navy); color:#F4F5F5; min-height:100vh; }
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
   nav {
@@ -27,15 +27,15 @@
     background:rgba(5,13,26,0.97); border-bottom:1px solid var(--border);
     position:sticky; top:0; z-index:100; backdrop-filter:blur(12px);
   }
-  .nav-logo { display:flex; align-items:center; gap:12px; text-decoration:none; color:#e8f0ff; }
+  .nav-logo { display:flex; align-items:center; gap:12px; text-decoration:none; color:#F4F5F5; }
   .nav-logo img { height:36px; width:auto; display:block; }
   .nav-logo span { font-size:15px; font-weight:700; letter-spacing:-0.01em; }
   .nav-logo span em { color:var(--orange); font-style:normal; }
   .nav-links { display:flex; gap:4px; }
   .nav-links a { color:var(--dim); text-decoration:none; font-size:13px; font-weight:500;
     padding:6px 12px; border-radius:6px; transition:background .15s,color .15s; }
-  .nav-links a:hover { color:#e8f0ff; background:rgba(255,255,255,0.06); }
-  .nav-links a.active { color:#e8f0ff; background:rgba(0,69,171,0.25); }
+  .nav-links a:hover { color:#F4F5F5; background:rgba(255,255,255,0.06); }
+  .nav-links a.active { color:#F4F5F5; background:rgba(0,69,171,0.25); }
 
   .hero { padding:80px 36px 60px; max-width:1100px; margin:0 auto; }
   .hero .eyebrow { font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; font-weight:600; }
@@ -120,7 +120,7 @@
 
     <a href="silver.html" class="card" style="--accent:#6B88B4;">
       <span class="card-badge badge-silver">Silver</span>
-      <h3>NAICS / ISIC<br>Emissions Tables</h3>
+      <h3>NAICS<br>Emissions Tables</h3>
       <!-- PLACEHOLDER: update card descriptions -->
       <p>Benchmark Scope 1, 2 &amp; 3 emissions intensity across industry sectors and countries for 2020–2024.</p>
       <div class="card-pills">
@@ -147,7 +147,7 @@
       </div>
     </a>
 
-    <a href="rlca.html" class="card" style="--accent:#1ABC9C;">
+    <a href="rlca.html" class="card" style="--accent:#A7F3D0;">
       <span class="card-badge badge-rlca">rLCA</span>
       <h3>Rapid Life Cycle<br>Assessment</h3>
       <p>Deep-dive emissions structures at the individual commodity level for comprehensive management and mitigation</p>

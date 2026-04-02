@@ -10,25 +10,25 @@
   --navy:#050d1a; --navy2:#0a1628; --panel2:#0d1c35;
   --primary:#0045AB; --primary-lt:#A7CCE7; --accent:#3FA9F6;
   --orange:#FFBB00;
-  --s1:#3FA9F6; --s2:#A7F3D0; --s3:#0045AB;
-  --dim:rgba(255,255,255,0.48); --bdr:rgba(0,69,171,0.22);
-  --mid:rgba(255,255,255,0.28);
+  --s1:#B98EFF; --s2:#3FA9F6; --s3:#A7F3D0;
+  --dim:rgba(244,245,245,0.48); --bdr:rgba(0,69,171,0.22);
+  --mid:rgba(244,245,245,0.28);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--navy);color:#e8f0ff;min-height:100vh;}
+body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--navy);color:#F4F5F5;min-height:100vh;}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px;height:58px;
     background:rgba(5,13,26,0.97);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
-.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:#e8f0ff;}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:#F4F5F5;}
 .nav-logo img{height:36px;width:auto;display:block;}
 .logo-text{font-size:15px;font-weight:700;letter-spacing:-0.01em;}
 .logo-text em{color:var(--orange);font-style:normal;}
 .nav-links{display:flex;gap:4px;}
 .nav-links a{color:var(--dim);text-decoration:none;font-size:13px;font-weight:500;
   padding:6px 12px;border-radius:6px;transition:background .15s,color .15s;}
-.nav-links a:hover{color:#e8f0ff;background:rgba(255,255,255,0.06);}
-.nav-links a.active{color:#e8f0ff;background:rgba(0,69,171,0.25);}
+.nav-links a:hover{color:#F4F5F5;background:rgba(255,255,255,0.06);}
+.nav-links a.active{color:#F4F5F5;background:rgba(0,69,171,0.25);}
 
 .ph{padding:24px 36px 16px;border-bottom:1px solid var(--bdr);}
 .ph .ey{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange);margin-bottom:7px;font-weight:600;}
@@ -39,7 +39,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .tb{padding:13px 20px;background:none;border:none;border-bottom:2.5px solid transparent;
     color:var(--dim);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;
     transition:color .2s,border-color .2s;margin-bottom:-1px;}
-.tb:hover{color:#e8f0ff;}.tb.on{color:#e8f0ff;border-bottom-color:var(--orange);}
+.tb:hover{color:#F4F5F5;}.tb.on{color:#F4F5F5;border-bottom-color:var(--orange);}
 .pane{display:none;}.pane.on{display:block;}
 
 .filters{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;
@@ -47,7 +47,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .fg{display:flex;flex-direction:column;gap:4px;}
 .fg label{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--accent);font-weight:700;}
 .fg select{background:rgba(5,13,26,0.8);border:1.5px solid var(--bdr);
-  color:#e8f0ff;border-radius:7px;padding:7px 12px;font-size:13px;font-family:inherit;
+  color:#F4F5F5;border-radius:7px;padding:7px 12px;font-size:13px;font-family:inherit;
   min-width:220px;appearance:none;cursor:pointer;transition:border-color .2s;}
 .fg select:focus{outline:none;border-color:var(--primary-lt);}
 .fg select option{background:#0a1628;}
@@ -95,8 +95,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .bar-track{height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:5px;transition:width .5s ease;}
 
-.sankey-wrap{overflow-x:auto;border-radius:8px;background:linear-gradient(135deg,#e8f0f7,#f0f5f9);padding:16px;}
-.sankey-wrap canvas{display:block;}
+.sankey-wrap{overflow-x:auto;border-radius:8px;background:#0a1628;padding:0;width:100%;}
+.sankey-wrap canvas{display:block;width:100% !important;}
 
 .hbar-chart{display:flex;flex-direction:column;gap:7px;}
 .hbar-row{display:flex;align-items:center;gap:8px;font-size:11px;}
@@ -117,7 +117,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 
 .tc{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
 .tc input{background:rgba(255,255,255,0.07);border:1.5px solid var(--bdr);
-  color:#e8f0ff;border-radius:7px;padding:7px 11px;font-size:13px;font-family:inherit;width:260px;}
+  color:#F4F5F5;border-radius:7px;padding:7px 11px;font-size:13px;font-family:inherit;width:260px;}
 .tc input::placeholder{color:var(--mid);}
 .tc input:focus{outline:none;border-color:var(--orange);}
 .rc{font-size:12px;color:var(--dim);margin-left:auto;}
@@ -160,7 +160,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
     <!-- EDIT: update contact link -->
     <p>This data is available exclusively in our <strong>Platinum tier</strong>. Get full supply-chain Sankey diagrams and Tier 1 emissions breakdowns for every sector and year.</p>
     <div class="upsell-actions">
-      <a href="/cdn-cgi/l/email-protection#cea7a0a8a18ebaafbdafe3aba8b6e0ada1a3f1bdbbaca4abadbaf39ea2afbaa7a0bba3ee8fadadabbdbdee9cabbfbbabbdba" class="upsell-btn">Contact Us to Upgrade →</a>
+      <a href="https://tasa-efx.com/national-models/" class="upsell-btn" target="_blank" rel="noopener">Contact Us to Upgrade →</a>
       <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
     </div>
   </div>
@@ -183,7 +183,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
   <p class="ey">Platinum Model · Supply-Chain Analysis</p>
   <h1>Supply Chain  Emissions Flows and Hotspots</h1>
   <!-- EDIT: update description -->
-  <p>Trace emissions of supply inputs using locationally-specific data. Select a country, ISIC category, and year to explore the supply-chain breakdown.</p>
+  <p>Trace emissions of supply inputs using locationally-specific data. Select a country, NAICS category, and year to explore the supply-chain breakdown.</p>
 </div>
 
 <div class="tabs">
@@ -239,13 +239,13 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
   <span>Platinum Model · Emissions Intelligence Platform</span>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ══════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════
 const XLSX_FILE       = 'TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx';
 const SHEET_NAME      = 'Hotspots_USD';
-const SILVER_CSV      = 'TASA_Silver_NAICS_ISIC.csv';
+const SILVER_CSV      = 'TASA_open_silver_stacked_output_all.csv';
 
 const DEFAULT_COUNTRY = 'South Korea';
 const DEFAULT_SECTOR  = 'South Korea — Abrasive Material'; // EDIT: the one free sector
@@ -254,11 +254,15 @@ const FREE_YEARS      = ['2017','2020','2022','2023'];
 // any sector not in South Korea list triggers upsell
 // ══════════════════════════════════════════════════════════════
 
-const T1_COLORS=['#1ABC9C','#2980B9','#16A085','#1F618D','#148F77','#21618C',
-  '#0E6655','#1A7BBF','#117A65','#154360','#0B5345','#1B4F72','#0E6251',
-  '#1A5276','#117864','#145A32','#1B2631','#0A3D62','#1C6EA4','#186A3B','#1F3A93'];
-const S_COLORS=['#3A86C8','#2BAE96','#1B4F8A'];
-const C={s1:'#2E86AB',s2:'#17A589',s3:'#1A5276'};
+const T1_COLORS=[
+  '#0045AB','#1a5cbf','#2e6fd4','#0d3d8a','#163f7a',
+  '#8C5ACC','#7a48bb','#6a3aab','#5a2d99','#4a2080',
+  '#3FA9F6','#2a94e0','#1a80cc','#0f6ab8','#0a55a0',
+  '#A7CCE7','#8ab8d8','#6da4c8','#5090b8','#3478a0',
+  '#D4AF37','#b89a2a'
+];
+const S_COLORS=['#B98EFF','#3FA9F6','#A7F3D0'];
+const C={s1:'#B98EFF',s2:'#3FA9F6',s3:'#A7F3D0'};
 
 // silverMap[country] = sorted array of unique Country Sector strings
 let silverMap  = {};   // built from Silver CSV
@@ -382,7 +386,7 @@ function buildSilverMap(csvText){
   const rows = parseCSV(csvText);
   silverMap = {};
   rows.forEach(row=>{
-    const country=row['Country Name'], sector=row['Country Sector'];
+    const country=row['Country'], sector=row['Country Sectors'];
     if(!country||!sector) return;
     if(!silverMap[country]) silverMap[country]=new Set();
     silverMap[country].add(sector);
@@ -601,18 +605,38 @@ function setCanvasMode(mode){
   drawCanvas(window._ptData,mode);
 }
 
+let _ptResizeTimer;
+window.addEventListener('resize',()=>{
+  clearTimeout(_ptResizeTimer);
+  _ptResizeTimer=setTimeout(()=>{ if(window._ptData) drawCanvas(window._ptData,canvasMode); },120);
+});
+
 // ── Canvas Sankey ─────────────────────────────────────────────
 function drawCanvas(d,mode){
   const C2=document.getElementById('sankey-canvas');
   if(!C2) return;
-  const TOP=72,LPAD=14,FULL_H=Math.max(620,d.tier1.length*44),BOX_GAP=3,MIN_BOX=10;
-  const ANC_W=120,SC_W=106,T1_W=230,LF_W=106,GAP=136;
+
+  // Fill the full container width
+  const wrap = C2.parentElement;
+  const containerW = wrap ? wrap.clientWidth : 900;
+
+  const TOP=72,LPAD=20,FULL_H=Math.max(620,d.tier1.length*44),BOX_GAP=3,MIN_BOX=10;
+  // Distribute column widths proportionally to fill containerW
+  const ANC_W=Math.round(containerW*0.10);
+  const SC_W =Math.round(containerW*0.09);
+  const T1_W =Math.round(containerW*0.22);
+  const LF_W =Math.round(containerW*0.09);
+  const GAP  =Math.round(containerW*0.10);
   const ANC_X=LPAD,SC_X=ANC_X+ANC_W+GAP,T1_X=SC_X+SC_W+GAP,LF_X=T1_X+T1_W+GAP;
-  const TW=LF_X+LF_W+LPAD+10,TH=TOP+FULL_H+32;
+  const TW=Math.max(containerW, LF_X+LF_W+LPAD),TH=TOP+FULL_H+32;
   const DPR=window.devicePixelRatio||1;
   C2.width=TW*DPR; C2.height=TH*DPR;
   C2.style.width=TW+'px'; C2.style.height=TH+'px';
   const ctx=C2.getContext('2d'); ctx.scale(DPR,DPR);
+
+  // Dark canvas background
+  ctx.fillStyle='#0a1628';
+  ctx.fillRect(0,0,TW,TH);
 
   const hits=[];
   function regHit(x,y,w,h,label,val){ hits.push({x,y,w,h,label,val}); }
@@ -621,7 +645,7 @@ function drawCanvas(d,mode){
   if(!tip){
     tip=document.createElement('div'); tip.id='pt-tip';
     tip.style.cssText='display:none;position:fixed;pointer-events:none;'+
-      'background:rgba(8,16,36,0.97);color:#e8ecff;padding:11px 15px;'+
+      'background:rgba(8,16,36,0.97);color:#F4F5F5;padding:11px 15px;'+
       'border-radius:9px;font-size:12px;border:1px solid rgba(255,255,255,0.12);'+
       'line-height:1.75;z-index:9999;max-width:260px;box-shadow:0 6px 24px rgba(0,0,0,0.6);'+
       "font-family:'Segoe UI',Arial,sans-serif;";
@@ -691,10 +715,10 @@ function drawCanvas(d,mode){
   }
 
   function hdr(x,w,l1,l2){
-    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#0D2F4F';
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#A7CCE7';
     ctx.font="700 10px 'Segoe UI',Arial,sans-serif"; ctx.fillText(l1,x+w/2,TOP-(l2?23:13));
-    if(l2){ctx.font="400 8px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='#4A6A8A';ctx.fillText(l2,x+w/2,TOP-10);}
-    ctx.strokeStyle='rgba(26,63,100,0.15)';ctx.lineWidth=1;
+    if(l2){ctx.font="400 8px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='rgba(167,204,231,0.55)';ctx.fillText(l2,x+w/2,TOP-10);}
+    ctx.strokeStyle='rgba(0,69,171,0.3)';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(x+3,TOP-2);ctx.lineTo(x+w-3,TOP-2);ctx.stroke();
   }
 
@@ -706,7 +730,7 @@ function drawCanvas(d,mode){
   // Anchor chevron — word-wrapped sector name
   const chev=18;
   const ag=ctx.createLinearGradient(ANC_X,TOP,ANC_X,TOP+FULL_H);
-  ag.addColorStop(0,'#1A4A72'); ag.addColorStop(1,'#0D2F4F');
+  ag.addColorStop(0,'#0045AB'); ag.addColorStop(1,'#002d6e');
   ctx.fillStyle=ag; ctx.beginPath();
   ctx.moveTo(ANC_X,TOP); ctx.lineTo(ANC_X+ANC_W-chev,TOP);
   ctx.lineTo(ANC_X+ANC_W,TOP+FULL_H/2); ctx.lineTo(ANC_X+ANC_W-chev,TOP+FULL_H);
@@ -715,7 +739,7 @@ function drawCanvas(d,mode){
 
   const acx=ANC_X+(ANC_W-chev)/2, ancTxtW=ANC_W-chev-12;
   ctx.font="600 10px 'Segoe UI',Arial,sans-serif";
-  ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#F4F5F5'; ctx.textAlign='center'; ctx.textBaseline='middle';
   const words=d.sector.split(' '); const lines=[]; let cur='';
   words.forEach(w=>{ const t=cur?cur+' '+w:w; if(ctx.measureText(t).width>ancTxtW&&cur){lines.push(cur);cur=w;}else cur=t; });
   if(cur) lines.push(cur);
@@ -786,7 +810,7 @@ function drawCanvas(d,mode){
     smY=TOP; d.summed.forEach((sm,si)=>{const h=smH[si];drawBox(LF_X,smY,LF_W,h,S_COLORS[si],sm.label,sm.pct,sm.val,10);smY+=h+BOX_GAP;});
   }
 
-  ctx.font="400 7px 'Segoe UI',Arial,sans-serif"; ctx.fillStyle='rgba(80,110,140,0.5)';
+  ctx.font="400 7px 'Segoe UI',Arial,sans-serif"; ctx.fillStyle='rgba(167,204,231,0.45)';
   ctx.textAlign='left'; ctx.textBaseline='top';
   ctx.fillText('Mg CO₂e per Million USD · '+d.year,ANC_X,TOP+FULL_H+12);
 }

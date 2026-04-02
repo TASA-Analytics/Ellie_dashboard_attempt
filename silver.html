@@ -8,9 +8,9 @@
 :root {
   --navy:#050d1a; --navy2:#0a1628; --panel:#0d1c35;
   --primary:#0045AB; --primary-lt:#A7CCE7; --accent:#3FA9F6;
-  --orange:#FFBB00; --white:#e8f0ff;
-  --s1:#FF66B3; --s2:#FFBB00; --s3:#3FA9F6;
-  --dim:rgba(255,255,255,0.40); --bdr:rgba(0,69,171,0.22);
+  --orange:#FFBB00; --white:#F4F5F5;
+  --s1:#B98EFF; --s2:#3FA9F6; --s3:#A7F3D0;
+  --dim:rgba(244,245,245,0.40); --bdr:rgba(0,69,171,0.22);
   --mid:rgba(255,255,255,0.28);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -46,7 +46,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px
 .ctrl-group{display:flex;flex-direction:column;gap:6px;}
 .ctrl-label{font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--accent);text-transform:uppercase;}
 
-#f-isic{min-width:480px;}
+#f-naics{min-width:480px;}
 
 select{background:var(--navy);color:var(--white);border:1.5px solid var(--bdr);
   border-radius:8px;padding:4px 8px;font-family:inherit;font-size:12px;
@@ -64,7 +64,7 @@ select option:checked{background:#0a2a5e;color:var(--primary-lt);}
              border-radius:10px;overflow:hidden;min-height:200px;}
 
 .chart-scroll{overflow-x:auto;width:100%;}
-svg.chart{display:block;overflow:visible;}
+svg.chart{display:block;overflow:visible;min-width:100%;}
 
 .state-msg{display:flex;align-items:center;justify-content:center;min-height:300px;
   padding:40px;text-align:center;color:var(--mid);font-size:14px;
@@ -96,7 +96,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
 @media(max-width:700px){
   nav{padding:12px 14px;} .ph,.tabs,.controls,.chart-area,.raw-area{margin-left:12px;margin-right:12px;}
-  #f-isic{min-width:260px;} #f-country{width:160px;} .controls{gap:14px;}
+  #f-naics{min-width:260px;} #f-country{width:160px;} .controls{gap:14px;}
 }
 </style>
 </head>
@@ -132,8 +132,8 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <!-- Controls — 1 dropdown + 2 multi-selects, exactly like the Python widgets -->
   <div class="controls">
     <div class="ctrl-group" style="flex:1;min-width:260px;">
-      <div class="ctrl-label">ISIC Sector</div>
-      <select id="f-isic" onchange="render()"><option value="">Loading…</option></select>
+      <div class="ctrl-label">NAICS Sector</div>
+      <select id="f-naics" onchange="render()"><option value="">Loading…</option></select>
     </div>
     <div class="ctrl-group">
       <div class="ctrl-label">Countries</div>
@@ -180,10 +180,10 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 <script>
 // ══════════════════════════════════════════
 // CONFIG
-const CSV_URL = 'TASA_Silver_NAICS_ISIC.csv';
+const CSV_URL = 'TASA_open_silver_stacked_output_all.csv';
 // ══════════════════════════════════════════
 
-const SCOPE_COLORS = {'Scope 1':'#e8534a','Scope 2':'#f0a500','Scope 3':'#4a90d9'};
+const SCOPE_COLORS = {'Scope 1':'#B98EFF','Scope 2':'#3FA9F6','Scope 3':'#A7F3D0'};
 const GAP_SECTOR   = 0.6;   // gap between country-sectors within a country (matches Python)
 const GAP_COUNTRY  = 1.8;   // gap between countries (matches Python)
 const BAR_W        = 28;    // pixel width per bar unit
@@ -223,8 +223,8 @@ function parseCSV(text){
 // Melt wide CSV into long form — exact equivalent of df_long in Python
 function toLong(rows){
   const numCols = [
-    'Base Year Total Emissions Intensity',
-    'Base Year Scope 1','Base Year Scope 2','Base Year Scope 3',
+    'Baseline Total Emissions Intensity',
+    'Baseline Scope 1','Baseline Scope 2','Baseline Scope 3',
     '2020 Total Emissions Intensity',
     '2020 Scope 1','2020 Scope 2','2020 Scope 3',
     '2023 Total Emissions Intensity',
@@ -239,9 +239,9 @@ function toLong(rows){
       if(isNaN(val)) return;
       // parse year and scope from column name
       let year, scope;
-      if(col.startsWith('Base Year')){
-        year  = 'Base Year';
-        scope = col.replace('Base Year ','');
+      if(col.startsWith('Baseline')){
+        year  = 'Baseline';
+        scope = col.replace('Baseline ','');
       } else {
         const sp = col.indexOf(' ');
         year  = col.slice(0, sp);
@@ -249,9 +249,9 @@ function toLong(rows){
       }
       if(!scope.startsWith('Scope')) return; // skip Total rows — we sum the 3 scopes ourselves
       long.push({
-        isic:          row['ISIC Rev. 4 Title']   ||'',
-        country:       row['Country Name']         ||'',
-        countrySector: row['Country Sector']       ||`${row['Country Name']} — ${row['ISIC Rev. 4 Title']}`,
+        isic:          row['NAICS definition']  ||'',
+        country:       row['Country']           ||'',
+        countrySector: row['Country Sectors']   ||`${row['Country']} — ${row['NAICS definition']}`,
         year, scope, value: val
       });
     });
@@ -270,19 +270,19 @@ function switchTab(id,btn){
 function getSelected(id){ return [...document.getElementById(id).selectedOptions].map(o=>o.value); }
 
 // ── Default selections shown on first load ──
-const DEFAULT_ISIC      = 'Manufacture of other non-metallic mineral products n.e.c.'; // EDIT: default sector
+const DEFAULT_NAICS     = 'Abrasive Product Manufacturing'; // EDIT: default sector
 const DEFAULT_COUNTRIES = ['Mexico','South Korea','United States']; // EDIT: default countries
 
 function populateControls(){
-  // ISIC dropdown uses ONLY "ISIC Rev. 4 Title" — the two code columns are ignored entirely
+  // NAICS dropdown uses ONLY "NAICS definition" — code columns are ignored entirely
   const isics     = [...new Set(dfLong.map(r=>r.isic).filter(Boolean))].sort();
   const countries = [...new Set(dfLong.map(r=>r.country).filter(Boolean))].sort();
 
-  const iSel = document.getElementById('f-isic');
+  const iSel = document.getElementById('f-naics');
   iSel.innerHTML = '';
   isics.forEach(title=>{
     const o = new Option(title, title);
-    if(title === DEFAULT_ISIC || (!isics.includes(DEFAULT_ISIC) && title === isics[0])) o.selected = true;
+    if(title === DEFAULT_NAICS || (!isics.includes(DEFAULT_NAICS) && title === isics[0])) o.selected = true;
     iSel.add(o);
   });
 
@@ -297,7 +297,7 @@ function populateControls(){
 
 // ── Main render — replicates build_chart() from Python exactly ──
 function render(){
-  const isic      = document.getElementById('f-isic').value;
+  const isic      = document.getElementById('f-naics').value;
   const countries = getSelected('f-country');
   const years     = getSelected('f-year');
   const area      = document.getElementById('chart-area');
@@ -313,7 +313,7 @@ function render(){
   );
 
   if(!filtered.length){
-    area.innerHTML = `<div class="state-msg">No data for this selection — try different countries or ISIC sector.</div>`;
+    area.innerHTML = `<div class="state-msg">No data for this selection — try different countries or NAICS sector.</div>`;
     return;
   }
 
@@ -384,16 +384,24 @@ function render(){
   const maxY   = Math.max(...agg.map(r=>r.Total)) * 1.08 || 1;
 
   // ── SVG dimensions ──
-  // Map numeric x-position to pixels
+  // Fill the full container width; only scroll when content is wider
   const LPAD=64, RPAD=24, TPAD=52, BPAD=180;
-  const UNIT = BAR_W + BAR_GAP; // pixels per x-unit
-  const chartW = LPAD + RPAD + (maxX + 1) * UNIT;
+  const containerW = document.getElementById('chart-area').clientWidth || 900;
+  const naturalW   = LPAD + RPAD + (maxX + 1) * (BAR_W + BAR_GAP);
+  // If natural width is smaller than container, scale UNIT up to fill evenly
+  const totalBars  = maxX + 1;
+  const availW     = Math.max(naturalW, containerW);
+  const UNIT       = (availW - LPAD - RPAD) / totalBars;
+  const chartW     = availW;
   const chartH = 520;
   const plotH  = chartH - TPAD - BPAD;
   const plotW  = chartW - LPAD - RPAD;
 
-  const px = x => LPAD + x * UNIT + UNIT/2 - BAR_W/2;  // left edge of bar at x-pos
-  const py = v => TPAD + plotH - (v / maxY) * plotH;    // y pixel for value v
+  // Recalculate bar width proportionally — cap so bars don't get too fat
+  const scaledBarW = Math.min(60, Math.max(BAR_W, UNIT * 0.55));
+
+  const px = x => LPAD + x * UNIT + UNIT/2 - scaledBarW/2;  // left edge of bar at x-pos
+  const py = v => TPAD + plotH - (v / maxY) * plotH;         // y pixel for value v
 
   // Y grid lines
   const yTicks = 5;
@@ -405,16 +413,16 @@ function render(){
     gridLines += `<line x1="${LPAD}" y1="${y.toFixed(1)}" x2="${chartW-RPAD}" y2="${y.toFixed(1)}"
       stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
       <text x="${LPAD-6}" y="${y.toFixed(1)}" dy="4" text-anchor="end"
-        fill="#5a6080" font-size="10" font-family="DM Sans,Segoe UI,sans-serif">${lbl}</text>`;
+        fill="#A7CCE7" font-size="10" font-family="DM Sans,Segoe UI,sans-serif">${lbl}</text>`;
   }
 
   // Y axis label
   const yAxisLabel = `<text transform="rotate(-90)" x="${-(TPAD+plotH/2)}" y="14"
-    text-anchor="middle" fill="#4a5070" font-size="11" font-family="DM Sans,Segoe UI,sans-serif">Emissions Intensity</text>`;
+    text-anchor="middle" fill="#A7CCE7" font-size="11" font-family="DM Sans,Segoe UI,sans-serif">Emissions Intensity</text>`;
 
-  // ISIC label at top (matches Python annotation at y=1.07)
+  // NAICS label at top (matches Python annotation at y=1.07)
   const isicLabel = `<text x="${chartW/2}" y="${TPAD-28}" text-anchor="middle"
-    fill="#5a6080" font-size="11" font-family="DM Sans,Segoe UI,sans-serif">
+    fill="#A7CCE7" font-size="11" font-family="DM Sans,Segoe UI,sans-serif">
     ▸  ${escSVG(isic)}</text>`;
 
   // Legend
@@ -423,7 +431,7 @@ function render(){
   ['Scope 1','Scope 2','Scope 3'].forEach((sc,i)=>{
     const lx = LPAD + i*90;
     legend += `<rect x="${lx}" y="${legendY-8}" width="10" height="10" rx="2" fill="${SCOPE_COLORS[sc]}"/>
-      <text x="${lx+14}" y="${legendY+1}" fill="#8a90a8" font-size="11" font-family="DM Sans,Segoe UI,sans-serif">${sc}</text>`;
+      <text x="${lx+14}" y="${legendY+1}" fill="#A7CCE7" font-size="11" font-family="DM Sans,Segoe UI,sans-serif">${sc}</text>`;
   });
 
   // Bars — one <rect> per scope per row, stacked
@@ -438,7 +446,7 @@ function render(){
       const bx    = px(row.xPos).toFixed(1);
       const by    = py(below+val).toFixed(1);
       const bh    = Math.max(1, ((val/maxY)*plotH)).toFixed(1);
-      const bw    = BAR_W;
+      const bw    = scaledBarW;
       // Tooltip data embedded as data-* attributes
       bars += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}"
         fill="${SCOPE_COLORS[scope]}" opacity="0.92" rx="1"
@@ -456,16 +464,16 @@ function render(){
   // X tick labels (year, below each bar)
   let xTicks = '';
   tickVals.forEach((xv,i)=>{
-    const cx = (px(xv) + BAR_W/2).toFixed(1);
+    const cx = (px(xv) + scaledBarW/2).toFixed(1);
     xTicks += `<text x="${cx}" y="${(TPAD+plotH+14).toFixed(1)}" text-anchor="middle"
-      fill="#5a6080" font-size="10" font-family="DM Sans,Segoe UI,sans-serif">${tickTexts[i]}</text>`;
+      fill="#A7CCE7" font-size="10" font-family="DM Sans,Segoe UI,sans-serif">${tickTexts[i]}</text>`;
   });
 
   // Country Sector labels (below year ticks) — matches Python annotation at y=-0.34
   let secLabels = '';
   Object.entries(sectorLabelPos).forEach(([key, midX])=>{
     const [,sec] = key.split('|||');
-    const cx = (px(midX) + BAR_W/2).toFixed(1);
+    const cx = (px(midX) + scaledBarW/2).toFixed(1);
     const words = sec.split(/\s+/);
     // wrap to ~16 chars per line
     const lines = [];
@@ -478,16 +486,16 @@ function render(){
     const ly = TPAD + plotH + 30;
     lines.forEach((ln,li)=>{
       secLabels += `<text x="${cx}" y="${(ly+li*13).toFixed(1)}" text-anchor="middle"
-        fill="#5a6080" font-size="10" font-family="DM Sans,Segoe UI,sans-serif">${escSVG(ln)}</text>`;
+        fill="#A7CCE7" font-size="10" font-family="DM Sans,Segoe UI,sans-serif">${escSVG(ln)}</text>`;
     });
   });
 
   // Country labels (bottom) — matches Python annotation at y=-0.58
   let ctyLabels = '';
   Object.entries(countryLabelPos).forEach(([country, midX])=>{
-    const cx = (px(midX) + BAR_W/2).toFixed(1);
+    const cx = (px(midX) + scaledBarW/2).toFixed(1);
     ctyLabels += `<text x="${cx}" y="${(TPAD+plotH+110).toFixed(1)}" text-anchor="middle"
-      fill="#7bb8f5" font-size="13" font-weight="bold" font-family="DM Sans,Segoe UI,sans-serif">${escSVG(country)}</text>`;
+      fill="#A7CCE7" font-size="13" font-weight="bold" font-family="DM Sans,Segoe UI,sans-serif">${escSVG(country)}</text>`;
   });
 
   // Country separator lines — matches Python add_shape dotted vertical
@@ -495,9 +503,9 @@ function render(){
   const validCountries = countries.filter(c=>agg.some(r=>r.country===c));
   validCountries.slice(0,-1).forEach(country=>{
     const lastX = Math.max(...agg.filter(r=>r.country===country).map(r=>r.xPos));
-    const sepX  = (px(lastX) + BAR_W + (GAP_SECTOR/2+GAP_COUNTRY/3)*UNIT).toFixed(1);
+    const sepX  = (px(lastX) + scaledBarW + (GAP_SECTOR/2+GAP_COUNTRY/3)*UNIT).toFixed(1);
     separators += `<line x1="${sepX}" y1="${TPAD}" x2="${sepX}" y2="${(TPAD+plotH).toFixed(1)}"
-      stroke="#2a3050" stroke-width="1" stroke-dasharray="4,3"/>`;
+      stroke="#0045AB" stroke-width="1" stroke-dasharray="4,3"/>`;
   });
 
   area.innerHTML = `
@@ -517,9 +525,9 @@ function render(){
     </div>
     <div id="tooltip" style="
       display:none;position:fixed;pointer-events:none;
-      background:rgba(21,24,39,0.97);color:#e8ecff;
+      background:rgba(10,22,40,0.97);color:#F4F5F5;
       padding:10px 14px;border-radius:8px;font-size:12px;
-      border:1px solid #2e3249;line-height:1.7;z-index:9999;max-width:220px;
+      border:1px solid #0045AB;line-height:1.7;z-index:9999;max-width:220px;
       font-family:'DM Sans','Segoe UI',sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.4);">
     </div>`;
 
@@ -529,12 +537,12 @@ function render(){
     rect.addEventListener('mouseenter', e=>{
       const d = e.target.dataset;
       tip.innerHTML = `<b style="font-size:13px">${d.country}</b><br>
-        <span style="color:#8a90a8">${d.sector} · ${d.year}</span><br><br>
+        <span style="color:#A7CCE7">${d.sector} · ${d.year}</span><br><br>
         <b>Total: ${d.total}</b><br>
-        <span style="color:#3a4060">──────────────</span><br>
-        <span style="color:#e8534a">▮</span> Scope 1 &nbsp; ${d.s1}<br>
-        <span style="color:#f0a500">▮</span> Scope 2 &nbsp; ${d.s2}<br>
-        <span style="color:#4a90d9">▮</span> Scope 3 &nbsp; ${d.s3}`;
+        <span style="color:#0045AB">──────────────</span><br>
+        <span style="color:#B98EFF">▮</span> Scope 1 &nbsp; ${d.s1}<br>
+        <span style="color:#3FA9F6">▮</span> Scope 2 &nbsp; ${d.s2}<br>
+        <span style="color:#A7F3D0">▮</span> Scope 3 &nbsp; ${d.s3}`;
       tip.style.display='block';
     });
     rect.addEventListener('mousemove', e=>{
@@ -547,23 +555,27 @@ function render(){
 
 function escSVG(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// Re-render chart on window resize
+let _resizeTimer;
+window.addEventListener('resize', ()=>{ clearTimeout(_resizeTimer); _resizeTimer=setTimeout(render, 120); });
+
 // Raw data table
 function renderTable(){
   const q=(document.getElementById('ts')?.value||'').toLowerCase();
-  const isic=document.getElementById('f-isic').value;
+  const isic=document.getElementById('f-naics').value;
   const yr=YEARS_AVAIL[0];
-  const cols=['ISIC Rev. 4 Title','Country Name','Country Sector',
+  const cols=['NAICS definition','Country','Country Sectors',
     '2024 Total Emissions Intensity','2024 Scope 1','2024 Scope 2','2024 Scope 3',
     '2023 Total Emissions Intensity','2023 Scope 1','2023 Scope 2','2023 Scope 3',
     '2020 Scope 1','2020 Scope 2','2020 Scope 3'];
   const sc={'2024 Scope 1':'cs1','2024 Scope 2':'cs2','2024 Scope 3':'cs3',
             '2023 Scope 1':'cs1','2023 Scope 2':'cs2','2023 Scope 3':'cs3',
             '2020 Scope 1':'cs1','2020 Scope 2':'cs2','2020 Scope 3':'cs3'};
-  const src = isic ? allData.filter(r=>r['ISIC Rev. 4 Title']===isic) : allData;
+  const src = isic ? allData.filter(r=>r['NAICS definition']===isic) : allData;
   const rows = src.filter(r=>!q||
-    (r['ISIC Rev. 4 Title']||'').toLowerCase().includes(q)||
-    (r['Country Name']||'').toLowerCase().includes(q)||
-    (r['Country Sector']||'').toLowerCase().includes(q)
+    (r['NAICS definition']||'').toLowerCase().includes(q)||
+    (r['Country']||'').toLowerCase().includes(q)||
+    (r['Country Sectors']||'').toLowerCase().includes(q)
   ).slice(0,600);
   document.getElementById('rc').textContent=`${rows.length} of ${src.length} rows`;
   const visibleCols = cols.filter(c=>Object.keys(rows[0]||{}).includes(c));
