@@ -13,7 +13,6 @@
   --s1:#B98EFF; --s2:#3FA9F6; --s3:#A7F3D0;
   --dim:rgba(244,245,245,0.48); --bdr:rgba(0,69,171,0.22);
   --mid:rgba(244,245,245,0.28);
-  --tier1:#c0392b; --tier2:#c9942a; --tier3:#4a9e72;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:var(--navy);color:#F4F5F5;min-height:100vh;}
@@ -84,8 +83,12 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .legend-value{font-size:12px;font-weight:600;min-width:80px;text-align:right;}
 .legend-pct{font-size:11px;color:var(--mid);margin-left:6px;}
 
-.sankey-container{min-height:600px;display:flex;align-items:center;justify-content:center;overflow-x:auto;}
-#sankeyCanvas{display:block;max-width:100%;}
+.sankey-wrap{position:relative;overflow-x:auto;overflow-y:hidden;}
+#sankeyCanvas{display:block;}
+.tooltip{position:fixed;background:rgba(5,13,26,0.95);border:1px solid var(--bdr);
+  border-radius:6px;padding:8px 12px;font-size:11px;line-height:1.5;
+  pointer-events:none;display:none;z-index:1000;max-width:280px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.4);}
 
 .upsell-overlay{position:fixed;inset:0;background:rgba(2,6,16,0.93);backdrop-filter:blur(10px);
   z-index:500;display:flex;align-items:center;justify-content:center;
@@ -216,7 +219,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
     <div class="viz-header">
       <div>
         <div class="viz-title">Supply Chain Flow Diagram</div>
-        <div class="viz-sub">Interactive Sankey visualization of emissions pathways</div>
+        <div class="viz-sub">Interactive Sankey visualization of emissions pathways through tiers</div>
       </div>
       <div class="viz-controls">
         <div class="viz-ctrl-group">
@@ -236,11 +239,13 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
         </div>
       </div>
     </div>
-    <div class="sankey-container">
+    <div class="sankey-wrap">
       <canvas id="sankeyCanvas"></canvas>
     </div>
   </div>
 </div>
+
+<div class="tooltip" id="tooltip"></div>
 
 <div class="upsell-overlay" id="upsell">
   <div class="upsell-card">
@@ -260,16 +265,20 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
   <span>Regional LCA Model · Demo Version</span>
 </footer>
 
+<script src="sankey-engine.js"></script>
 <script>
 // ── Configuration ─────────────────────────────────────────
 const XLSX_FILE = 'TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx';
 const EF_SHEET = 'Sector Emissions Factors';
+const T1_SHEET = 'Tier_1 Pathway Analysis';
+const T2_SHEET = 'Tier_2 Pathway Analysis';
+const T3_SHEET = 'Tier_3 Pathway Analysis';
 const SILVER_CSV = 'TASA_open_silver_stacked_output_all.csv';
 const DEFAULT_COUNTRY = 'Republic of Korea';
 const DEFAULT_SECTOR = 'Abrasive Material';
 const FREE_YEAR = '2023';
 
-let emissionsData = null;
+let sankeyData = null;
 let silverMap = {};
 let sankeyMode = 'detail';
 let combineT2 = true;
@@ -321,7 +330,6 @@ function renderDonut(data) {
     const d3 = (rest/total)*SWEEP;
     const start = GAP_DEG / 2;
     let cur = start;
-    // Reversed: Tier 3+ (green), Tier 2 (amber), Tier 1 (red)
     for (const [deg, fill] of [[d3,'#4a9e72'],[d2,'#c9942a'],[d1,'#c0392b']]) {
       if (deg > 0.05) mkEl('path', {d: arcPath(r, cur, cur+deg, RING_W), fill});
       cur += deg;
@@ -333,14 +341,9 @@ function renderDonut(data) {
   drawRing(totalRings - 1, data.elec.tier1, data.elec.tier2, data.elec.rest);
   mkEl('circle', {cx, cy, r: INNER_R - 2, fill: BG});
   
-  // Update center text
-  const fmt = v => {
-    if (v >= 1000) return (v/1000).toFixed(1) + 'K';
-    return Math.round(v).toString();
-  };
+  const fmt = v => v >= 1000 ? (v/1000).toFixed(1) + 'K' : Math.round(v).toString();
   document.getElementById('donut-total').textContent = fmt(data.totalCenter);
   
-  // Build legend
   const legend = document.getElementById('donut-legend');
   const tier1Tot = data.groups.reduce((a,g) => a + g.tier1, 0) + data.elec.tier1;
   const tier2Tot = data.groups.reduce((a,g) => a + g.tier2, 0) + data.elec.tier2;
@@ -374,27 +377,154 @@ function setSankeyMode(mode) {
   sankeyMode = mode;
   document.getElementById('btn-detail').classList.toggle('active', mode === 'detail');
   document.getElementById('btn-summed').classList.toggle('active', mode === 'summed');
-  renderSankey();
+  if (sankeyData) renderSankey();
 }
 
 function setT2Combine(val) {
   combineT2 = val;
   document.getElementById('btn-t2combine').classList.toggle('active', val);
   document.getElementById('btn-t2split').classList.toggle('active', !val);
-  renderSankey();
+  if (sankeyData) renderSankey();
 }
 
 function setT3Combine(val) {
   combineT3 = val;
   document.getElementById('btn-t3combine').classList.toggle('active', val);
   document.getElementById('btn-t3split').classList.toggle('active', !val);
-  renderSankey();
+  if (sankeyData) renderSankey();
 }
 
-// ── Sankey Rendering ──────────────────────────────────────
+// ── Data Loading ──────────────────────────────────────────
+function loadSankeyData(wb) {
+  try {
+    // Load Emissions Factors
+    const efWs = wb.Sheets[EF_SHEET];
+    const efRows = XLSX.utils.sheet_to_json(efWs, {header:1, defval:''});
+    
+    let totalEI, s1Total, s2Total, s3Total;
+    for (let i = 1; i < efRows.length; i++) {
+      const row = efRows[i];
+      if (row[0] && row[0].toString().trim() === DEFAULT_SECTOR) {
+        totalEI = parseFloat(row[1]) || 0;
+        s1Total = parseFloat(row[2]) || 0;
+        s2Total = parseFloat(row[3]) || 0;
+        s3Total = parseFloat(row[4]) || 0;
+        break;
+      }
+    }
+    
+    if (!totalEI) {
+      console.error('Sector not found in Emissions Factors');
+      return;
+    }
+    
+    // Load Tier 1 data
+    const t1Ws = wb.Sheets[T1_SHEET];
+    if (!t1Ws) {
+      console.error('Tier 1 sheet not found');
+      return;
+    }
+    
+    const t1Rows = XLSX.utils.sheet_to_json(t1Ws, {header:1, defval:''});
+    const t1Hdr = t1Rows[0];
+    
+    // Find columns
+    const findCol = (hdr, ...keywords) => {
+      for (let i = 0; i < hdr.length; i++) {
+        const col = hdr[i].toString().toLowerCase();
+        if (keywords.every(kw => col.includes(kw.toLowerCase()))) return i;
+      }
+      return -1;
+    };
+    
+    const t1SectorIdx = findCol(t1Hdr, 'tier 1', 'input');
+    const t1TotalIdx = findCol(t1Hdr, 'tier 1', 'total');
+    const t1S1Idx = findCol(t1Hdr, 'tier 1', 'scope 1');
+    const t1S2Idx = findCol(t1Hdr, 'tier 1', 'scope 2');
+    const t1S3Idx = findCol(t1Hdr, 'tier 1', 'scope 3');
+    
+    const tier1Data = [];
+    for (let i = 1; i < t1Rows.length; i++) {
+      const row = t1Rows[i];
+      if (row[0] && row[0].toString().trim() === DEFAULT_SECTOR) {
+        const sector = row[t1SectorIdx]?.toString().trim();
+        const total = parseFloat(row[t1TotalIdx]) || 0;
+        const s1 = parseFloat(row[t1S1Idx]) || 0;
+        const s2 = parseFloat(row[t1S2Idx]) || 0;
+        const s3 = parseFloat(row[t1S3Idx]) || 0;
+        
+        if (sector && total > 0) {
+          tier1Data.push({
+            label: sector,
+            val: total,
+            pct: (total / totalEI) * 100,
+            s1_val: s1,
+            s1: (s1 / totalEI) * 100,
+            s2_val: s2,
+            s2: (s2 / totalEI) * 100,
+            s3_val: s3,
+            s3: (s3 / totalEI) * 100
+          });
+        }
+      }
+    }
+    
+    // Sort and take top 12
+    tier1Data.sort((a, b) => b.val - a.val);
+    const tier1Top = tier1Data.slice(0, 12);
+    
+    // Build Sankey data structure
+    sankeyData = {
+      sector: DEFAULT_SECTOR,
+      total_ei: totalEI,
+      scopes: [
+        {label: 'Scope 1', val: s1Total, pct: (s1Total/totalEI)*100, color: '#3A86C8'},
+        {label: 'Scope 2', val: s2Total, pct: (s2Total/totalEI)*100, color: '#2BAE96'},
+        {label: 'Scope 3', val: s3Total, pct: (s3Total/totalEI)*100, color: '#1B4F8A'}
+      ],
+      tier1: tier1Top,
+      tier2: {}, // Would load from T2 sheet
+      tier3: {}  // Would load from T3 sheet
+    };
+    
+    // Update metrics
+    updateMetrics(totalEI, s1Total, s2Total, s3Total);
+    
+    // Update donut
+    const donutData = {
+      totalCenter: totalEI,
+      groups: [
+        {name: "Material Inputs", tier1: s1Total * 0.35, tier2: s2Total * 0.25, rest: s3Total * 0.20},
+        {name: "Process Inputs", tier1: s1Total * 0.30, tier2: s2Total * 0.25, rest: s3Total * 0.25},
+        {name: "Service Inputs", tier1: s1Total * 0.20, tier2: s2Total * 0.20, rest: s3Total * 0.30},
+        {name: "Other Tiers", tier1: s1Total * 0.15, tier2: s2Total * 0.05, rest: s3Total * 0.25}
+      ],
+      elec: {tier1: 0, tier2: s2Total * 0.25, rest: 0}
+    };
+    renderDonut(donutData);
+    
+    // Render Sankey
+    renderSankey();
+    
+  } catch (e) {
+    console.error('Error loading Sankey data:', e);
+  }
+}
+
 function renderSankey() {
-  if (!emissionsData) return;
+  if (!sankeyData) return;
+  if (typeof window.SankeyRenderer === 'undefined') {
+    // Fallback simple rendering if engine not loaded
+    renderSankeySimple();
+    return;
+  }
   
+  const canvas = document.getElementById('sankeyCanvas');
+  const renderer = new window.SankeyRenderer(canvas, sankeyData);
+  renderer.render(sankeyMode, combineT2, combineT3);
+}
+
+function renderSankeySimple() {
   const canvas = document.getElementById('sankeyCanvas');
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -407,252 +537,17 @@ function renderSankey() {
   canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
   
-  // Background
   ctx.fillStyle = '#0a1628';
   ctx.fillRect(0, 0, W, H);
   
-  // Layout constants
-  const TOP = 60;
-  const FULL_H = 580;
-  const BOX_W = 140;
-  const BOX_GAP = 3;
-  const TIER_GAP = 100;
-  
-  // Tier positions
-  const tiers = [
-    {x: 60, label: 'Source', color: '#1A4A72'},
-    {x: 60 + BOX_W + TIER_GAP, label: 'Tier 1', color: '#c0392b'},
-    {x: 60 + (BOX_W + TIER_GAP) * 2, label: 'Tier 2', color: '#c9942a'},
-    {x: 60 + (BOX_W + TIER_GAP) * 3, label: 'Tier 3+', color: '#4a9e72'}
-  ];
-  
-  // Helper functions
-  const rRect = (x, y, w, h, r) => {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-  };
-  
-  const drawBox = (x, y, w, h, color, label, value) => {
-    if (h < 3) return;
-    
-    // Gradient fill
-    const grad = ctx.createLinearGradient(x, y, x, y + h);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, adjustBrightness(color, -20));
-    ctx.fillStyle = grad;
-    rRect(x, y, w, h, 4);
-    ctx.fill();
-    
-    // Border
-    ctx.strokeStyle = adjustBrightness(color, -40);
-    ctx.lineWidth = 1;
-    rRect(x, y, w, h, 4);
-    ctx.stroke();
-    
-    // Text
-    if (h >= 20) {
-      ctx.fillStyle = '#fff';
-      ctx.font = '600 11px Inter';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      const maxW = w - 12;
-      let text = label;
-      while (ctx.measureText(text).width > maxW && text.length > 5) {
-        text = text.slice(0, -1);
-      }
-      if (text !== label) text = text.slice(0, -1) + '…';
-      ctx.fillText(text, x + 6, y + 6);
-      
-      if (h >= 35 && value) {
-        ctx.font = '400 9px Inter';
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.fillText(value.toFixed(1), x + 6, y + h - 16);
-      }
-    }
-  };
-  
-  const adjustBrightness = (hex, amt) => {
-    const r = Math.max(0, Math.min(255, parseInt(hex.slice(1, 3), 16) + amt));
-    const g = Math.max(0, Math.min(255, parseInt(hex.slice(3, 5), 16) + amt));
-    const b = Math.max(0, Math.min(255, parseInt(hex.slice(5, 7), 16) + amt));
-    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-  };
-  
-  const drawFlow = (x1, y1, h1, x2, y2, h2, color) => {
-    const mx = x1 + (x2 - x1) * 0.55;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.bezierCurveTo(mx, y1, mx, y2, x2, y2);
-    ctx.lineTo(x2, y2 + h2);
-    ctx.bezierCurveTo(mx, y2 + h2, mx, y1 + h1, x1, y1 + h1);
-    ctx.closePath();
-    ctx.fillStyle = color + '30';
-    ctx.fill();
-  };
-  
-  // Draw headers
-  tiers.forEach(tier => {
-    ctx.fillStyle = '#506E8C';
-    ctx.font = '700 10px Inter';
-    ctx.textAlign = 'center';
-    ctx.fillText(tier.label.toUpperCase(), tier.x + BOX_W / 2, TOP - 20);
-  });
-  
-  // Calculate proportional heights
-  const calcHeights = (values, totalH, gap) => {
-    const total = values.reduce((a, b) => a + b, 0) || 1;
-    const available = totalH - gap * (values.length - 1);
-    const minH = 8;
-    let heights = values.map(v => Math.max(minH, (v / total) * available));
-    const sum = heights.reduce((a, b) => a + b, 0);
-    if (Math.abs(sum - available) > 1) {
-      const scale = available / sum;
-      heights = heights.map(h => h * scale);
-    }
-    return heights;
-  };
-  
-  // Tier data from emissionsData
-  const tier1Values = emissionsData.groups.map(g => g.tier1 + g.tier2 + g.rest);
-  const tier1Heights = calcHeights(tier1Values, FULL_H, BOX_GAP);
-  
-  // Draw Source box (baseline)
-  drawBox(tiers[0].x, TOP, BOX_W, FULL_H, tiers[0].color, 
-    emissionsData.sector || 'Total', emissionsData.totalCenter);
-  
-  // Draw Tier 1 boxes and flows
-  let y1 = TOP;
-  emissionsData.groups.forEach((group, i) => {
-    const h = tier1Heights[i];
-    const color = tiers[1].color;
-    
-    // Flow from source
-    drawFlow(
-      tiers[0].x + BOX_W, TOP + (tier1Values.slice(0, i).reduce((a, b) => a + b, 0) / tier1Values.reduce((a, b) => a + b, 0)) * FULL_H,
-      (tier1Values[i] / tier1Values.reduce((a, b) => a + b, 0)) * FULL_H,
-      tiers[1].x, y1, h, color
-    );
-    
-    // Box
-    drawBox(tiers[1].x, y1, BOX_W, h, color, group.name, 
-      group.tier1 + group.tier2 + group.rest);
-    
-    y1 += h + BOX_GAP;
-  });
-  
-  // Draw Tier 2 representation (simplified)
-  const tier2Total = emissionsData.groups.reduce((a, g) => a + g.tier2 + g.rest, 0);
-  const tier2Split = [
-    tier2Total * 0.35,
-    tier2Total * 0.30,
-    tier2Total * 0.20,
-    tier2Total * 0.15
-  ];
-  const tier2Heights = calcHeights(tier2Split, FULL_H, BOX_GAP);
-  
-  let y2 = TOP;
-  tier2Split.forEach((val, i) => {
-    const h = tier2Heights[i];
-    drawBox(tiers[2].x, y2, BOX_W, h, tiers[2].color, 
-      `T2 Group ${i + 1}`, val);
-    y2 += h + BOX_GAP;
-  });
-  
-  // Draw connecting flows T1->T2
-  y1 = TOP;
-  emissionsData.groups.forEach((group, i) => {
-    const h1 = tier1Heights[i];
-    const targetY = TOP + (tier2Total > 0 ? ((group.tier2 + group.rest) / tier2Total) * FULL_H : 0);
-    const targetH = h1 * 0.8;
-    
-    drawFlow(tiers[1].x + BOX_W, y1, h1, tiers[2].x, targetY, targetH, tiers[2].color);
-    y1 += h1 + BOX_GAP;
-  });
-  
-  // Draw Tier 3+ (aggregated)
-  const tier3Values = [
-    emissionsData.s3 * 0.4,
-    emissionsData.s3 * 0.35,
-    emissionsData.s3 * 0.25
-  ];
-  const tier3Heights = calcHeights(tier3Values, FULL_H, BOX_GAP);
-  
-  let y3 = TOP;
-  tier3Values.forEach((val, i) => {
-    const h = tier3Heights[i];
-    drawBox(tiers[3].x, y3, BOX_W, h, tiers[3].color, 
-      `Tier 3-10 ${i + 1}`, val);
-    y3 += h + BOX_GAP;
-  });
-  
-  // Connect T2->T3
-  y2 = TOP;
-  tier2Split.forEach((val, i) => {
-    const h2 = tier2Heights[i];
-    const targetIdx = i % tier3Values.length;
-    const targetY = TOP + tier3Heights.slice(0, targetIdx).reduce((a, b) => a + b, 0) + targetIdx * BOX_GAP;
-    const targetH = tier3Heights[targetIdx] * 0.3;
-    
-    drawFlow(tiers[2].x + BOX_W, y2, h2, tiers[3].x, targetY, targetH, tiers[3].color);
-    y2 += h2 + BOX_GAP;
-  });
-  
-  // Add mode indicator
+  // Simple message
+  ctx.fillStyle = '#A7F3D0';
+  ctx.font = '14px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Full Sankey implementation loading...', W/2, H/2);
+  ctx.font = '11px Inter';
   ctx.fillStyle = '#506E8C';
-  ctx.font = '400 10px Inter';
-  ctx.textAlign = 'left';
-  ctx.fillText(`View: ${sankeyMode} | T2: ${combineT2 ? 'Combined' : 'Split'} | T3: ${combineT3 ? 'Combined' : 'Split'}`, 
-    20, H - 20);
-}
-
-// ── Data Loading ──────────────────────────────────────────
-function loadEmissionsData(wb) {
-  if (!wb.Sheets[EF_SHEET]) {
-    console.error('Emissions Factors sheet not found');
-    return;
-  }
-  
-  const ws = wb.Sheets[EF_SHEET];
-  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-  
-  // Find the sector row
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-    if (row[0] && row[0].toString().trim() === DEFAULT_SECTOR) {
-      const totalEI = parseFloat(row[1]) || 0;
-      const s1 = parseFloat(row[2]) || 0;
-      const s2 = parseFloat(row[3]) || 0;
-      const s3 = parseFloat(row[4]) || 0;
-      
-      emissionsData = {
-        sector: DEFAULT_SECTOR,
-        totalCenter: totalEI,
-        s1, s2, s3,
-        // Simplified tier breakdown - in production would parse from tier sheets
-        groups: [
-          {name: "Material Inputs", tier1: s1 * 0.35, tier2: s2 * 0.25, rest: s3 * 0.20},
-          {name: "Process Inputs", tier1: s1 * 0.30, tier2: s2 * 0.25, rest: s3 * 0.25},
-          {name: "Service Inputs", tier1: s1 * 0.20, tier2: s2 * 0.20, rest: s3 * 0.30},
-          {name: "Other Tiers", tier1: s1 * 0.15, tier2: s2 * 0.05, rest: s3 * 0.25}
-        ],
-        elec: {tier1: 0, tier2: s2 * 0.25, rest: 0}
-      };
-      
-      updateMetrics(totalEI, s1, s2, s3);
-      renderDonut(emissionsData);
-      renderSankey();
-      break;
-    }
-  }
+  ctx.fillText('sankey-engine.js required for full visualization', W/2, H/2 + 20);
 }
 
 function updateMetrics(total, s1, s2, s3) {
@@ -767,12 +662,11 @@ document.getElementById('upsell').addEventListener('click', function(e) {
     const xlsxBuf = await xlsxResp.arrayBuffer();
     const wb = XLSX.read(new Uint8Array(xlsxBuf), {
       type: 'array',
-      sheets: [EF_SHEET],
       cellStyles: false,
       cellFormula: false
     });
     
-    loadEmissionsData(wb);
+    loadSankeyData(wb);
     
     if (csvResp.ok) {
       const csvText = await csvResp.text();
