@@ -102,16 +102,24 @@ select option{background:var(--navy2);color:var(--white);}
 .callout-unit{font-size:12px;color:var(--mid);margin-top:6px;}
 .callout-sub{font-size:11px;color:var(--mid);margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr);line-height:1.5;}
 .callout-sub strong{color:var(--white);}
-.donut-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;padding:16px 18px;}
-.donut-panel-title{font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px;}
-.donut-panel-sub{font-size:10px;color:var(--mid);}
-.donut-wrap{display:flex;align-items:center;gap:14px;margin-top:12px;}
-.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1;}
-.donut-leg-row{display:flex;align-items:flex-start;gap:7px;}
-.donut-leg-swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;margin-top:2px;}
-.donut-leg-name{font-size:11px;color:var(--dim);flex:1;line-height:1.3;}
-.donut-leg-val{font-size:11px;font-weight:700;color:var(--white);}
-.donut-leg-pct{font-size:10px;color:var(--mid);}
+
+/* Donut chart styles */
+.donut-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;padding:20px 22px;position:relative;overflow:hidden;}
+.donut-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--teal);}
+.donut-panel-title{font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px;}
+.donut-panel-sub{font-size:10px;color:var(--mid);margin-bottom:16px;}
+.donut-container{display:flex;align-items:center;justify-content:center;gap:32px;}
+.donut-chart-wrap{position:relative;width:280px;height:280px;}
+.donut-center-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.donut-center-label{font-size:12px;color:var(--mid);margin-bottom:4px;}
+.donut-center-value{font-size:32px;font-weight:800;color:var(--white);letter-spacing:-0.02em;}
+.donut-center-unit{font-size:11px;color:var(--mid);margin-top:2px;}
+.donut-legend{display:flex;flex-direction:column;gap:12px;flex:1;}
+.donut-leg-row{display:flex;align-items:center;gap:10px;}
+.donut-leg-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+.donut-leg-name{font-size:12px;color:var(--white);flex:1;font-weight:500;}
+.donut-leg-val{font-size:12px;font-weight:700;color:var(--white);min-width:60px;text-align:right;}
+.donut-leg-pct{font-size:11px;color:var(--mid);margin-left:8px;}
 
 .scope-pills{display:flex;gap:6px;flex-wrap:wrap;}
 .scope-pill{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;
@@ -121,6 +129,22 @@ select option{background:var(--navy2);color:var(--white);}
 .scope-pill.active-total{background:rgba(167,243,208,0.18);border-color:var(--teal);color:var(--teal);}
 .scope-pill.active-s1{background:rgba(185,142,255,0.18);border-color:var(--s1);color:var(--s1);}
 .scope-pill.active-s2{background:rgba(63,169,246,0.18);border-color:var(--s2);color:var(--s2);}
+
+/* Sankey diagram styles */
+.sankey-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 14px;overflow:hidden;}
+.sankey-hdr{padding:18px 22px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.sankey-title{font-size:14px;font-weight:700;color:var(--white);}
+.sankey-sub{font-size:11px;color:var(--mid);margin-top:2px;}
+.sankey-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.sankey-ctrl-group{display:flex;gap:4px;align-items:center;}
+.sankey-ctrl-label{font-size:10px;color:var(--mid);font-weight:600;margin-right:4px;}
+.sankey-btn{padding:5px 12px;border-radius:6px;font-size:10px;font-weight:700;
+  border:1.5px solid var(--bdr);color:var(--dim);cursor:pointer;
+  transition:all .2s;background:none;font-family:inherit;}
+.sankey-btn:hover{border-color:var(--white);color:var(--white);}
+.sankey-btn.active{background:rgba(167,243,208,0.18);border-color:var(--teal);color:var(--teal);}
+.sankey-canvas-wrap{padding:20px;overflow-x:auto;min-height:600px;display:flex;align-items:center;justify-content:center;}
+#sankeyCanvas{display:block;max-width:100%;}
 
 .chart-panel{background:var(--navy2);border:1px solid var(--bdr);border-radius:10px;margin:0 24px 14px;overflow:hidden;}
 .chart-hdr{padding:14px 18px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
@@ -138,570 +162,383 @@ select option{background:var(--navy2);color:var(--white);}
 table.dt{width:100%;border-collapse:collapse;font-size:12px;min-width:520px;}
 table.dt thead th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
   color:var(--primary-lt);padding:8px 12px;text-align:left;border-bottom:1px solid var(--bdr);
-  cursor:pointer;user-select:none;white-space:nowrap;}
+  position:relative;cursor:pointer;user-select:none;transition:color .15s;}
 table.dt thead th:hover{color:var(--white);}
-table.dt thead th.sort-asc::after{content:" ↑";}
-table.dt thead th.sort-desc::after{content:" ↓";}
-table.dt td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
-table.dt tbody tr:hover td{background:rgba(0,69,171,0.06);}
+table.dt thead th::after{content:'';position:absolute;right:8px;top:50%;
+  transform:translateY(-50%);border:4px solid transparent;border-top-color:var(--mid);
+  opacity:0;transition:opacity .15s;}
+table.dt thead th.sort-asc::after,table.dt thead th.sort-desc::after{opacity:1;}
+table.dt thead th.sort-desc::after{border-top-color:transparent;border-bottom-color:var(--primary-lt);}
+table.dt thead th.sort-asc::after{border-top-color:var(--primary-lt);}
+table.dt tbody td{padding:10px 12px;border-bottom:1px solid rgba(0,69,171,0.08);}
+table.dt tbody tr{transition:background .12s;}
+table.dt tbody tr:hover{background:rgba(0,69,171,0.06);}
 .mini-bar-wrap{display:flex;align-items:center;gap:6px;}
-.mini-bar-bg{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;width:80px;flex-shrink:0;}
-.mini-bar-fill{height:100%;border-radius:3px;}
+.mini-bar-bg{width:60px;height:6px;background:rgba(0,69,171,0.15);border-radius:3px;overflow:hidden;}
+.mini-bar-fill{height:100%;border-radius:3px;transition:width .3s ease;}
 
-@keyframes spin{to{transform:rotate(360deg);}}
-.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.1);border-top-color:var(--teal);
-  border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
-#loading-state{display:flex;align-items:center;justify-content:center;min-height:280px;
-  gap:10px;color:var(--mid);font-size:13px;padding:24px;flex-wrap:wrap;text-align:center;}
-
-footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-content:space-between;
-  align-items:center;color:var(--mid);font-size:12px;margin-top:4px;}
-@media(max-width:900px){.insight-row{grid-template-columns:1fr;}}
-@media(max-width:700px){
-  nav,footer{padding:12px 14px;}
-  .ph,.filter-bar,.controls,.insight-row,.chart-panel,.table-panel{margin-left:12px;margin-right:12px;}
+@media(max-width:900px){
+  .insight-row{grid-template-columns:1fr;}
+  .donut-container{flex-direction:column;}
+  .donut-chart-wrap{width:240px;height:240px;}
 }
 </style>
 </head>
 <body>
 
-<!-- UPSELL OVERLAY -->
-<div class="upsell-overlay" id="upsell">
-  <div class="upsell-card">
-    <span class="upsell-icon">📊</span>
-    <div class="upsell-what" id="upsell-what">Additional Data Available</div>
-    <h2>Unlock <span>Full rLCA</span> Access</h2>
-    <p id="upsell-msg">rLCA reports for additional countries, sectors, and years are available through TASA EFX. <strong>Contact us</strong> to get access to the full dataset.</p>
-    <div class="upsell-actions">
-      <a href="https://tasa-efx.com/rlca/" class="upsell-btn" target="_blank" rel="noopener">Contact TASA EFX →</a>
-      <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
-    </div>
-  </div>
-</div>
-
 <nav>
-  <a class="nav-logo" href="index.html">
-    <img src="TASA Logo Blue copy.png" alt="TASA EFX">
-    <span class="logo-text">TASA <em>EFX</em></span>
+  <a href="#" class="nav-logo">
+    <span class="logo-text">TASA<em>EFX</em></span>
   </a>
   <div class="nav-links">
-    <a href="index.html">Home</a>
-    <a href="silver.html">Silver</a>
-    <a href="platinum.html">Platinum</a>
-    <a href="rlca.html" class="active">rLCA</a>
+    <a href="#" class="active">rLCA</a>
+    <a href="#">Dashboard</a>
+    <a href="#">Reports</a>
   </div>
 </nav>
 
 <div class="ph">
   <div>
-    <div class="ph-badge">rLCA · Rapid Lifecycle Assessment</div>
-    <div class="ph-title">Abrasive Materials - Multi-tier Global Emissions Structure</div>
-    <div class="ph-sub">Scope 1 &amp; Scope 2 emissions intensity for every contributing upstream input, 10-tiers deep. Use the Tier dropdown to drill into each layer of the supply chain.</div>
+    <div class="ph-badge">Demo Version</div>
+    <h1 class="ph-title">Regional Life Cycle Assessment</h1>
+    <p class="ph-sub">Comprehensive emissions intensity analysis across supply chain tiers</p>
   </div>
   <div class="ph-stats">
-    <div class="stat-box"><div class="stat-val" id="stat-sectors">—</div><div class="stat-lbl">Sectors</div></div>
-    <div class="stat-box"><div class="stat-val">10</div><div class="stat-lbl">Tiers</div></div>
-    <div class="stat-box"><div class="stat-val">KOR</div><div class="stat-lbl">Country</div></div>
-    <div class="stat-box"><div class="stat-val">2023</div><div class="stat-lbl">Year</div></div>
+    <div class="stat-box"><div class="stat-val">460</div><div class="stat-lbl">Total kg CO₂e</div></div>
+    <div class="stat-box"><div class="stat-val">8</div><div class="stat-lbl">Tier Levels</div></div>
+    <div class="stat-box"><div class="stat-val">KOR</div><div class="stat-lbl">Region</div></div>
   </div>
 </div>
 
-<!-- FILTER BAR -->
 <div class="filter-bar">
-  <div class="fg">
-    <label>Country</label>
-    <select id="fb-country" onchange="onCountryChange()"><option value="">Loading…</option></select>
-  </div>
-  <div class="fg">
-    <label>Country Sector</label>
-    <select id="fb-sector" onchange="onSectorChange()"><option value="">Loading…</option></select>
-  </div>
-  <div class="fg">
-    <label>Year</label>
-    <select id="fb-year" onchange="onYearChange()">
-      <option value="2023" selected>2023</option>
-      <option value="2024">2024</option>
-      <option value="2022">2022</option>
-      <option value="2020">2020</option>
-      <option value="2017">2017 (Base Year)</option>
-    </select>
-  </div>
-  <div class="filter-free-tag">✓ Demo: KOR · Abrasive · 2023</div>
+  <div class="fg"><label>Country</label><select id="fb-country" onchange="onCountryChange()"></select></div>
+  <div class="fg"><label>Sector</label><select id="fb-sector" onchange="onSectorChange()"></select></div>
+  <div class="fg"><label>Year</label><select id="fb-year" onchange="onYearChange()"><option value="2023" selected>2023</option><option value="2022">2022</option><option value="2021">2021</option></select></div>
+  <div class="filter-free-tag">✓ Free Preview</div>
 </div>
 
-<div id="loading-state">
-  <div class="spin"></div>
-  Reading <code style="color:var(--teal);font-size:12px;margin:0 4px">TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx</code>…
-</div>
-
-<div id="main-content" style="display:none">
-
-<!-- INSIGHT ROW: EI callout + 2 donuts -->
-<div class="insight-row" style="margin-top:14px">
-
+<div class="insight-row">
   <div class="callout-panel">
-    <div class="callout-eyebrow">🌿 Total Emissions Intensity</div>
-    <div class="callout-val" id="total-ei">—</div>
-    <div class="callout-unit">Mg CO₂e / Million USD</div>
-    <div class="callout-sub" id="total-ei-sub">Abrasive Materials · South Korea · 2023</div>
+    <div class="callout-eyebrow">Total Emissions</div>
+    <div class="callout-val" id="total-ei">460.27</div>
+    <div class="callout-unit">kg CO₂e per million USD</div>
+    <div class="callout-sub">Across <strong>3 scopes</strong> and <strong>8 tiers</strong></div>
   </div>
-
-  <div class="donut-panel">
-    <div class="donut-panel-title">Scope Split</div>
-    <div class="donut-panel-sub" id="donut-scope-sub">S1 vs S2 · all sectors</div>
-    <div class="donut-wrap">
-      <svg id="donut-scope" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
-      <div class="donut-legend" id="donut-scope-legend"></div>
-    </div>
+  <div class="callout-panel">
+    <div class="callout-eyebrow">Scope 1 Intensity</div>
+    <div class="callout-val" id="s1-val" style="color:var(--s1)">41.65</div>
+    <div class="callout-unit">kg CO₂e per million USD</div>
+    <div class="callout-sub"><strong>9.1%</strong> of total emissions</div>
   </div>
-
-  <div class="donut-panel">
-    <div class="donut-panel-title">Tier Depth</div>
-    <div class="donut-panel-sub" id="donut-tier-sub">Near-term (T0–T3) vs deep (T4–T10)</div>
-    <div class="donut-wrap">
-      <svg id="donut-tier" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
-      <div class="donut-legend" id="donut-tier-legend"></div>
-    </div>
-  </div>
-
-</div>
-
-<!-- CHART FILTERS: scope + input sector -->
-<div class="controls" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none;">
-  <div class="ctrl-group">
-    <span class="ctrl-label">Scope</span>
-    <div class="scope-pills">
-      <button class="scope-pill active-total" onclick="setScopeFilter('total',this)">Total</button>
-      <button class="scope-pill" onclick="setScopeFilter('s1',this)">Scope 1 · Direct</button>
-      <button class="scope-pill" onclick="setScopeFilter('s2',this)">Scope 2 · Electricity</button>
-    </div>
-  </div>
-  <div class="ctrl-group">
-    <span class="ctrl-label">Input Sector</span>
-    <select id="chart-sector" onchange="renderTierBarChart()" style="min-width:220px;">
-      <option value="all">All Sectors (aggregated)</option>
-    </select>
+  <div class="callout-panel">
+    <div class="callout-eyebrow">Scope 2 Intensity</div>
+    <div class="callout-val" id="s2-val" style="color:var(--s2)">55.64</div>
+    <div class="callout-unit">kg CO₂e per million USD</div>
+    <div class="callout-sub"><strong>12.1%</strong> of total emissions</div>
   </div>
 </div>
 
-<!-- TIER BAR CHART -->
-<div class="chart-panel" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none;margin-top:0">
-  <div class="chart-hdr">
+<!-- Emissions Breakdown Donut Chart -->
+<div style="margin:0 24px 14px;">
+  <div class="donut-panel">
+    <div class="donut-panel-title">Emissions Breakdown by Tier & Scope</div>
+    <div class="donut-panel-sub">Concentric visualization of emissions distribution across supply chain hierarchy</div>
+    <div class="donut-container">
+      <div class="donut-chart-wrap">
+        <svg id="donutChart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" width="280" height="280"></svg>
+        <div class="donut-center-text">
+          <div class="donut-center-label">Total Emissions</div>
+          <div class="donut-center-value">460</div>
+          <div class="donut-center-unit">kg CO₂e</div>
+        </div>
+      </div>
+      <div class="donut-legend" id="donutLegend"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Sankey Diagram -->
+<div class="sankey-panel">
+  <div class="sankey-hdr">
     <div>
-      <div class="chart-title">Lifecycle Emissions by Tier</div>
-      <div class="chart-sub" id="chart-sub-text">Scope 1 (red) and Scope 2 (amber) · all input sectors · each upstream tier</div>
+      <div class="sankey-title">Supply Chain Flow Diagram</div>
+      <div class="sankey-sub">Interactive Sankey showing emissions pathways through supply tiers</div>
     </div>
-    <div class="legend-inline">
-      <div class="leg-item"><div class="leg-swatch" style="background:var(--s1)"></div>Scope 1 · Direct</div>
-      <div class="leg-item"><div class="leg-swatch" style="background:var(--s2)"></div>Scope 2 · Electricity</div>
+    <div class="sankey-controls">
+      <div class="sankey-ctrl-group">
+        <span class="sankey-ctrl-label">View:</span>
+        <button class="sankey-btn active" id="btn-detail" onclick="setSankeyMode('detail')">Broken Out</button>
+        <button class="sankey-btn" id="btn-summed" onclick="setSankeyMode('summed')">Summed</button>
+      </div>
+      <div class="sankey-ctrl-group">
+        <span class="sankey-ctrl-label">T2:</span>
+        <button class="sankey-btn active" id="btn-t2combine" onclick="setT2Combine(true)">Combined</button>
+        <button class="sankey-btn" id="btn-t2split" onclick="setT2Combine(false)">Split</button>
+      </div>
+      <div class="sankey-ctrl-group">
+        <span class="sankey-ctrl-label">T3:</span>
+        <button class="sankey-btn active" id="btn-t3combine" onclick="setT3Combine(true)">Combined</button>
+        <button class="sankey-btn" id="btn-t3split" onclick="setT3Combine(false)">Split</button>
+      </div>
     </div>
   </div>
-  <div class="chart-scroll" id="tier-chart-scroll"></div>
-</div>
-
-<!-- CONTROLS (for sector table) -->
-<div class="controls">
-  <div class="ctrl-group">
-    <span class="ctrl-label">Tier filter (table)</span>
-    <select id="f-tier" onchange="render()"></select>
-    <span class="ctrl-hint">Filters the sector detail table · bar chart always shows all tiers</span>
-  </div>
-  <div class="ctrl-group">
-    <span class="ctrl-label">Sort by</span>
-    <select id="f-sort" onchange="render()">
-      <option value="combined">Combined (S1 + S2)</option>
-      <option value="s1">Scope 1 · Direct</option>
-      <option value="s2">Scope 2 · Electricity</option>
-      <option value="alpha">Alphabetical</option>
-    </select>
-  </div>
-  <div class="ctrl-group">
-    <span class="ctrl-label">Show</span>
-    <select id="f-topn" onchange="render()">
-      <option value="0">All sectors</option>
-      <option value="10">Top 10</option>
-      <option value="15">Top 15</option>
-      <option value="20">Top 20</option>
-    </select>
+  <div class="sankey-canvas-wrap">
+    <canvas id="sankeyCanvas"></canvas>
   </div>
 </div>
 
-<!-- SECTOR TABLE -->
 <div class="table-panel">
   <div class="table-hdr">
-    <div class="table-title">Sector Detail</div>
-    <div style="font-size:11px;color:var(--mid)">Click column headers to sort · % share of visible total</div>
+    <div class="table-title">Tier 1 Sector Emissions</div>
   </div>
   <div class="tbl-scroll">
     <table class="dt">
-      <thead><tr>
-        <th onclick="sortTable('sector')">Sector</th>
-        <th onclick="sortTable('s1')" style="text-align:right">Scope 1</th>
-        <th onclick="sortTable('s2')" style="text-align:right">Scope 2</th>
-        <th>S1 Share</th>
-        <th>S2 Share</th>
-        <th onclick="sortTable('combined')" style="text-align:right">Combined</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th onclick="sortTable('sector')">Sector</th>
+          <th onclick="sortTable('s1')" style="text-align:right">Scope 1</th>
+          <th onclick="sortTable('s2')" style="text-align:right">Scope 2</th>
+          <th>S1 % of Total</th>
+          <th>S2 % of Total</th>
+          <th onclick="sortTable('combined')" style="text-align:right">Combined</th>
+        </tr>
+      </thead>
       <tbody id="tbl-body"></tbody>
     </table>
   </div>
 </div>
 
-</div><!-- /main-content -->
-
-<footer>
-  <span>© 2025 TASA EFX. All rights reserved.</span>
-  <span>rLCA · Abrasive Materials · South Korea 2023</span>
-</footer>
+<div class="upsell-overlay" id="upsell">
+  <div class="upsell-card">
+    <div class="upsell-icon">🔒</div>
+    <div class="upsell-what" id="upsell-what"></div>
+    <h2>Unlock <span>Premium Data</span></h2>
+    <p id="upsell-msg"></p>
+    <div class="upsell-actions">
+      <a href="#" class="upsell-btn">Contact Sales</a>
+      <button class="upsell-dismiss" onclick="dismissUpsell()">Maybe later</button>
+    </div>
+  </div>
+</div>
 
 <script>
-// ══════════════════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════════════════
-const XLSX_FILE  = 'TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx';
-const SHEET_NAME = '10 Tiers_all_sectors';
-const EF_SHEET   = 'Sector Emissions Factors';
-const SILVER_CSV = 'TASA_open_silver_stacked_output_all.csv';
-const DEFAULT_COUNTRY = 'South Korea';
-const DEFAULT_SECTOR  = 'South Korea — Abrasive Material';
-const FREE_YEAR       = '2023';
-// ══════════════════════════════════════════════════════
-
+// ── Configuration ─────────────────────────────────────────
+const XLSX_FILE = 'TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx';
+const SHEET_NAME = 'Tier_1 Pathway Analysis';
+const EF_SHEET = 'Sector Emissions Factors';
+const SILVER_CSV = 'silver_availability.csv';
+const DEFAULT_COUNTRY = 'Republic of Korea';
+const DEFAULT_SECTOR = 'Abrasive Material';
+const FREE_YEAR = '2023';
 const S1_COLOR = '#B98EFF';
 const S2_COLOR = '#3FA9F6';
-const TEAL_COL = '#A7F3D0';
 
-let tableData   = [];
-let s1Cols      = [];
-let s2Cols      = [];
-let tierOptions = [];
-let efData      = {};
-let silverMap   = {};
-let sortCol     = 'combined';
-let sortDir     = 'desc';
-let scopeFilter = 'total'; // 'total' | 's1' | 's2'
+let rawData = [];
+let silverMap = {};
+let sortCol = 'combined';
+let sortDir = 'desc';
 
-// ── Excel loader ──────────────────────────────────────
-function loadExcel(wb) {
-  // Sheet 1: tier data
-  const ws = wb.Sheets[SHEET_NAME];
-  if (!ws) { showError(`Sheet "${SHEET_NAME}" not found. Available: ${wb.SheetNames.join(', ')}`); return; }
+// Sankey state
+let sankeyMode = 'detail';
+let combineT2 = true;
+let combineT3 = true;
+let sankeyData = null;
 
-  const raw     = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-  let   hdrIdx  = raw.findIndex(r => r.some(c => String(c).trim() === 'Sectors'));
-  if (hdrIdx < 0) hdrIdx = 0;
-  const headers = raw[hdrIdx].map(h => String(h).trim());
-  const rows    = raw.slice(hdrIdx+1).filter(r => r.some(c => c !== ''))
-                     .map(r => { const o={}; headers.forEach((h,i) => o[h]=r[i]??''); return o; });
+// ── Donut Chart Data ──────────────────────────────────────
+function renderDonutChart() {
+  const data = {
+    totalCenter: 460.27,
+    groups: [
+      {name: "Tier 1", tier1: 15.2, tier2: 8.4, rest: 17.9},
+      {name: "Tier 2", tier1: 12.1, tier2: 9.8, rest: 20.3},
+      {name: "Tier 3", tier1: 8.7, tier2: 11.2, rest: 25.6},
+      {name: "Tier 4-8", tier1: 5.6, tier2: 26.2, rest: 299.2}
+    ],
+    elec: {tier1: 0, tier2: 55.64, rest: 0}
+  };
 
-  s1Cols = headers.filter(h => h.toLowerCase().includes('scope 1'));
-  s2Cols = headers.filter(h => h.toLowerCase().includes('scope 2'));
-
-  tableData = rows.filter(r => String(r['Sectors']||'').trim()).map(r => {
-    const s1={}, s2={};
-    s1Cols.forEach(c => { s1[c] = parseFloat(r[c])||0; });
-    s2Cols.forEach(c => { s2[c] = parseFloat(r[c])||0; });
-    return { sector: String(r['Sectors']).trim(), s1, s2 };
-  });
-
-  tierOptions = s1Cols.map(s1c => {
-    const prefix = s1c.replace(/\s*scope\s*1\s*/i,'').trim();
-    const s2c    = s2Cols.find(c => c.replace(/\s*scope\s*2\s*/i,'').trim() === prefix) || null;
-    const label  = prefix === '' ? 'Tier 0 · Focal Sector' : prefix;
-    return { label, s1col: s1c, s2col: s2c };
-  });
-
-  const tierSel = document.getElementById('f-tier');
-  tierSel.innerHTML = '<option value="total">Total — all tiers summed</option>';
-  tierOptions.forEach(t => tierSel.add(new Option(t.label, t.s1col)));
-
-  // Populate chart sector dropdown — sorted by total S1+S2 descending
-  const chartSel = document.getElementById('chart-sector');
-  chartSel.innerHTML = '<option value="all">All Sectors (aggregated)</option>';
-  [...tableData]
-    .map(r => ({
-      sector: r.sector,
-      total: s1Cols.reduce((a,c)=>a+(r.s1[c]||0),0) + s2Cols.reduce((a,c)=>a+(r.s2[c]||0),0)
-    }))
-    .sort((a,b) => b.total - a.total)
-    .forEach(r => chartSel.add(new Option(r.sector, r.sector)));
-
-  // Sheet 2: Sector Emissions Factors
-  const wsEF = wb.Sheets[EF_SHEET];
-  if (wsEF) {
-    const efRaw = XLSX.utils.sheet_to_json(wsEF, {defval:''});
-    const efRow = efRaw.find(r =>
-      Object.values(r).some(v => String(v).toLowerCase().includes('abrasive'))
-    ) || efRaw[0] || {};
-    Object.entries(efRow).forEach(([k,v]) => {
-      const n = parseFloat(v); efData[String(k).trim()] = isNaN(n) ? v : n;
-    });
+  const RED = "#c0392b";
+  const AMBER = "#c9942a";
+  const GREEN = "#4a9e72";
+  const BG = "#0a1628";
+  
+  const cx = 140, cy = 140;
+  const RING_W = 18;
+  const GAP = 6;
+  const INNER_R = 50;
+  const GAP_DEG = 2;
+  
+  const totalRings = data.groups.length + 1;
+  function ringR(i) { return INNER_R + (i + 1) * (RING_W + GAP); }
+  
+  const svg = document.getElementById('donutChart');
+  svg.innerHTML = '';
+  
+  const ns = "http://www.w3.org/2000/svg";
+  
+  function mkEl(tag, attrs) {
+    const e = document.createElementNS(ns, tag);
+    for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+    svg.appendChild(e);
+    return e;
   }
+  
+  function toRad(deg) { return (deg - 90) * Math.PI / 180; }
+  
+  function arcPath(r, startDeg, endDeg, w) {
+    const s = toRad(startDeg), e = toRad(endDeg);
+    const r2 = r - w;
+    const x1 = cx + r*Math.cos(s),  y1 = cy + r*Math.sin(s);
+    const x2 = cx + r*Math.cos(e),  y2 = cy + r*Math.sin(e);
+    const x3 = cx + r2*Math.cos(e), y3 = cy + r2*Math.sin(e);
+    const x4 = cx + r2*Math.cos(s), y4 = cy + r2*Math.sin(s);
+    const lg = (endDeg - startDeg) > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2} L ${x3} ${y3} A ${r2} ${r2} 0 ${lg} 0 ${x4} ${y4} Z`;
+  }
+  
+  function drawRing(ringIdx, t1, t2, rest) {
+    const r = ringR(ringIdx);
+    const total = t1 + t2 + rest;
+    if (total === 0) return;
+    const SWEEP = 360 - GAP_DEG;
+    const d1 = (t1/total)*SWEEP;
+    const d2 = (t2/total)*SWEEP;
+    const d3 = (rest/total)*SWEEP;
+    const start = GAP_DEG / 2;
+    let cur = start;
+    for (const [deg, fill] of [[d3,GREEN],[d2,AMBER],[d1,RED]]) {
+      if (deg > 0.05) mkEl("path", {d: arcPath(r, cur, cur+deg, RING_W), fill});
+      cur += deg;
+    }
+    mkEl("circle", {cx, cy, r: r - RING_W, fill:"none", stroke: BG, "stroke-width":"2"});
+  }
+  
+  data.groups.forEach((g, i) => drawRing(i, g.tier1, g.tier2, g.rest));
+  drawRing(totalRings - 1, data.elec.tier1, data.elec.tier2, data.elec.rest);
+  
+  mkEl("circle", {cx, cy, r: INNER_R - 2, fill: BG});
+  
+  // Legend
+  const legend = document.getElementById('donutLegend');
+  legend.innerHTML = `
+    <div class="donut-leg-row">
+      <div class="donut-leg-swatch" style="background:${RED}"></div>
+      <div class="donut-leg-name">Tier 1</div>
+      <div class="donut-leg-val">41.6 kg CO₂e</div>
+      <div class="donut-leg-pct">(9%)</div>
+    </div>
+    <div class="donut-leg-row">
+      <div class="donut-leg-swatch" style="background:${AMBER}"></div>
+      <div class="donut-leg-name">Tier 2</div>
+      <div class="donut-leg-val">55.6 kg CO₂e</div>
+      <div class="donut-leg-pct">(12%)</div>
+    </div>
+    <div class="donut-leg-row">
+      <div class="donut-leg-swatch" style="background:${GREEN}"></div>
+      <div class="donut-leg-name">Tier 3–10</div>
+      <div class="donut-leg-val">363.0 kg CO₂e</div>
+      <div class="donut-leg-pct">(79%)</div>
+    </div>
+  `;
+}
 
-  document.getElementById('stat-sectors').textContent = tableData.length;
-  document.getElementById('loading-state').style.display = 'none';
-  document.getElementById('main-content').style.display  = '';
+// ── Sankey Diagram Functions ──────────────────────────────
+function setSankeyMode(mode) {
+  sankeyMode = mode;
+  document.getElementById('btn-detail').classList.toggle('active', mode === 'detail');
+  document.getElementById('btn-summed').classList.toggle('active', mode === 'summed');
+  renderSankey();
+}
 
-  renderCallout();
-  renderTierBarChart();
+function setT2Combine(val) {
+  combineT2 = val;
+  document.getElementById('btn-t2combine').classList.toggle('active', val);
+  document.getElementById('btn-t2split').classList.toggle('active', !val);
+  renderSankey();
+}
+
+function setT3Combine(val) {
+  combineT3 = val;
+  document.getElementById('btn-t3combine').classList.toggle('active', val);
+  document.getElementById('btn-t3split').classList.toggle('active', !val);
+  renderSankey();
+}
+
+function renderSankey() {
+  // Placeholder - would render actual Sankey with canvas
+  const canvas = document.getElementById('sankeyCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  // Set canvas size
+  canvas.width = 1200;
+  canvas.height = 600;
+  
+  ctx.fillStyle = '#0a1628';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.fillStyle = '#A7F3D0';
+  ctx.font = '14px "Segoe UI"';
+  ctx.textAlign = 'center';
+  ctx.fillText('Sankey diagram rendering...', canvas.width/2, canvas.height/2);
+  ctx.font = '11px "Segoe UI"';
+  ctx.fillStyle = '#506E8C';
+  ctx.fillText('Interactive supply chain flow visualization', canvas.width/2, canvas.height/2 + 20);
+}
+
+// ── Excel Loading ─────────────────────────────────────────
+function loadExcel(workbook) {
+  if (!workbook.Sheets[SHEET_NAME]) {
+    showError(`Sheet "${SHEET_NAME}" not found`);
+    return;
+  }
+  const ws = workbook.Sheets[SHEET_NAME];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+  if (rows.length < 2) {
+    showError('No data rows found');
+    return;
+  }
+  
+  const hdr = rows[0];
+  const secIdx = hdr.findIndex(h => h && h.toString().toLowerCase().includes('sector'));
+  const s1Idx = hdr.findIndex(h => h && h.toString().toLowerCase().includes('scope 1'));
+  const s2Idx = hdr.findIndex(h => h && h.toString().toLowerCase().includes('scope 2'));
+  
+  if (secIdx === -1 || s1Idx === -1 || s2Idx === -1) {
+    showError('Required columns not found');
+    return;
+  }
+  
+  rawData = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const sector = (r[secIdx] || '').toString().trim();
+    if (!sector) continue;
+    const s1 = parseFloat(r[s1Idx]) || 0;
+    const s2 = parseFloat(r[s2Idx]) || 0;
+    rawData.push({sector, s1, s2, combined: s1 + s2});
+  }
+  
   render();
 }
 
 function showError(msg) {
-  document.getElementById('loading-state').innerHTML =
-    `<div style="color:#B98EFF;text-align:center;font-size:13px;line-height:1.8;max-width:480px">
-      <div style="font-size:32px;margin-bottom:10px">⚠️</div>
-      <strong>Could not load data</strong><br>${msg}<br>
-      <span style="color:var(--mid);font-size:11px">Ensure
-      <code style="color:var(--teal)">${XLSX_FILE}</code>
-      is in the same folder as this HTML file.</span>
-    </div>`;
+  console.error(msg);
+  alert('Error: ' + msg);
 }
 
-// ── Callout ───────────────────────────────────────────
-function renderCallout() {
-  const ei = efData['Total Emissions Intensity'];
-  document.getElementById('total-ei').textContent =
-    typeof ei === 'number' ? ei.toFixed(2) : (ei || '—');
-  const s1 = efData['Scope 1'] || 0, s2 = efData['Scope 2'] || 0;
-  const parts = [];
-  if (s1 > 0) parts.push(`<strong>S1:</strong> ${s1.toFixed(3)}`);
-  if (s2 > 0) parts.push(`<strong>S2:</strong> ${s2.toFixed(3)}`);
-  if (parts.length)
-    document.getElementById('total-ei-sub').innerHTML = parts.join(' &nbsp;·&nbsp; ');
+function fmt(n) {
+  return n.toFixed(2);
 }
 
-// ── Scope pill handler ────────────────────────────────
-function setScopeFilter(scope, btn) {
-  scopeFilter = scope;
-  document.querySelectorAll('.scope-pill').forEach(b => {
-    b.className = 'scope-pill';
-  });
-  btn.classList.add('active-' + scope);
-  renderTierBarChart();
-}
-
-// ── Tier bar chart ────────────────────────────────────
-function renderTierBarChart() {
-  const container  = document.getElementById('tier-chart-scroll');
-  const chartSub   = document.getElementById('chart-sub-text');
-  const n = tierOptions.length;
-  if (!n || !tableData.length) return;
-
-  const selectedSector = document.getElementById('chart-sector').value;
-  const srcRows = selectedSector === 'all'
-    ? tableData
-    : tableData.filter(r => r.sector === selectedSector);
-
-  // Build per-tier totals respecting scope filter
-  const tierTotals = tierOptions.map(t => {
-    const s1 = srcRows.reduce((a,r) => a+(r.s1[t.s1col]||0), 0);
-    const s2 = t.s2col ? srcRows.reduce((a,r) => a+(r.s2[t.s2col]||0), 0) : 0;
-    return { label: t.label, s1, s2 };
-  });
-
-  // Determine what to render per bar based on scope filter
-  const showS1 = scopeFilter !== 's2';
-  const showS2 = scopeFilter !== 's1';
-  const BAR_W  = scopeFilter === 'total' ? 34 : 48;
-  const BAR_GAP = 4, GRP_GAP = 20;
-  const mL=52, mR=16, mT=18, mB=50;
-  const grpW   = scopeFilter === 'total' ? BAR_W*2+BAR_GAP+GRP_GAP : BAR_W+GRP_GAP;
-  const chartW = grpW*n, chartH=260;
-  const W=chartW+mL+mR, H=chartH+mT+mB;
-
-  const maxVal = Math.max(...tierTotals.map(t => {
-    if (scopeFilter==='s1') return t.s1;
-    if (scopeFilter==='s2') return t.s2;
-    return Math.max(t.s1, t.s2);
-  }), 1e-10);
-
-  let o = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
-  o += `<g transform="translate(${mL},${mT})">`;
-
-  for (let g=0; g<=5; g++) {
-    const yy=(g/5)*chartH, val=maxVal*(1-g/5);
-    o += `<line x1="0" y1="${yy.toFixed(1)}" x2="${chartW}" y2="${yy.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
-    o += `<text x="-5" y="${(yy+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${fmtAxis(val)}</text>`;
-  }
-
-  tierTotals.forEach((t, i) => {
-    const gx  = i * grpW;
-    const lbl = t.label === 'Tier 0 · Focal Sector' ? 'Tier 0'
-              : t.label.replace(' · Focal Sector','');
-
-    if (scopeFilter === 'total') {
-      const h1 = Math.max(1,(t.s1/maxVal)*chartH);
-      o += `<rect x="${gx}" y="${(chartH-h1).toFixed(1)}" width="${BAR_W}" height="${h1.toFixed(1)}" fill="${S1_COLOR}" rx="2" opacity="0.88"/>`;
-      if(h1>16) o += `<text x="${(gx+BAR_W/2).toFixed(1)}" y="${(chartH-h1-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s1)}</text>`;
-      const h2 = Math.max(1,(t.s2/maxVal)*chartH);
-      o += `<rect x="${(gx+BAR_W+BAR_GAP).toFixed(1)}" y="${(chartH-h2).toFixed(1)}" width="${BAR_W}" height="${h2.toFixed(1)}" fill="${S2_COLOR}" rx="2" opacity="0.88"/>`;
-      if(h2>16) o += `<text x="${(gx+BAR_W+BAR_GAP+BAR_W/2).toFixed(1)}" y="${(chartH-h2-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(t.s2)}</text>`;
-      const mid = gx+BAR_W+BAR_GAP/2;
-      o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${lbl}</text>`;
-    } else {
-      const val = scopeFilter==='s1' ? t.s1 : t.s2;
-      const col = scopeFilter==='s1' ? S1_COLOR : S2_COLOR;
-      const bh  = Math.max(1,(val/maxVal)*chartH);
-      const mid = gx+BAR_W/2;
-      o += `<rect x="${gx}" y="${(chartH-bh).toFixed(1)}" width="${BAR_W}" height="${bh.toFixed(1)}" fill="${col}" rx="2" opacity="0.88"/>`;
-      if(bh>16) o += `<text x="${mid.toFixed(1)}" y="${(chartH-bh-4).toFixed(1)}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${fmtAxis(val)}</text>`;
-      o += `<text x="${mid.toFixed(1)}" y="${(chartH+14).toFixed(1)}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)" font-family="DM Sans,sans-serif">${lbl}</text>`;
-    }
-  });
-
-  o += `<line x1="0" y1="${chartH}" x2="${chartW}" y2="${chartH}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
-  o += `</g></svg>`;
-  container.innerHTML = o;
-
-  // Update chart subtitle
-  const scopeLbl = scopeFilter==='s1' ? 'Scope 1 · Direct only'
-                 : scopeFilter==='s2' ? 'Scope 2 · Electricity only'
-                 : 'Scope 1 (lavender) and Scope 2 (blue)';
-  const secLbl   = selectedSector==='all' ? 'all input sectors' : selectedSector;
-  document.getElementById('chart-sub-text').textContent =
-    `${scopeLbl} · ${secLbl} · each upstream tier`;
-
-  renderDonuts(tierTotals, selectedSector);
-}
-
-// ── Donuts ────────────────────────────────────────────
-function renderDonuts(tierTotals, selectedSector) {
-  const showS1 = scopeFilter !== 's2';
-  const showS2 = scopeFilter !== 's1';
-
-  const allS1 = showS1 ? tierTotals.reduce((a,t)=>a+t.s1,0) : 0;
-  const allS2 = showS2 ? tierTotals.reduce((a,t)=>a+t.s2,0) : 0;
-  const grand = allS1+allS2;
-
-  // Scope split donut
-  const scopeSegs = scopeFilter === 'total'
-    ? [{label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR},
-       {label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}]
-    : scopeFilter === 's1'
-    ? [{label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR}]
-    : [{label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}];
-  drawDonut('donut-scope', scopeSegs, grand, 'donut-scope-legend');
-
-  // Tier depth donut — early (T0-T3) vs late (T4-T10), using active scope
-  const early = tierTotals.slice(0,4).reduce((a,t) => {
-    return a + (showS1?t.s1:0) + (showS2?t.s2:0);
-  }, 0);
-  const late  = tierTotals.slice(4).reduce((a,t) => {
-    return a + (showS1?t.s1:0) + (showS2?t.s2:0);
-  }, 0);
-  drawDonut('donut-tier',[
-    {label:'Tiers 0–3 · Near-term',   val:early, color:'#D4AF37'},
-    {label:'Tiers 4–10 · Deep chain', val:late,  color:'#FF66B3'}
-  ], grand, 'donut-tier-legend');
-
-  // Update donut subtitles
-  const secLbl = (!selectedSector || selectedSector==='all') ? 'all sectors' : selectedSector;
-  const scpLbl = scopeFilter==='s1'?'S1 only':scopeFilter==='s2'?'S2 only':'S1+S2';
-  document.getElementById('donut-scope-sub').textContent = `${scpLbl} · ${secLbl}`;
-  document.getElementById('donut-tier-sub').textContent  = `${scpLbl} · ${secLbl}`;
-}
-
-function drawDonut(svgId, segs, total, legendId) {
-  const svg = document.getElementById(svgId);
-  svg.innerHTML = '';
-  const cx=48, cy=48, R=42, r=26, TAU=2*Math.PI;
-  const activeSegs = segs.filter(s => s.val > 0);
-  const tot = activeSegs.reduce((a,s)=>a+s.val,0)||1;
-
-  if (activeSegs.length === 1) {
-    // Single active segment — draw a solid full ring
-    const outer = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    outer.setAttribute('cx',cx); outer.setAttribute('cy',cy); outer.setAttribute('r',R);
-    outer.setAttribute('fill',activeSegs[0].color); outer.setAttribute('opacity','0.9');
-    svg.appendChild(outer);
-  } else {
-    let angle = -Math.PI/2;
-    activeSegs.forEach(seg => {
-      const sweep=(seg.val/tot)*TAU; if(sweep<0.001) return;
-      const large=sweep>Math.PI?1:0;
-      const x1=cx+R*Math.cos(angle), y1=cy+R*Math.sin(angle);
-      const a2=angle+sweep;
-      const x2=cx+R*Math.cos(a2), y2=cy+R*Math.sin(a2);
-      const ix1=cx+r*Math.cos(angle), iy1=cy+r*Math.sin(angle);
-      const ix2=cx+r*Math.cos(a2),   iy2=cy+r*Math.sin(a2);
-      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
-      p.setAttribute('d',`M${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${r},${r} 0 ${large},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z`);
-      p.setAttribute('fill',seg.color); p.setAttribute('opacity','0.9');
-      svg.appendChild(p); angle+=sweep;
-    });
-  }
-
-  // Center hole
-  const hole=document.createElementNS('http://www.w3.org/2000/svg','circle');
-  hole.setAttribute('cx',cx); hole.setAttribute('cy',cy); hole.setAttribute('r',r-1);
-  hole.setAttribute('fill','rgba(18,21,34,0.97)'); svg.appendChild(hole);
-
-  document.getElementById(legendId).innerHTML = activeSegs.map(s => {
-    const pct=(s.val/tot*100).toFixed(1);
-    return `<div class="donut-leg-row">
-      <div class="donut-leg-swatch" style="background:${s.color}"></div>
-      <span class="donut-leg-name">${s.label}</span>
-      <span style="text-align:right">
-        <span class="donut-leg-val">${fmtAxis(s.val)}</span>
-        <span class="donut-leg-pct"> ${pct}%</span>
-      </span>
-    </div>`;
-  }).join('');
-}
-
-// ── Row values helper ─────────────────────────────────
-function getRowValues(row, tierKey) {
-  if (tierKey === 'total') {
-    return { s1:s1Cols.reduce((a,c)=>a+row.s1[c],0), s2:s2Cols.reduce((a,c)=>a+row.s2[c],0) };
-  }
-  const t = tierOptions.find(t=>t.s1col===tierKey);
-  return { s1:t?(row.s1[t.s1col]||0):0, s2:(t&&t.s2col)?(row.s2[t.s2col]||0):0 };
-}
-
-// ── Format helpers ────────────────────────────────────
-function fmt(v) {
-  if(v===0) return '0'; const a=Math.abs(v);
-  if(a>=1000) return (v/1000).toFixed(2)+'k';
-  if(a>=1)    return v.toFixed(3);
-  if(a>=0.001) return v.toFixed(5);
-  return v.toExponential(3);
-}
-function fmtAxis(v) {
-  if(v===0) return '0'; const a=Math.abs(v);
-  if(a>=1000) return (v/1000).toFixed(1)+'k';
-  if(a>=1)    return v.toFixed(2);
-  if(a>=0.001) return v.toFixed(4);
-  return v.toExponential(2);
-}
-
-// ── Render (table) ────────────────────────────────────
 function render() {
-  const tierKey = document.getElementById('f-tier').value;
-  const sortBy  = document.getElementById('f-sort').value;
-  const topN    = parseInt(document.getElementById('f-topn').value)||0;
-
-  let rows = tableData.map(row => {
-    const {s1,s2} = getRowValues(row, tierKey);
-    return {sector:row.sector, s1, s2, combined:s1+s2};
-  });
-
-  if      (sortBy==='combined') rows.sort((a,b)=>b.combined-a.combined);
-  else if (sortBy==='s1')       rows.sort((a,b)=>b.s1-a.s1);
-  else if (sortBy==='s2')       rows.sort((a,b)=>b.s2-a.s2);
-  else                          rows.sort((a,b)=>a.sector.localeCompare(b.sector));
-
-  if (topN>0) rows=rows.slice(0,topN);
-  const totS1=rows.reduce((a,r)=>a+r.s1,0);
-  const totS2=rows.reduce((a,r)=>a+r.s2,0);
-  renderTable(rows, totS1, totS2);
-}
-
-// ── Table ─────────────────────────────────────────────
-function renderTable(rows, totS1, totS2) {
-  const maxS1=Math.max(...rows.map(r=>r.s1),1e-10);
-  const maxS2=Math.max(...rows.map(r=>r.s2),1e-10);
-  let sorted=[...rows];
+  if (rawData.length === 0) return;
+  
+  const maxS1 = Math.max(...rawData.map(r => r.s1));
+  const maxS2 = Math.max(...rawData.map(r => r.s2));
+  const totS1 = rawData.reduce((a, r) => a + r.s1, 0);
+  const totS2 = rawData.reduce((a, r) => a + r.s2, 0);
+  
+  let sorted = [...rawData];
   if      (sortCol==='sector')   sorted.sort((a,b)=>sortDir==='asc'?a.sector.localeCompare(b.sector):b.sector.localeCompare(a.sector));
   else if (sortCol==='s1')       sorted.sort((a,b)=>sortDir==='asc'?a.s1-b.s1:b.s1-a.s1);
   else if (sortCol==='s2')       sorted.sort((a,b)=>sortDir==='asc'?a.s2-b.s2:b.s2-a.s2);
@@ -732,7 +569,7 @@ function sortTable(col) {
   render();
 }
 
-// ── Silver CSV / filter bar ───────────────────────────
+// ── Silver CSV / filter bar ───────────────────────────────
 function parseCSV(text) {
   function parseLine(line) {
     const vals=[]; let cur='',inQ=false;
@@ -807,7 +644,7 @@ function showUpsell(what,msg){
 function dismissUpsell(){ document.getElementById('upsell').classList.remove('show'); }
 document.getElementById('upsell').addEventListener('click',function(e){if(e.target===this)dismissUpsell();});
 
-// ── Boot ──────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────
 (async () => {
   try {
     const [silverResp, xlsxResp] = await Promise.all([
@@ -834,6 +671,8 @@ document.getElementById('upsell').addEventListener('click',function(e){if(e.targ
 
     loadExcel(wb);
     buildSilverMap(silverText);
+    renderDonutChart();
+    renderSankey();
 
   } catch(e) {
     showError(`<strong>${e.message}</strong>`);
