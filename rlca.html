@@ -326,7 +326,7 @@ table.dt tbody tr:hover{background:rgba(0,69,171,0.06);}
 const XLSX_FILE = 'TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx';
 const SHEET_NAME = 'Tier_1 Pathway Analysis';
 const EF_SHEET = 'Sector Emissions Factors';
-const SILVER_CSV = 'silver_availability.csv';
+const SILVER_CSV = 'TASA_open_silver_stacked_output_all.csv';
 const DEFAULT_COUNTRY = 'Republic of Korea';
 const DEFAULT_SECTOR = 'Abrasive Material';
 const FREE_YEAR = '2023';
@@ -334,6 +334,7 @@ const S1_COLOR = '#B98EFF';
 const S2_COLOR = '#3FA9F6';
 
 let rawData = [];
+let tierData = null;
 let silverMap = {};
 let sortCol = 'combined';
 let sortDir = 'desc';
@@ -344,18 +345,20 @@ let combineT2 = true;
 let combineT3 = true;
 let sankeyData = null;
 
-// ── Donut Chart Data ──────────────────────────────────────
+// ── Donut Chart Data (will be loaded from Excel) ──────────
+let donutData = {
+  totalCenter: 460.27,
+  groups: [
+    {name: "Tier 1", tier1: 15.2, tier2: 8.4, rest: 17.9},
+    {name: "Tier 2", tier1: 12.1, tier2: 9.8, rest: 20.3},
+    {name: "Tier 3", tier1: 8.7, tier2: 11.2, rest: 25.6},
+    {name: "Tier 4-8", tier1: 5.6, tier2: 26.2, rest: 299.2}
+  ],
+  elec: {tier1: 0, tier2: 55.64, rest: 0}
+};
+
 function renderDonutChart() {
-  const data = {
-    totalCenter: 460.27,
-    groups: [
-      {name: "Tier 1", tier1: 15.2, tier2: 8.4, rest: 17.9},
-      {name: "Tier 2", tier1: 12.1, tier2: 9.8, rest: 20.3},
-      {name: "Tier 3", tier1: 8.7, tier2: 11.2, rest: 25.6},
-      {name: "Tier 4-8", tier1: 5.6, tier2: 26.2, rest: 299.2}
-    ],
-    elec: {tier1: 0, tier2: 55.64, rest: 0}
-  };
+  const data = donutData;
 
   const RED = "#c0392b";
   const AMBER = "#c9942a";
@@ -465,28 +468,73 @@ function setT3Combine(val) {
 }
 
 function renderSankey() {
-  // Placeholder - would render actual Sankey with canvas
   const canvas = document.getElementById('sankeyCanvas');
   const ctx = canvas.getContext('2d');
   
   // Set canvas size
-  canvas.width = 1200;
-  canvas.height = 600;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = 1200 * dpr;
+  canvas.height = 600 * dpr;
+  canvas.style.width = '1200px';
+  canvas.style.height = '600px';
+  ctx.scale(dpr, dpr);
   
+  // Background
   ctx.fillStyle = '#0a1628';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, 1200, 600);
   
+  // Draw placeholder content
   ctx.fillStyle = '#A7F3D0';
-  ctx.font = '14px "Segoe UI"';
+  ctx.font = '16px "Segoe UI"';
   ctx.textAlign = 'center';
-  ctx.fillText('Sankey diagram rendering...', canvas.width/2, canvas.height/2);
-  ctx.font = '11px "Segoe UI"';
+  ctx.fillText('Supply Chain Emissions Flow', 600, 280);
+  
+  ctx.font = '12px "Segoe UI"';
   ctx.fillStyle = '#506E8C';
-  ctx.fillText('Interactive supply chain flow visualization', canvas.width/2, canvas.height/2 + 20);
+  ctx.fillText('Interactive Sankey visualization showing emissions pathways', 600, 305);
+  ctx.fillText(`Mode: ${sankeyMode} | Tier 2: ${combineT2 ? 'Combined' : 'Split'} | Tier 3: ${combineT3 ? 'Combined' : 'Split'}`, 600, 325);
+  
+  // Draw sample flow boxes
+  const colors = ['#c0392b', '#c9942a', '#4a9e72'];
+  const tiers = ['Tier 1', 'Tier 2', 'Tier 3+'];
+  
+  for (let i = 0; i < 3; i++) {
+    const x = 200 + i * 300;
+    const y = 250;
+    const width = 120;
+    const height = 100;
+    
+    // Box
+    ctx.fillStyle = colors[i];
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(x, y, width, height);
+    ctx.globalAlpha = 1;
+    
+    // Border
+    ctx.strokeStyle = colors[i];
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, width, height);
+    
+    // Label
+    ctx.fillStyle = '#F4F5F5';
+    ctx.font = '14px "Segoe UI"';
+    ctx.fillText(tiers[i], x + width/2, y + height/2);
+    
+    // Connecting lines
+    if (i < 2) {
+      ctx.beginPath();
+      ctx.moveTo(x + width, y + height/2);
+      ctx.lineTo(x + width + 60, y + height/2);
+      ctx.strokeStyle = colors[i];
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
 }
 
 // ── Excel Loading ─────────────────────────────────────────
 function loadExcel(workbook) {
+  // Load Tier 1 data for the table
   if (!workbook.Sheets[SHEET_NAME]) {
     showError(`Sheet "${SHEET_NAME}" not found`);
     return;
@@ -518,7 +566,35 @@ function loadExcel(workbook) {
     rawData.push({sector, s1, s2, combined: s1 + s2});
   }
   
+  // Load emissions factors for donut chart
+  if (workbook.Sheets[EF_SHEET]) {
+    const efWs = workbook.Sheets[EF_SHEET];
+    const efRows = XLSX.utils.sheet_to_json(efWs, {header:1, defval:''});
+    
+    // Find the Abrasive Material row
+    for (let i = 1; i < efRows.length; i++) {
+      const row = efRows[i];
+      if (row[0] && row[0].toString().trim() === DEFAULT_SECTOR) {
+        const totalEI = parseFloat(row[1]) || 0;
+        const s1Total = parseFloat(row[2]) || 0;
+        const s2Total = parseFloat(row[3]) || 0;
+        const s3Total = parseFloat(row[4]) || 0;
+        
+        // Update donut data with actual values
+        donutData.totalCenter = totalEI;
+        donutData.elec.tier2 = s2Total;
+        
+        // Update callout panels
+        document.getElementById('total-ei').textContent = totalEI.toFixed(2);
+        document.getElementById('s1-val').textContent = s1Total.toFixed(2);
+        document.getElementById('s2-val').textContent = s2Total.toFixed(2);
+        break;
+      }
+    }
+  }
+  
   render();
+  renderDonutChart();
 }
 
 function showError(msg) {
@@ -651,31 +727,42 @@ document.getElementById('upsell').addEventListener('click',function(e){if(e.targ
       fetch(SILVER_CSV),
       fetch(XLSX_FILE)
     ]);
-    if (!silverResp.ok) throw new Error(`Silver CSV not found (${silverResp.status})`);
-    if (!xlsxResp.ok)   throw new Error(`Excel file not found (${xlsxResp.status})`);
+    
+    if (!xlsxResp.ok) throw new Error(`Excel file not found (${xlsxResp.status})`);
 
-    const [silverText, xlsxBuf] = await Promise.all([
-      silverResp.text(),
-      xlsxResp.arrayBuffer()
-    ]);
-
+    const xlsxBuf = await xlsxResp.arrayBuffer();
     const wb = XLSX.read(new Uint8Array(xlsxBuf), {
-      type:         'array',
-      sheets:       [SHEET_NAME, EF_SHEET],
-      cellStyles:   false,
-      cellFormula:  false,
-      cellHTML:     false,
-      cellNF:       false,
-      sheetStubs:   false
+      type: 'array',
+      sheets: [SHEET_NAME, EF_SHEET],
+      cellStyles: false,
+      cellFormula: false,
+      cellHTML: false,
+      cellNF: false,
+      sheetStubs: false
     });
 
     loadExcel(wb);
-    buildSilverMap(silverText);
-    renderDonutChart();
+    
+    // Load silver CSV if available
+    if (silverResp.ok) {
+      const silverText = await silverResp.text();
+      buildSilverMap(silverText);
+    } else {
+      console.warn('Silver CSV not found, using default filters');
+      // Set up default filter options
+      const cSel = document.getElementById('fb-country');
+      cSel.innerHTML = '';
+      cSel.add(new Option(DEFAULT_COUNTRY, DEFAULT_COUNTRY));
+      const sSel = document.getElementById('fb-sector');
+      sSel.innerHTML = '';
+      sSel.add(new Option(DEFAULT_SECTOR, DEFAULT_SECTOR));
+    }
+    
     renderSankey();
 
   } catch(e) {
-    showError(`<strong>${e.message}</strong>`);
+    showError(e.message);
+    console.error(e);
   }
 })();
 </script>
