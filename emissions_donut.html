@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Upstream Emissions</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #f0ede6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .legend {
+    display: flex;
+    gap: 28px;
+    margin-top: 16px;
+    padding-left: 20px;
+    font-size: 13px;
+    color: #444;
+  }
+  .legend span { display: flex; align-items: center; gap: 7px; }
+  .legend i { width: 13px; height: 13px; border-radius: 2px; display: inline-block; }
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <svg id="chart" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="legend">
+    <span><i style="background:#c0392b"></i> Tier 1</span>
+    <span><i style="background:#c9942a"></i> Tier 2</span>
+    <span><i style="background:#4a9e72"></i> Tier 3–10</span>
+  </div>
+</div>
+
+<script>
+const DATA = {"totalCenter": 358.77795978486347, "elec": {"tier1": 55.784469581987274, "tier2": 35.30711684139568, "rest": 51.887996749938665}, "groups": [{"name": "Plastics", "tier1": 1.408193577412428, "tier2": 0.4948741287504512, "rest": 0.609791692020851}, {"name": "Cement", "tier1": 0.3043136055102559, "tier2": 3.20295942893722, "rest": 2.174318301621345}, {"name": "Steel", "tier1": -0.04135562338615001, "tier2": 1.9009507949822941, "rest": 21.00496563132935}, {"name": "Aluminum", "tier1": 0.0227774631981272, "tier2": 0.0271390573234149, "rest": 0.1741681452974823}, {"name": "Other", "tier1": 54.69627684360857, "tier2": 54.49923469406629, "rest": 75.31976887086982}]};
+
+const RED   = "#c0392b";
+const AMBER = "#c9942a";
+const GREEN = "#4a9e72";
+const BG    = "#f0ede6";
+
+const cx = 310, cy = 310;
+const RING_W = 18;
+const GAP = 6;
+const INNER_R = 100;
+const GAP_DEG = 2;
+
+const totalRings = DATA.groups.length + 1;
+function ringR(i) { return INNER_R + (i + 1) * (RING_W + GAP); }
+const outerR = ringR(totalRings - 1);
+
+const W = outerR + cx + 360;
+const H = outerR * 2 + 40;
+const svgCy = H / 2;
+
+const ns = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("chart");
+svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+svg.setAttribute("width", W);
+svg.setAttribute("height", H);
+
+const cy2 = svgCy;
+
+function mkEl(tag, attrs, parent) {
+  const e = document.createElementNS(ns, tag);
+  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function toRad(deg) { return (deg - 90) * Math.PI / 180; }
+
+function arcPath(r, startDeg, endDeg, w) {
+  const s = toRad(startDeg), e = toRad(endDeg);
+  const r2 = r - w;
+  const x1 = cx + r*Math.cos(s),  y1 = cy2 + r*Math.sin(s);
+  const x2 = cx + r*Math.cos(e),  y2 = cy2 + r*Math.sin(e);
+  const x3 = cx + r2*Math.cos(e), y3 = cy2 + r2*Math.sin(e);
+  const x4 = cx + r2*Math.cos(s), y4 = cy2 + r2*Math.sin(s);
+  const lg = (endDeg - startDeg) > 180 ? 1 : 0;
+  return `M ${x1} ${y1} A ${r} ${r} 0 ${lg} 1 ${x2} ${y2} L ${x3} ${y3} A ${r2} ${r2} 0 ${lg} 0 ${x4} ${y4} Z`;
+}
+
+function drawRing(ringIdx, t1, t2, rest) {
+  const r = ringR(ringIdx);
+  const total = t1 + t2 + rest;
+  if (total === 0) return;
+  const SWEEP = 360 - GAP_DEG;
+  const d1 = (t1/total)*SWEEP;
+  const d2 = (t2/total)*SWEEP;
+  const d3 = (rest/total)*SWEEP;
+  const start = GAP_DEG / 2;
+  let cur = start;
+  // REVERSED ORDER: Tier 3+ (GREEN), then Tier 2 (AMBER), then Tier 1 (RED)
+  for (const [deg, fill] of [[d3,GREEN],[d2,AMBER],[d1,RED]]) {
+    if (deg > 0.05) mkEl("path", {d: arcPath(r, cur, cur+deg, RING_W), fill}, svg);
+    cur += deg;
+  }
+  mkEl("circle", {cx, cy: cy2, r: r - RING_W, fill:"none", stroke: BG, "stroke-width":"3"}, svg);
+}
+
+function fmt(v) {
+  if (v >= 1e6) return (v/1e6).toFixed(1)+"M";
+  if (v >= 1e3) return (v/1e3).toFixed(0)+"K";
+  return Math.round(v).toString();
+}
+
+DATA.groups.forEach((g, i) => drawRing(i, g.tier1, g.tier2, g.rest));
+drawRing(totalRings - 1, DATA.elec.tier1, DATA.elec.tier2, DATA.elec.rest);
+
+mkEl("circle", {cx, cy: cy2, r: INNER_R - 2, fill: BG}, svg);
+
+function txt(x, y, content, style={}) {
+  const t = mkEl("text", {x, y, ...style}, svg);
+  t.textContent = content;
+  return t;
+}
+
+txt(cx, cy2 - 12, "Total emissions", {
+  "text-anchor":"middle","font-size":"14","fill":"#666","font-family":"sans-serif"
+});
+txt(cx, cy2 + 16, fmt(DATA.totalCenter), {
+  "text-anchor":"middle","font-size":"36","font-weight":"600","fill":"#1a1a1a","font-family":"sans-serif"
+});
+txt(cx, cy2 + 36, "kg CO₂e", {
+  "text-anchor":"middle","font-size":"12","fill":"#999","font-family":"sans-serif"
+});
+
+const allLabels = [
+  {
+    label: "Upstream electricity (Scope 2)",
+    tier1: DATA.elec.tier1,
+    tier2: DATA.elec.tier2,
+    rest: DATA.elec.rest,
+    ringIdx: totalRings - 1
+  },
+  ...DATA.groups.map((g, i) => ({
+    label: g.name,
+    tier1: g.tier1,
+    tier2: g.tier2,
+    rest: g.rest,
+    ringIdx: i
+  }))
+];
+
+const n = allLabels.length;
+const ARROW_LEN = 80;
+const arrowStartX = cx + outerR + 12;
+const arrowEndX   = arrowStartX + ARROW_LEN;
+
+const labelSpacing = Math.min(46, (H - 100) / n);
+const totalH = (n - 1) * labelSpacing;
+const firstY  = cy2 - totalH / 2;
+
+// Vertical line at the edge of outermost circle (same color as background to be invisible)
+const verticalLineX = cx + outerR;
+mkEl("line", {
+  x1: verticalLineX, y1: cy2 - outerR - 20,
+  x2: verticalLineX, y2: cy2 + outerR + 20,
+  stroke: BG, "stroke-width": "1"
+}, svg);
+
+allLabels.forEach((item, idx) => {
+  const ly = firstY + idx * labelSpacing;
+  
+  // Arrow starts at top of ring, goes horizontally (tangent at 90 degrees)
+  const ringRadius = ringR(item.ringIdx);
+  const arrowFromX = cx;
+  const arrowFromY = cy2 - ringRadius + RING_W/2;
+  const arrowEndX = verticalLineX;
+  const arrowEndY = arrowFromY;
+
+  // Horizontal arrow line from top of ring to vertical line
+  mkEl("line", {
+    x1: arrowFromX, y1: arrowFromY,
+    x2: arrowEndX,   y2: arrowEndY,
+    stroke: "#111", "stroke-width": "1"
+  }, svg);
+
+  // Arrow head at the end
+  mkEl("polygon", {
+    points: `${arrowEndX},${arrowEndY} ${arrowEndX-7},${arrowEndY-3} ${arrowEndX-7},${arrowEndY+3}`,
+    fill: "#111"
+  }, svg);
+
+  // Single line label with total in parentheses
+  const total = item.tier1 + item.tier2 + item.rest;
+  const labelText = `${item.label} (${fmt(total)} kg CO₂e)`;
+  txt(verticalLineX + 8, arrowEndY + 5, labelText, {
+    "font-size":"13","font-weight":"500","fill":"#1a1a1a","font-family":"sans-serif"
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TASA EFX — Emissions Intelligence Platform</title>
+<style>
+  :root {
+    --navy:       #050d1a;
+    --panel:      #0a1628;
+    --panel2:     #0d1c35;
+    --primary:    #0045AB;
+    --primary-lt: #A7CCE7;
+    --accent:     #3FA9F6;
+    --orange:     #FFBB00;
+    --border:     rgba(0,69,171,0.22);
+    --dim:        rgba(244,245,245,0.48);
+    --mid:        rgba(244,245,245,0.28);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter','Segoe UI',Arial,sans-serif; background:var(--navy); color:#F4F5F5; min-height:100vh; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 36px; height:58px;
+    background:rgba(5,13,26,0.97); border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:100; backdrop-filter:blur(12px);
+  }
+  .nav-logo { display:flex; align-items:center; gap:12px; text-decoration:none; color:#F4F5F5; }
+  .nav-logo img { height:36px; width:auto; display:block; }
+  .nav-logo span { font-size:15px; font-weight:700; letter-spacing:-0.01em; }
+  .nav-logo span em { color:var(--orange); font-style:normal; }
+  .nav-links { display:flex; gap:4px; }
+  .nav-links a { color:var(--dim); text-decoration:none; font-size:13px; font-weight:500;
+    padding:6px 12px; border-radius:6px; transition:background .15s,color .15s; }
+  .nav-links a:hover { color:#F4F5F5; background:rgba(255,255,255,0.06); }
+  .nav-links a.active { color:#F4F5F5; background:rgba(0,69,171,0.25); }
+
+  .hero { padding:80px 36px 60px; max-width:1100px; margin:0 auto; }
+  .hero .eyebrow { font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--orange); margin-bottom:16px; font-weight:600; }
+  .hero h1 { font-size:clamp(32px,5vw,58px); font-weight:800; letter-spacing:-0.03em; line-height:1.08; margin-bottom:20px; }
+  .hero h1 span { color:var(--orange); }
+  .hero p { font-size:16px; line-height:1.7; color:var(--dim); max-width:520px; margin-bottom:40px; }
+  .hero-btns { display:flex; gap:14px; flex-wrap:wrap; }
+  .btn-primary { background:var(--orange); color:var(--navy); padding:13px 30px; border-radius:8px; font-weight:700; text-decoration:none; font-size:14px; transition:transform 0.15s,box-shadow 0.15s; }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,187,0,0.35); }
+  .btn-ghost { border:1.5px solid rgba(0,69,171,0.4); color:var(--primary-lt); padding:13px 30px; border-radius:8px; font-weight:500; text-decoration:none; font-size:14px; transition:border-color 0.2s,color 0.2s; }
+  .btn-ghost:hover { border-color:var(--orange); color:var(--orange); }
+
+  .cards-section { padding:0 36px 80px; max-width:1100px; margin:0 auto; }
+  .section-lbl { font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:rgba(0,69,171,0.7); margin-bottom:32px; font-weight:700; }
+  .cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+
+  .card {
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:30px 26px 72px; text-decoration:none; color:inherit; display:block;
+    position:relative; overflow:hidden;
+    transition:transform 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .card::after { content:''; position:absolute; top:0;left:0;right:0; height:3px; background:var(--accent-bar,var(--primary-lt)); transform:scaleX(0); transform-origin:left; transition:transform 0.3s; }
+  .card:hover { transform:translateY(-4px); border-color:rgba(0,69,171,0.45); background:var(--panel2); }
+  .card:hover::after { transform:scaleX(1); }
+
+  .card-badge { display:inline-block; padding:3px 11px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; margin-bottom:16px; }
+  .badge-silver { background:rgba(167,204,231,0.12); color:#A7CCE7; border:1px solid rgba(167,204,231,0.2); }
+  .badge-plat   { background:rgba(255,187,0,0.12); color:var(--orange); border:1px solid rgba(255,187,0,0.2); }
+  .badge-rlca   { background:rgba(167,243,208,0.12); color:#A7F3D0; border:1px solid rgba(167,243,208,0.2); }
+
+  .card h3 { font-size:19px; font-weight:700; margin-bottom:10px; line-height:1.25; }
+  .card p  { font-size:13px; line-height:1.6; color:var(--dim); margin-bottom:24px; }
+  .card-pills { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { padding:3px 9px; border-radius:4px; font-size:11px; background:rgba(0,69,171,0.12); color:rgba(167,204,231,0.7); border:1px solid rgba(0,69,171,0.2); }
+
+  .card-arrow { position:absolute; bottom:26px; right:26px; width:32px; height:32px; border-radius:8px; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; transition:background 0.2s,border-color 0.2s; }
+  .card:hover .card-arrow { background:var(--orange); border-color:var(--orange); }
+  .card:hover .card-arrow path { stroke:#050d1a; }
+
+  footer { border-top:1px solid var(--border); padding:22px 36px; display:flex; justify-content:space-between; align-items:center; color:var(--mid); font-size:12px; }
+
+  @media(max-width:800px){
+    nav,footer{padding:12px 16px;}
+    .hero,.cards-section{padding-left:16px;padding-right:16px;}
+    .cards-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">
+    <img src="TASA Logo Blue copy.png" alt="TASA EFX">
+    <span>TASA <em>EFX</em></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html" class="active">Home</a>
+    <a href="silver.html">Silver</a>
+    <a href="platinum.html">Platinum</a>
+    <a href="rlca.html">rLCA</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <!-- PLACEHOLDER: update eyebrow / tagline / description -->
+  <p class="eyebrow">TASA EFX · Emissions Intelligence</p>
+  <h1>Global Emissions Data<br><span>You Can Act On</span></h1>
+  <p>
+    TASA-EFX is the world's most comprehensive global, multi-tier emissions factor exchange. Explore the Open Silver National Datasets  – free for all to use – or explore deeper supply chain insights with premium Platinum and rapidLCA (rLCA) datasets.
+  </p>
+  <div class="hero-btns">
+    <a href="silver.html" class="btn-primary">Explore Open Silver</a>
+    <a href="platinum.html" class="btn-ghost">Explore Platinum</a>
+    <a href="rlca.html" class="btn-ghost">Explore rLCA</a>
+  </div>
+</section>
+
+<section class="cards-section">
+  <p class="section-lbl">Platform Tools</p>
+  <div class="cards-grid">
+
+    <a href="silver.html" class="card" style="--accent:#6B88B4;">
+      <span class="card-badge badge-silver">Silver</span>
+      <h3>NAICS<br>Emissions Tables</h3>
+      <!-- PLACEHOLDER: update card descriptions -->
+      <p>Benchmark Scope 1, 2 &amp; 3 emissions intensity across industry sectors and countries for 2020–2024.</p>
+      <div class="card-pills">
+        <span class="pill">Scope 1/2/3</span><span class="pill">2020–2024</span><span class="pill">NAICS</span>
+      </div>
+      <div class="card-arrow">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 11L11 2M11 2H4.5M11 2V8.5" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </a>
+
+    <a href="platinum.html" class="card" style="--accent:#F5A623;">
+      <span class="card-badge badge-plat">Platinum</span>
+      <h3>Supply-Chain<br>Sankey Analysis</h3>
+      <p>Trace emissions through input hotspots flows to inform engagement with suppliers.</p>
+      <div class="card-pills">
+        <span class="pill">Sankey Flow</span><span class="pill">Tier 1 Inputs</span><span class="pill">Deep Dive</span>
+      </div>
+      <div class="card-arrow">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 11L11 2M11 2H4.5M11 2V8.5" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </a>
+
+    <a href="rlca.html" class="card" style="--accent:#A7F3D0;">
+      <span class="card-badge badge-rlca">rLCA</span>
+      <h3>Rapid Life Cycle<br>Assessment</h3>
+      <p>Deep-dive emissions structures at the individual commodity level for comprehensive management and mitigation</p>
+      <div class="card-pills">
+        <span class="pill">Lifecycle</span><span class="pill">Hotspot View</span><span class="pill">Baseline</span>
+      </div>
+      <div class="card-arrow">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 11L11 2M11 2H4.5M11 2V8.5" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<footer>
+  <!-- PLACEHOLDER: update copyright / contact -->
+  <span>© 2025 TASA EFX. All rights reserved.</span>
+  <span>Emissions Intelligence Platform</span>
+</footer>
+
+</body>
+</html>
