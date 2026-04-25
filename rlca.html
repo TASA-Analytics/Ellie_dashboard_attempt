@@ -399,60 +399,219 @@ function renderSankey() {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   
-  canvas.width = 1200 * dpr;
-  canvas.height = 600 * dpr;
-  canvas.style.width = '1200px';
-  canvas.style.height = '600px';
+  const W = 1400;
+  const H = 700;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
   
   // Background
   ctx.fillStyle = '#0a1628';
-  ctx.fillRect(0, 0, 1200, 600);
+  ctx.fillRect(0, 0, W, H);
   
-  // Simple placeholder visualization
-  ctx.fillStyle = '#A7F3D0';
-  ctx.font = '16px Inter';
-  ctx.textAlign = 'center';
-  ctx.fillText('Supply Chain Emissions Flow', 600, 280);
+  // Layout constants
+  const TOP = 60;
+  const FULL_H = 580;
+  const BOX_W = 140;
+  const BOX_GAP = 3;
+  const TIER_GAP = 100;
   
-  ctx.font = '12px Inter';
-  ctx.fillStyle = '#506E8C';
-  ctx.fillText(`Mode: ${sankeyMode} | T2: ${combineT2 ? 'Combined' : 'Split'} | T3: ${combineT3 ? 'Combined' : 'Split'}`, 600, 305);
+  // Tier positions
+  const tiers = [
+    {x: 60, label: 'Source', color: '#1A4A72'},
+    {x: 60 + BOX_W + TIER_GAP, label: 'Tier 1', color: '#c0392b'},
+    {x: 60 + (BOX_W + TIER_GAP) * 2, label: 'Tier 2', color: '#c9942a'},
+    {x: 60 + (BOX_W + TIER_GAP) * 3, label: 'Tier 3+', color: '#4a9e72'}
+  ];
   
-  // Draw sample tier boxes
-  const colors = ['#c0392b', '#c9942a', '#4a9e72'];
-  const tiers = ['Tier 1', 'Tier 2', 'Tier 3+'];
+  // Helper functions
+  const rRect = (x, y, w, h, r) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  };
   
-  for (let i = 0; i < 3; i++) {
-    const x = 250 + i * 280;
-    const y = 250;
-    const w = 100;
-    const h = 100;
+  const drawBox = (x, y, w, h, color, label, value) => {
+    if (h < 3) return;
     
-    ctx.fillStyle = colors[i];
-    ctx.globalAlpha = 0.25;
-    ctx.fillRect(x, y, w, h);
-    ctx.globalAlpha = 1;
+    // Gradient fill
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, adjustBrightness(color, -20));
+    ctx.fillStyle = grad;
+    rRect(x, y, w, h, 4);
+    ctx.fill();
     
-    ctx.strokeStyle = colors[i];
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, w, h);
+    // Border
+    ctx.strokeStyle = adjustBrightness(color, -40);
+    ctx.lineWidth = 1;
+    rRect(x, y, w, h, 4);
+    ctx.stroke();
     
-    ctx.fillStyle = '#F4F5F5';
-    ctx.font = '14px Inter';
-    ctx.fillText(tiers[i], x + w/2, y + h/2 + 5);
-    
-    if (i < 2) {
-      ctx.beginPath();
-      ctx.moveTo(x + w, y + h/2);
-      ctx.lineTo(x + w + 80, y + h/2);
-      ctx.strokeStyle = colors[i];
-      ctx.lineWidth = 2;
-      ctx.globalAlpha = 0.4;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
+    // Text
+    if (h >= 20) {
+      ctx.fillStyle = '#fff';
+      ctx.font = '600 11px Inter';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      const maxW = w - 12;
+      let text = label;
+      while (ctx.measureText(text).width > maxW && text.length > 5) {
+        text = text.slice(0, -1);
+      }
+      if (text !== label) text = text.slice(0, -1) + '…';
+      ctx.fillText(text, x + 6, y + 6);
+      
+      if (h >= 35 && value) {
+        ctx.font = '400 9px Inter';
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.fillText(value.toFixed(1), x + 6, y + h - 16);
+      }
     }
-  }
+  };
+  
+  const adjustBrightness = (hex, amt) => {
+    const r = Math.max(0, Math.min(255, parseInt(hex.slice(1, 3), 16) + amt));
+    const g = Math.max(0, Math.min(255, parseInt(hex.slice(3, 5), 16) + amt));
+    const b = Math.max(0, Math.min(255, parseInt(hex.slice(5, 7), 16) + amt));
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+  
+  const drawFlow = (x1, y1, h1, x2, y2, h2, color) => {
+    const mx = x1 + (x2 - x1) * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.bezierCurveTo(mx, y1, mx, y2, x2, y2);
+    ctx.lineTo(x2, y2 + h2);
+    ctx.bezierCurveTo(mx, y2 + h2, mx, y1 + h1, x1, y1 + h1);
+    ctx.closePath();
+    ctx.fillStyle = color + '30';
+    ctx.fill();
+  };
+  
+  // Draw headers
+  tiers.forEach(tier => {
+    ctx.fillStyle = '#506E8C';
+    ctx.font = '700 10px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(tier.label.toUpperCase(), tier.x + BOX_W / 2, TOP - 20);
+  });
+  
+  // Calculate proportional heights
+  const calcHeights = (values, totalH, gap) => {
+    const total = values.reduce((a, b) => a + b, 0) || 1;
+    const available = totalH - gap * (values.length - 1);
+    const minH = 8;
+    let heights = values.map(v => Math.max(minH, (v / total) * available));
+    const sum = heights.reduce((a, b) => a + b, 0);
+    if (Math.abs(sum - available) > 1) {
+      const scale = available / sum;
+      heights = heights.map(h => h * scale);
+    }
+    return heights;
+  };
+  
+  // Tier data from emissionsData
+  const tier1Values = emissionsData.groups.map(g => g.tier1 + g.tier2 + g.rest);
+  const tier1Heights = calcHeights(tier1Values, FULL_H, BOX_GAP);
+  
+  // Draw Source box (baseline)
+  drawBox(tiers[0].x, TOP, BOX_W, FULL_H, tiers[0].color, 
+    emissionsData.sector || 'Total', emissionsData.totalCenter);
+  
+  // Draw Tier 1 boxes and flows
+  let y1 = TOP;
+  emissionsData.groups.forEach((group, i) => {
+    const h = tier1Heights[i];
+    const color = tiers[1].color;
+    
+    // Flow from source
+    drawFlow(
+      tiers[0].x + BOX_W, TOP + (tier1Values.slice(0, i).reduce((a, b) => a + b, 0) / tier1Values.reduce((a, b) => a + b, 0)) * FULL_H,
+      (tier1Values[i] / tier1Values.reduce((a, b) => a + b, 0)) * FULL_H,
+      tiers[1].x, y1, h, color
+    );
+    
+    // Box
+    drawBox(tiers[1].x, y1, BOX_W, h, color, group.name, 
+      group.tier1 + group.tier2 + group.rest);
+    
+    y1 += h + BOX_GAP;
+  });
+  
+  // Draw Tier 2 representation (simplified)
+  const tier2Total = emissionsData.groups.reduce((a, g) => a + g.tier2 + g.rest, 0);
+  const tier2Split = [
+    tier2Total * 0.35,
+    tier2Total * 0.30,
+    tier2Total * 0.20,
+    tier2Total * 0.15
+  ];
+  const tier2Heights = calcHeights(tier2Split, FULL_H, BOX_GAP);
+  
+  let y2 = TOP;
+  tier2Split.forEach((val, i) => {
+    const h = tier2Heights[i];
+    drawBox(tiers[2].x, y2, BOX_W, h, tiers[2].color, 
+      `T2 Group ${i + 1}`, val);
+    y2 += h + BOX_GAP;
+  });
+  
+  // Draw connecting flows T1->T2
+  y1 = TOP;
+  emissionsData.groups.forEach((group, i) => {
+    const h1 = tier1Heights[i];
+    const targetY = TOP + (tier2Total > 0 ? ((group.tier2 + group.rest) / tier2Total) * FULL_H : 0);
+    const targetH = h1 * 0.8;
+    
+    drawFlow(tiers[1].x + BOX_W, y1, h1, tiers[2].x, targetY, targetH, tiers[2].color);
+    y1 += h1 + BOX_GAP;
+  });
+  
+  // Draw Tier 3+ (aggregated)
+  const tier3Values = [
+    emissionsData.s3 * 0.4,
+    emissionsData.s3 * 0.35,
+    emissionsData.s3 * 0.25
+  ];
+  const tier3Heights = calcHeights(tier3Values, FULL_H, BOX_GAP);
+  
+  let y3 = TOP;
+  tier3Values.forEach((val, i) => {
+    const h = tier3Heights[i];
+    drawBox(tiers[3].x, y3, BOX_W, h, tiers[3].color, 
+      `Tier 3-10 ${i + 1}`, val);
+    y3 += h + BOX_GAP;
+  });
+  
+  // Connect T2->T3
+  y2 = TOP;
+  tier2Split.forEach((val, i) => {
+    const h2 = tier2Heights[i];
+    const targetIdx = i % tier3Values.length;
+    const targetY = TOP + tier3Heights.slice(0, targetIdx).reduce((a, b) => a + b, 0) + targetIdx * BOX_GAP;
+    const targetH = tier3Heights[targetIdx] * 0.3;
+    
+    drawFlow(tiers[2].x + BOX_W, y2, h2, tiers[3].x, targetY, targetH, tiers[3].color);
+    y2 += h2 + BOX_GAP;
+  });
+  
+  // Add mode indicator
+  ctx.fillStyle = '#506E8C';
+  ctx.font = '400 10px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(`View: ${sankeyMode} | T2: ${combineT2 ? 'Combined' : 'Split'} | T3: ${combineT3 ? 'Combined' : 'Split'}`, 
+    20, H - 20);
 }
 
 // ── Data Loading ──────────────────────────────────────────
@@ -475,6 +634,7 @@ function loadEmissionsData(wb) {
       const s3 = parseFloat(row[4]) || 0;
       
       emissionsData = {
+        sector: DEFAULT_SECTOR,
         totalCenter: totalEI,
         s1, s2, s3,
         // Simplified tier breakdown - in production would parse from tier sheets
