@@ -774,10 +774,11 @@ function rebuildSectorDropdown(country, selectValue) {
   const sSel=document.getElementById('fb-sector');
   sSel.innerHTML='';
   (silverMap[country]||[]).forEach(s=>sSel.add(new Option(s,s)));
-  // Try exact match, then fuzzy on confectionery/sweets, then first option
+  // Try exact match, then multiple fuzzy keywords, then first option
+  const KEYWORDS = ['confectionery','sweets','chewing gum','nonchocolate','non-chocolate','sugar confection'];
   const match=
     [...sSel.options].find(o=>o.value===selectValue) ||
-    [...sSel.options].find(o=>o.value.toLowerCase().includes('confectionery') || o.value.toLowerCase().includes('sweets'));
+    [...sSel.options].find(o=>KEYWORDS.some(k=>o.value.toLowerCase().includes(k)));
   sSel.value=match?match.value:(sSel.options[0]||{}).value||'';
 }
 
@@ -792,10 +793,11 @@ function onCountryChange() {
 }
 function onSectorChange() {
   const s=document.getElementById('fb-sector').value;
-  if(s.toLowerCase().includes('manufacture of sweets') || s.toLowerCase().includes('confectionery')) return;
+  const KEYWORDS=['confectionery','sweets','chewing gum','nonchocolate','non-chocolate','sugar confection'];
+  if(KEYWORDS.some(k=>s.toLowerCase().includes(k))) return;
   showUpsell(`Sector · ${s}`,`rLCA reports for <strong>${s}</strong> are available through TASA EFX. Contact us to get access.`);
   const _opts=[...document.getElementById('fb-sector').options];
-  const _def=_opts.find(o=>o.value.toLowerCase().includes('confectionery')||o.value.toLowerCase().includes('sweets'))||_opts[0];
+  const _def=_opts.find(o=>KEYWORDS.some(k=>o.value.toLowerCase().includes(k)))||_opts[0];
   document.getElementById('fb-sector').value=_def?_def.value:'';
 }
 function onYearChange() {
