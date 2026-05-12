@@ -250,6 +250,7 @@ function toLong(rows){
       if(!scope.startsWith('Scope')) return; // skip Total rows — we sum the 3 scopes ourselves
       long.push({
         isic:          row['NAICS definition']  ||'',
+        naicsCode:     row['NAICS code']        ||'',
         country:       row['Country']           ||'',
         countrySector: row['Country Sectors']   ||`${row['Country']} — ${row['NAICS definition']}`,
         year, scope, value: val
@@ -270,19 +271,27 @@ function switchTab(id,btn){
 function getSelected(id){ return [...document.getElementById(id).selectedOptions].map(o=>o.value); }
 
 // ── Default selections shown on first load ──
-const DEFAULT_NAICS     = 'Abrasive Product Manufacturing'; // EDIT: default sector
-const DEFAULT_COUNTRIES = ['Mexico','South Korea','United States']; // EDIT: default countries
+const DEFAULT_NAICS     = 'Nonchocolate Confectionery Manufacturing'; // EDIT: default sector
+const DEFAULT_COUNTRIES = ['Mexico','United States']; // EDIT: default countries
 
 function populateControls(){
-  // NAICS dropdown uses ONLY "NAICS definition" — code columns are ignored entirely
   const isics     = [...new Set(dfLong.map(r=>r.isic).filter(Boolean))].sort();
   const countries = [...new Set(dfLong.map(r=>r.country).filter(Boolean))].sort();
+
+  // Build a map of NAICS definition -> code for dropdown labels
+  const codeMap = {};
+  dfLong.forEach(r=>{ if(r.isic && r.naicsCode) codeMap[r.isic]=r.naicsCode; });
 
   const iSel = document.getElementById('f-naics');
   iSel.innerHTML = '';
   isics.forEach(title=>{
-    const o = new Option(title, title);
-    if(title === DEFAULT_NAICS || (!isics.includes(DEFAULT_NAICS) && title === isics[0])) o.selected = true;
+    const code  = codeMap[title] || '';
+    const label = code ? `${code} – ${title}` : title;
+    const o = new Option(label, title); // label shown, value stays as definition for filtering
+    // Fuzzy match: exact first, then contains 'confectionery', then first
+    const isDefault = title === DEFAULT_NAICS ||
+      (!isics.includes(DEFAULT_NAICS) && title.toLowerCase().includes('confectionery'));
+    if(isDefault || (!isics.some(t=>t===DEFAULT_NAICS||t.toLowerCase().includes('confectionery')) && title===isics[0])) o.selected = true;
     iSel.add(o);
   });
 
