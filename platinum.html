@@ -403,6 +403,12 @@ function buildSilverMap(csvText){
   const sSel=document.getElementById('f-sector');
   sSel.innerHTML='';
   (silverMap[DEFAULT_COUNTRY]||[]).forEach(s=>sSel.add(new Option(s,s)));
+  // Pre-select confectionery/sweets sector
+  const defSect = [...sSel.options].find(o=>
+    o.value.toLowerCase().includes('confectionery') ||
+    o.value.toLowerCase().includes('sweets')
+  );
+  if(defSect) sSel.value = defSect.value;
 }
 
 // ── Load Platinum Excel ───────────────────────────────────────
@@ -857,10 +863,13 @@ function renderTable(){
     loadExcel(new Uint8Array(xlsxBuf));
 
     console.time('[PT] renderDashboard');
-    // Set sector dropdown to DEFAULT_SECTOR if it exists, else first option
+    // Set sector dropdown \u2014 fuzzy match on confectionery/sweets, fallback exact, fallback first
     const sSel = document.getElementById('f-sector');
-    const defOpt = [...sSel.options].find(o=>o.value===DEFAULT_SECTOR);
-    if(defOpt) sSel.value = DEFAULT_SECTOR;
+    const defOpt = [...sSel.options].find(o=>
+      o.value.toLowerCase().includes('confectionery') ||
+      o.value.toLowerCase().includes('sweets')
+    ) || [...sSel.options].find(o=>o.value===DEFAULT_SECTOR);
+    if(defOpt) sSel.value = defOpt.value;
     renderDashboard(sSel.value, '2023');
     console.timeEnd('[PT] renderDashboard');
 
