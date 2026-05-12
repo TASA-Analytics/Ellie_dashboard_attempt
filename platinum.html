@@ -204,11 +204,10 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
   <div class="fg">
     <label>Year</label>
     <select id="f-year" onchange="onFilterChange()">
-      <option value="2024">2024</option>
       <option value="2023" selected>2023</option>
       <option value="2022">2022</option>
       <option value="2020">2020</option>
-      <option value="2017">2017</option>
+      <option value="2013">2013 (Base Year)</option>
     </select>
   </div>
 </div>
@@ -243,15 +242,15 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 // ══════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════
-const XLSX_FILE       = 'TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx';
+const XLSX_FILE       = 'TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx';
 const SHEET_NAME      = 'Hotspots_USD';
 const SILVER_CSV      = 'TASA_open_silver_stacked_output_all.csv';
 
-const DEFAULT_COUNTRY = 'South Korea';
-const DEFAULT_SECTOR  = 'South Korea — Abrasive Material'; // EDIT: the one free sector
-const FREE_YEARS      = ['2017','2020','2022','2023'];
-// 2024 triggers upsell; any non-South-Korea country triggers upsell;
-// any sector not in South Korea list triggers upsell
+const DEFAULT_COUNTRY = 'Mexico';
+const DEFAULT_SECTOR  = 'Mexico — Manufacture of sweets, chewing gum and confectionery products other than chocolate'; // EDIT: the one free sector
+const FREE_YEARS      = ['2013','2020','2022','2023'];
+// 2024 triggers upsell; any non-Mexico country triggers upsell;
+// any sector not in Mexico list triggers upsell
 // ══════════════════════════════════════════════════════════════
 
 const T1_COLORS=[
@@ -309,8 +308,8 @@ function findDefaultSectorOption(){
   const opts = [...sSel.options].map(o=>o.value);
   // Exact match first
   if(opts.includes(DEFAULT_SECTOR)) return DEFAULT_SECTOR;
-  // Fallback: find option containing "Abrasive Material" (case-insensitive)
-  const fuzzy = opts.find(o=>o.toLowerCase().includes('abrasive material'));
+  // Fallback: find option containing "confectionery" (case-insensitive)
+  const fuzzy = opts.find(o=>o.toLowerCase().includes('confectionery') || o.toLowerCase().includes('sweets'));
   if(fuzzy) return fuzzy;
   // Last resort: first option
   return opts[0] || '';
@@ -318,7 +317,7 @@ function findDefaultSectorOption(){
 
 function resetToDefault(){
   document.getElementById('f-country').value = DEFAULT_COUNTRY;
-  // Rebuild sector list for South Korea without triggering upsell
+  // Rebuild sector list for Mexico without triggering upsell
   const sectors = silverMap[DEFAULT_COUNTRY] || [];
   const sSel = document.getElementById('f-sector');
   sSel.innerHTML = '';
@@ -363,9 +362,9 @@ function onFilterChange(){
   const year   = document.getElementById('f-year').value;
 
   // Any sector other than the default → upsell
-  if(sector && sector !== DEFAULT_SECTOR && !sector.toLowerCase().includes('abrasive material')){
+  if(sector && sector !== DEFAULT_SECTOR && !sector.toLowerCase().includes('confectionery') && !sector.toLowerCase().includes('sweets')){
     showUpsell();
-    // Reset sector dropdown back to Abrasive Material immediately
+    // Reset sector dropdown back to default immediately
     const defVal = findDefaultSectorOption();
     document.getElementById('f-sector').value = defVal;
     return;
@@ -449,8 +448,8 @@ function showError(msg){
 }
 
 // ── Match a Country Sector string to a Platinum "Sectors" value ─
-// The Platinum Excel has a "Sectors" column (e.g. "Abrasive Material").
-// The Silver CSV has "Country Sector" (e.g. "Korea — Manufacture of abrasive products").
+// The Platinum Excel has a "Sectors" column (e.g. "Manufacture of sweets...").
+// The Silver CSV has "Country Sector" (e.g. "Mexico — Manufacture of sweets...").
 // We match by finding a Platinum sector whose name appears as a substring
 // of the Country Sector, or fall back to first available.
 function matchPlatinumSector(countrySector){

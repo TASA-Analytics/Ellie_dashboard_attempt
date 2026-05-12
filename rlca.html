@@ -195,13 +195,13 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 <div class="ph">
   <div>
     <div class="ph-badge">rLCA · Rapid Lifecycle Assessment</div>
-    <div class="ph-title">Abrasive Materials - Multi-tier Global Emissions Structure</div>
+    <div class="ph-title">Manufacture of Sweets, Chewing Gum &amp; Confectionery — Multi-tier Global Emissions Structure</div>
     <div class="ph-sub">Scope 1 &amp; Scope 2 emissions intensity for every contributing upstream input, 10-tiers deep. Use the Tier dropdown to drill into each layer of the supply chain.</div>
   </div>
   <div class="ph-stats">
     <div class="stat-box"><div class="stat-val" id="stat-sectors">—</div><div class="stat-lbl">Sectors</div></div>
     <div class="stat-box"><div class="stat-val">10</div><div class="stat-lbl">Tiers</div></div>
-    <div class="stat-box"><div class="stat-val">KOR</div><div class="stat-lbl">Country</div></div>
+    <div class="stat-box"><div class="stat-val">MEX</div><div class="stat-lbl">Country</div></div>
     <div class="stat-box"><div class="stat-val">2023</div><div class="stat-lbl">Year</div></div>
   </div>
 </div>
@@ -226,12 +226,12 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
       <option value="2017">2017 (Base Year)</option>
     </select>
   </div>
-  <div class="filter-free-tag">✓ Demo: KOR · Abrasive · 2023</div>
+  <div class="filter-free-tag">✓ Demo: MEX · Confectionery · 2023</div>
 </div>
 
 <div id="loading-state">
   <div class="spin"></div>
-  Reading <code style="color:var(--teal);font-size:12px;margin:0 4px">TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx</code>…
+  Reading <code style="color:var(--teal);font-size:12px;margin:0 4px">TASA-EFX_rLCA_Manufacture-of-sweets,-chewing-gum-and-confectionery-products-other-than-chocolate_MEX_2023_v2.0.xlsx</code>…
 </div>
 
 <div id="main-content" style="display:none">
@@ -243,7 +243,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
     <div class="callout-eyebrow">🌿 Total Emissions Intensity</div>
     <div class="callout-val" id="total-ei">—</div>
     <div class="callout-unit">Mg CO₂e / Million USD</div>
-    <div class="callout-sub" id="total-ei-sub">Abrasive Materials · South Korea · 2023</div>
+    <div class="callout-sub" id="total-ei-sub">Confectionery Products · Mexico · 2023</div>
   </div>
 
   <div class="donut-panel">
@@ -351,19 +351,19 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
 <footer>
   <span>© 2025 TASA EFX. All rights reserved.</span>
-  <span>rLCA · Abrasive Materials · South Korea 2023</span>
+  <span>rLCA · Confectionery Products · Mexico 2023</span>
 </footer>
 
 <script>
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-const XLSX_FILE  = 'TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx';
+const XLSX_FILE  = 'TASA-EFX_rLCA_Manufacture-of-sweets,-chewing-gum-and-confectionery-products-other-than-chocolate_MEX_2023_v2.0.xlsx';
 const SHEET_NAME = '10 Tiers_all_sectors';
 const EF_SHEET   = 'Sector Emissions Factors';
 const SILVER_CSV = 'TASA_open_silver_stacked_output_all.csv';
-const DEFAULT_COUNTRY = 'South Korea';
-const DEFAULT_SECTOR  = 'South Korea — Abrasive Material';
+const DEFAULT_COUNTRY = 'Mexico';
+const DEFAULT_SECTOR  = 'Mexico — Manufacture of sweets, chewing gum and confectionery products other than chocolate';
 const FREE_YEAR       = '2023';
 // ══════════════════════════════════════════════════════
 
@@ -431,7 +431,7 @@ function loadExcel(wb) {
   if (wsEF) {
     const efRaw = XLSX.utils.sheet_to_json(wsEF, {defval:''});
     const efRow = efRaw.find(r =>
-      Object.values(r).some(v => String(v).toLowerCase().includes('abrasive'))
+      Object.values(r).some(v => String(v).toLowerCase().includes('confectionery') || String(v).toLowerCase().includes('sweets'))
     ) || efRaw[0] || {};
     Object.entries(efRow).forEach(([k,v]) => {
       const n = parseFloat(v); efData[String(k).trim()] = isNaN(n) ? v : n;
@@ -789,7 +789,7 @@ function onCountryChange() {
 }
 function onSectorChange() {
   const s=document.getElementById('fb-sector').value;
-  if(s.toLowerCase().includes('abrasive material')) return;
+  if(s.toLowerCase().includes('manufacture of sweets') || s.toLowerCase().includes('confectionery')) return;
   showUpsell(`Sector · ${s}`,`rLCA reports for <strong>${s}</strong> are available through TASA EFX. Contact us to get access.`);
   document.getElementById('fb-sector').value=DEFAULT_SECTOR;
 }
