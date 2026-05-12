@@ -206,8 +206,9 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
     <select id="f-year" onchange="onFilterChange()">
       <option value="2023" selected>2023</option>
       <option value="2022">2022</option>
+      <option value="2021">2021</option>
       <option value="2020">2020</option>
-      <option value="2013">2013 (Base Year)</option>
+      <option value="2018">2018 (Base Year)</option>
     </select>
   </div>
 </div>
@@ -242,13 +243,13 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 // ══════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════
-const XLSX_FILE       = 'TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx';
+const XLSX_FILE       = 'TASA-EFX_MEX_Platinum_Model_2024_v3.0.xlsx';
 const SHEET_NAME      = 'Hotspots_USD';
 const SILVER_CSV      = 'TASA_open_silver_stacked_output_all.csv';
 
 const DEFAULT_COUNTRY = 'Mexico';
 const DEFAULT_SECTOR  = 'Mexico — Manufacture of sweets, chewing gum and confectionery products other than chocolate'; // EDIT: the one free sector
-const FREE_YEARS      = ['2013','2020','2022','2023'];
+const FREE_YEARS      = ['2018','2020','2021','2022','2023'];
 // 2024 triggers upsell; any non-Mexico country triggers upsell;
 // any sector not in Mexico list triggers upsell
 // ══════════════════════════════════════════════════════════════
