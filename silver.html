@@ -48,6 +48,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px
 
 #f-naics{min-width:480px;}
 
+.naics-search-wrap{position:relative;display:flex;flex-direction:column;gap:6px;}
+#naics-search{background:rgba(255,255,255,0.06);border:1.5px solid var(--bdr);
+  color:var(--white);border-radius:7px;padding:6px 10px 6px 28px;font-size:12px;
+  font-family:inherit;width:100%;transition:border-color .2s;}
+#naics-search::placeholder{color:var(--mid);}
+#naics-search:focus{outline:none;border-color:var(--primary-lt);}
+.naics-search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);
+  pointer-events:none;color:var(--mid);font-size:12px;line-height:1;}
+.naics-no-match{font-size:11px;color:var(--mid);padding:3px 2px;display:none;}
+
 select{background:var(--navy);color:var(--white);border:1.5px solid var(--bdr);
   border-radius:8px;padding:4px 8px;font-family:inherit;font-size:12px;
   appearance:none;cursor:pointer;transition:border-color .2s;}
@@ -131,8 +141,13 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
   <!-- Controls — 1 dropdown + 2 multi-selects, exactly like the Python widgets -->
   <div class="controls">
-    <div class="ctrl-group" style="flex:1;min-width:260px;">
+    <div class="ctrl-group naics-search-wrap" style="flex:1;min-width:260px;">
       <div class="ctrl-label">NAICS Sector</div>
+      <div style="position:relative;">
+        <span class="naics-search-icon">🔍</span>
+        <input type="text" id="naics-search" placeholder="Search by code or description…" oninput="filterNaicsDropdown()" autocomplete="off">
+      </div>
+      <span class="naics-no-match" id="naics-no-match">No matching sectors</span>
       <select id="f-naics" onchange="render()"><option value="">Loading…</option></select>
     </div>
     <div class="ctrl-group">
@@ -250,6 +265,7 @@ function toLong(rows){
       if(!scope.startsWith('Scope')) return; // skip Total rows — we sum the 3 scopes ourselves
       long.push({
         isic:          row['NAICS definition']  ||'',
+        naicsCode:     row['NAICS code']        ||'',
         country:       row['Country']           ||'',
         countrySector: row['Country Sectors']   ||`${row['Country']} — ${row['NAICS definition']}`,
         year, scope, value: val
@@ -273,19 +289,38 @@ function getSelected(id){ return [...document.getElementById(id).selectedOptions
 const DEFAULT_NAICS     = 'Abrasive Product Manufacturing'; // EDIT: default sector
 const DEFAULT_COUNTRIES = ['Mexico','South Korea','United States']; // EDIT: default countries
 
+// Master list of all NAICS options (populated once at boot, used for filtering)
+let allNaicsOptions = [];
+
 function populateControls(){
-  // NAICS dropdown uses ONLY "NAICS definition" — code columns are ignored entirely
-  const isics     = [...new Set(dfLong.map(r=>r.isic).filter(Boolean))].sort();
-  const countries = [...new Set(dfLong.map(r=>r.country).filter(Boolean))].sort();
+  // Build map of NAICS definition → code (take first code found for each definition)
+  const codeMap = {};
+  dfLong.forEach(r=>{ if(r.isic && r.naicsCode && !codeMap[r.isic]) codeMap[r.isic] = r.naicsCode; });
+
+  // Unique definitions, sorted by their NAICS code numerically
+  const isics = [...new Set(dfLong.map(r=>r.isic).filter(Boolean))];
+  isics.sort((a,b)=>{
+    const ca = parseFloat(codeMap[a])||0, cb = parseFloat(codeMap[b])||0;
+    return ca !== cb ? ca - cb : a.localeCompare(b);
+  });
+
+  // Build master option list (value = NAICS definition; label = "CODE — Definition")
+  allNaicsOptions = isics.map(title=>({
+    value: title,
+    label: codeMap[title] ? `${codeMap[title]} — ${title}` : title,
+    code:  (codeMap[title]||'').toLowerCase(),
+    defn:  title.toLowerCase()
+  }));
 
   const iSel = document.getElementById('f-naics');
   iSel.innerHTML = '';
-  isics.forEach(title=>{
-    const o = new Option(title, title);
-    if(title === DEFAULT_NAICS || (!isics.includes(DEFAULT_NAICS) && title === isics[0])) o.selected = true;
+  allNaicsOptions.forEach(opt=>{
+    const o = new Option(opt.label, opt.value);
+    if(opt.value === DEFAULT_NAICS || (!isics.includes(DEFAULT_NAICS) && opt.value === isics[0])) o.selected = true;
     iSel.add(o);
   });
 
+  const countries = [...new Set(dfLong.map(r=>r.country).filter(Boolean))].sort();
   const cSel = document.getElementById('f-country');
   cSel.innerHTML = '';
   countries.forEach(c=>{
@@ -293,6 +328,32 @@ function populateControls(){
     if(DEFAULT_COUNTRIES.includes(c)) o.selected = true;
     cSel.add(o);
   });
+}
+
+function filterNaicsDropdown(){
+  const q = (document.getElementById('naics-search').value||'').toLowerCase().trim();
+  const iSel = document.getElementById('f-naics');
+  const noMatch = document.getElementById('naics-no-match');
+  const prevVal = iSel.value;
+
+  iSel.innerHTML = '';
+  const filtered = q
+    ? allNaicsOptions.filter(o=> o.code.includes(q) || o.defn.includes(q))
+    : allNaicsOptions;
+
+  filtered.forEach(opt=>{
+    const o = new Option(opt.label, opt.value);
+    if(opt.value === prevVal) o.selected = true;
+    iSel.add(o);
+  });
+
+  // If previous selection not in filtered results, select first available
+  if(filtered.length && !filtered.some(o=>o.value===prevVal)){
+    iSel.options[0].selected = true;
+    render();
+  }
+
+  noMatch.style.display = filtered.length ? 'none' : 'block';
 }
 
 // ── Main render — replicates build_chart() from Python exactly ──
