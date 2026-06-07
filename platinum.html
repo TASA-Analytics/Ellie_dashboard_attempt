@@ -834,8 +834,8 @@ async function boot(){
     console.time('[PT] total boot');
  
     const XLSX_FILE = window.TASA_AUTH?.isUnlocked
-      ? 'data/premium/platinum-full.xlsx'
-      : 'data/free/platinum-preview.xlsx';
+      ? 'data/premium/TASA-EFX_rLCA_Manufacture-of-sweets,-chewing-gum-and-confectionery-products-other-than-chocolate_MEX_2023_v2.0.xlsx'
+      : 'data/free/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx';
  
     console.time('[PT] fetch both files');
     const [silverResp, xlsxResp] = await Promise.all([
