@@ -154,6 +154,40 @@ table.dt tbody tr:hover td{background:rgba(0,69,171,0.06);}
 #loading-state{display:flex;align-items:center;justify-content:center;min-height:280px;
   gap:10px;color:var(--mid);font-size:13px;padding:24px;flex-wrap:wrap;text-align:center;}
 
+/* Custom tiered dropdowns */
+.custom-dd-wrapper{position:relative;display:inline-block;}
+.custom-dd-trigger{
+  background:var(--navy);border:1.5px solid var(--bdr);
+  color:var(--white);border-radius:8px;padding:7px 32px 7px 12px;
+  font-family:inherit;font-size:13px;min-width:160px;cursor:pointer;
+  text-align:left;appearance:none;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;transition:border-color .2s;
+}
+.custom-dd-trigger:focus,.custom-dd-trigger.open{outline:none;border-color:var(--teal);}
+.custom-dd-trigger::after{content:'▾';font-size:11px;opacity:.6;flex-shrink:0;}
+.custom-dd-list{
+  position:absolute;top:calc(100% + 4px);left:0;z-index:300;
+  background:var(--navy2);border:1.5px solid rgba(0,69,171,0.4);
+  border-radius:9px;min-width:260px;max-height:320px;overflow-y:auto;
+  box-shadow:0 12px 40px rgba(0,0,0,0.5);display:none;
+}
+.custom-dd-list.open{display:block;}
+.dd-section-label{
+  padding:8px 13px 4px;font-size:9px;letter-spacing:.13em;text-transform:uppercase;
+  color:rgba(167,243,208,0.5);font-weight:700;border-bottom:1px solid rgba(0,69,171,0.15);
+}
+.dd-item{
+  padding:8px 13px;font-size:13px;cursor:pointer;
+  transition:background .12s;border-left:2px solid transparent;
+  display:flex;align-items:center;gap:8px;
+}
+.dd-item:hover{background:rgba(0,69,171,0.15);}
+.dd-item.available{color:var(--white);font-weight:600;border-left-color:var(--teal);}
+.dd-item.available .dd-dot{background:var(--teal);width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dd-item.locked{color:rgba(244,245,245,0.3);font-weight:400;}
+.dd-item.locked .dd-dot{background:rgba(244,245,245,0.15);width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dd-item.selected{background:rgba(0,69,171,0.2);}
+
 footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-content:space-between;
   align-items:center;color:var(--mid);font-size:12px;margin-top:4px;}
 @media(max-width:900px){.insight-row{grid-template-columns:1fr;}}
@@ -195,14 +229,14 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 <div class="ph">
   <div>
     <div class="ph-badge">rLCA · Rapid Lifecycle Assessment</div>
-    <div class="ph-title">Abrasive Materials - Multi-tier Global Emissions Structure</div>
+    <div class="ph-title" id="ph-title">Multi-tier Global Emissions Structure</div>
     <div class="ph-sub">Scope 1 &amp; Scope 2 emissions intensity for every contributing upstream input, 10-tiers deep. Use the Tier dropdown to drill into each layer of the supply chain.</div>
   </div>
   <div class="ph-stats">
     <div class="stat-box"><div class="stat-val" id="stat-sectors">—</div><div class="stat-lbl">Sectors</div></div>
     <div class="stat-box"><div class="stat-val">10</div><div class="stat-lbl">Tiers</div></div>
-    <div class="stat-box"><div class="stat-val">KOR</div><div class="stat-lbl">Country</div></div>
-    <div class="stat-box"><div class="stat-val">2023</div><div class="stat-lbl">Year</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-country">—</div><div class="stat-lbl">Country</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-year">—</div><div class="stat-lbl">Year</div></div>
   </div>
 </div>
 
@@ -210,11 +244,11 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 <div class="filter-bar">
   <div class="fg">
     <label>Country</label>
-    <select id="fb-country" onchange="onCountryChange()"><option value="">Loading…</option></select>
+    <div id="rlca-country-wrap"><select id="fb-country" onchange="onCountryChange()"><option value="">Loading…</option></select></div>
   </div>
   <div class="fg">
     <label>Country Sector</label>
-    <select id="fb-sector" onchange="onSectorChange()"><option value="">Loading…</option></select>
+    <div id="rlca-sector-wrap"><select id="fb-sector" onchange="onSectorChange()"><option value="">Loading…</option></select></div>
   </div>
   <div class="fg">
     <label>Year</label>
@@ -226,12 +260,12 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
       <option value="2017">2017 (Base Year)</option>
     </select>
   </div>
-  <div class="filter-free-tag">✓ Demo: KOR · Abrasive · 2023</div>
+  <div class="filter-free-tag" id="rlca-free-tag">✓ Demo Mode</div>
 </div>
 
 <div id="loading-state">
   <div class="spin"></div>
-  Reading <code style="color:var(--teal);font-size:12px;margin:0 4px">TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx</code>…
+  <span id="loading-msg">Loading models…</span>
 </div>
 
 <div id="main-content" style="display:none">
@@ -351,22 +385,42 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
 <footer>
   <span>© 2025 TASA EFX. All rights reserved.</span>
-  <span>rLCA · Abrasive Materials · South Korea 2023</span>
+  <span id="footer-tag">rLCA · Emissions Intelligence Platform</span>
 </footer>
 
 <script>
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-const XLSX_FILE = window.TASA_AUTH?.isUnlocked
-  ? 'data/premium/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx'
-  : 'data/free/TASA-EFX_rLCA_Manufacture-of-sweets,-chewing-gum-and-confectionery-products-other-than-chocolate_MEX_2023_v2.0.xlsx';
-const SHEET_NAME = '10 Tiers_all_sectors';
-const EF_SHEET   = 'Sector Emissions Factors';
-const SILVER_CSV = 'TASA_open_silver_stacked_output_all.csv';
-const DEFAULT_COUNTRY = 'South Korea';
-const DEFAULT_SECTOR  = 'South Korea — Abrasive Material';
-const FREE_YEAR       = '2023';
+//
+// MANIFEST FILE REQUIRED:
+//   Create data/rlca-manifest.json listing all rLCA Excel files.
+//   Browsers cannot list directory contents. Format:
+//
+//   {
+//     "free": [
+//       "data/free/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx"
+//     ],
+//     "premium": [
+//       "data/premium/TASA-EFX_rLCA_SomeOtherSector_MEX_2023_v2.0.xlsx"
+//     ]
+//   }
+//
+//   Files need not contain "Platinum_Model" — any rLCA xlsx works.
+//   Country code and year are parsed from the filename.
+//
+const MANIFEST_URL = 'data/rlca-manifest.json';
+const SHEET_NAME   = '10 Tiers_all_sectors';
+const EF_SHEET     = 'Sector Emissions Factors';
+const SILVER_CSV   = 'TASA_open_silver_stacked_output_all.csv';
+const FREE_YEAR    = '2023';
+
+const COUNTRY_CODES = {
+  'KOR':'South Korea','MEX':'Mexico','USA':'United States','CHN':'China',
+  'JPN':'Japan','DEU':'Germany','GBR':'United Kingdom','AUS':'Australia',
+  'CAN':'Canada','BRA':'Brazil','IND':'India','FRA':'France',
+  'ITA':'Italy','ESP':'Spain','NLD':'Netherlands','CHE':'Switzerland'
+};
 // ══════════════════════════════════════════════════════
 
 const S1_COLOR = '#B98EFF';
@@ -381,7 +435,309 @@ let efData      = {};
 let silverMap   = {};
 let sortCol     = 'combined';
 let sortDir     = 'desc';
-let scopeFilter = 'total'; // 'total' | 's1' | 's2'
+let scopeFilter = 'total';
+
+// Manifest state
+let availableModels    = [];
+let availableCountries = new Set();
+let availableSectors   = {};    // country → Set<silverSector>
+let sectorToModelMap   = {};    // "country||sector" → { path, country, code, year }
+let currentModelPath   = null;
+let ddState = { country: null, sector: null };
+
+// ── Parse filename ────────────────────────────────────
+function parseModelFilename(path){
+  const name = path.split('/').pop();
+  // Try rLCA pattern: TASA-EFX_rLCA_{SectorWords}_{CODE}_{YEAR}
+  const m = name.match(/TASA-EFX[_-].*?[_-]([A-Z]{2,4})[_-](\d{4})/i);
+  if(!m) return null;
+  const code = m[1].toUpperCase();
+  const year = m[2];
+  const country = COUNTRY_CODES[code] || code;
+  return { path, code, country, year };
+}
+
+// ── CSV parser ────────────────────────────────────────
+function parseCSV(text) {
+  function parseLine(line) {
+    const vals=[]; let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+      else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}
+      else cur+=ch;
+    }
+    vals.push(cur.trim()); return vals;
+  }
+  const lines=text.trim().split(/\r?\n/);
+  const hdr=parseLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).filter(l=>l.trim()).map(ln=>{
+    const vals=parseLine(ln).map(v=>v.replace(/^"|"$/g,'').trim());
+    const o={}; hdr.forEach((h,i)=>o[h]=vals[i]??''); return o;
+  });
+}
+
+function buildSilverMap(csvText) {
+  const rows=parseCSV(csvText);
+  silverMap={};
+  rows.forEach(row=>{
+    const c=row['Country'],s=row['Country Sectors'];
+    if(!c||!s) return;
+    if(!silverMap[c]) silverMap[c]=new Set();
+    silverMap[c].add(s);
+  });
+  Object.keys(silverMap).forEach(c=>{silverMap[c]=[...silverMap[c]].sort();});
+}
+
+// ── Manifest & model probing ──────────────────────────
+async function loadManifest(){
+  let allFiles=[];
+  try{
+    const resp=await fetch(MANIFEST_URL);
+    if(resp.ok){
+      const json=await resp.json();
+      const isUnlocked=window.TASA_AUTH?.isUnlocked;
+      const free=(json.free||[]);
+      const prem=(json.premium||[]);
+      allFiles=isUnlocked?[...free,...prem]:free;
+    }
+  } catch(e){
+    console.warn('[rLCA] Manifest fetch failed:',e.message,'— create data/rlca-manifest.json');
+  }
+  availableModels=allFiles.map(parseModelFilename).filter(Boolean);
+  const seen=new Set();
+  availableModels=availableModels.filter(m=>{if(seen.has(m.path))return false;seen.add(m.path);return true;});
+  return availableModels;
+}
+
+async function probeModels(models){
+  availableCountries=new Set();
+  availableSectors={};
+  sectorToModelMap={};
+
+  for(const model of models){
+    try{
+      const resp=await fetch(model.path);
+      if(!resp.ok) continue;
+      const buf=await resp.arrayBuffer();
+      const wb=XLSX.read(new Uint8Array(buf),{
+        type:'array',sheets:[SHEET_NAME,EF_SHEET],
+        cellStyles:false,cellFormula:false,cellHTML:false,cellNF:false,sheetStubs:false
+      });
+      const ws=wb.Sheets[SHEET_NAME];
+      if(!ws) continue;
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      let hdrIdx=raw.findIndex(r=>r.some(c=>String(c).trim()==='Sectors'));
+      if(hdrIdx<0) hdrIdx=0;
+      const headers=raw[hdrIdx].map(h=>String(h).trim());
+      // Note: rLCA files don't have a "Sectors" column in the same sense as platinum —
+      // the ENTIRE file IS one sector/commodity. We match by filename keyword.
+      // Extract commodity name from filename: everything between "rLCA_" and "_{CODE}_"
+      const fnMatch=model.path.split('/').pop().match(/rLCA[_-](.+?)[_-][A-Z]{2,4}[_-]\d{4}/i);
+      const commodityKw=(fnMatch?fnMatch[1]:'').replace(/[-_]/g,' ').toLowerCase();
+
+      availableCountries.add(model.country);
+
+      // Match silver sectors for this country to this file by keyword
+      const silverSectors=silverMap[model.country]||[];
+      silverSectors.forEach(ss=>{
+        const sl=ss.toLowerCase();
+        // Does the silver sector string contain words from the commodity keyword?
+        const words=commodityKw.split(/\s+/).filter(w=>w.length>3);
+        const matched=words.length>0 && words.some(w=>sl.includes(w));
+        if(matched){
+          if(!availableSectors[model.country]) availableSectors[model.country]=new Set();
+          availableSectors[model.country].add(ss);
+          const key=model.country+'||'+ss;
+          if(!sectorToModelMap[key]) sectorToModelMap[key]={...model,wb};
+        }
+      });
+
+      // Store wb for later use (avoid double-fetch)
+      model._wb=wb;
+    } catch(e){
+      console.warn('[rLCA] Could not probe model:',model.path,e.message);
+    }
+  }
+}
+
+// ── Custom dropdowns ──────────────────────────────────
+function closeAllDropdowns(){
+  document.querySelectorAll('.custom-dd-list').forEach(l=>l.classList.remove('open'));
+  document.querySelectorAll('.custom-dd-trigger').forEach(t=>t.classList.remove('open'));
+}
+document.addEventListener('click',closeAllDropdowns);
+
+function buildCustomDropdown(wrapperId,triggerId,listId){
+  const wrapper=document.getElementById(wrapperId);
+  if(!wrapper) return;
+  wrapper.innerHTML=`
+    <div class="custom-dd-wrapper" id="${wrapperId}-dw">
+      <button class="custom-dd-trigger" id="${triggerId}" type="button">
+        <span id="${triggerId}-label">Loading…</span>
+      </button>
+      <div class="custom-dd-list" id="${listId}"></div>
+    </div>`;
+  document.getElementById(triggerId).addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const list=document.getElementById(listId);
+    const isOpen=list.classList.contains('open');
+    closeAllDropdowns();
+    if(!isOpen){list.classList.add('open');document.getElementById(triggerId).classList.add('open');}
+  });
+}
+
+function populateRlcaCountryDropdown(){
+  buildCustomDropdown('rlca-country-wrap','rlca-dd-country-btn','rlca-dd-country-list');
+  const allCountries=Object.keys(silverMap).sort();
+  const list=document.getElementById('rlca-dd-country-list');
+  list.innerHTML='';
+  const avail=allCountries.filter(c=>availableCountries.has(c));
+  const locked=allCountries.filter(c=>!availableCountries.has(c));
+  if(avail.length){
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Available Models</div>');
+    avail.forEach(c=>{
+      const item=document.createElement('div');
+      item.className='dd-item available';
+      item.innerHTML=`<span class="dd-dot"></span>${c}`;
+      item.addEventListener('click',()=>{rlcaSelectCountry(c);closeAllDropdowns();});
+      list.appendChild(item);
+    });
+  }
+  if(locked.length){
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Not Yet Available</div>');
+    locked.forEach(c=>{
+      const item=document.createElement('div');
+      item.className='dd-item locked';
+      item.innerHTML=`<span class="dd-dot"></span>${c}`;
+      item.addEventListener('click',()=>{showUpsell(`Country · ${c}`,`rLCA reports for <strong>${c}</strong> are available through TASA EFX. Contact us to get access.`);closeAllDropdowns();});
+      list.appendChild(item);
+    });
+  }
+  const defaultCountry=avail[0]||allCountries[0];
+  if(defaultCountry) rlcaSelectCountry(defaultCountry,true);
+}
+
+function rlcaSelectCountry(country,silent){
+  ddState.country=country;
+  const lbl=document.getElementById('rlca-dd-country-btn-label');
+  if(lbl) lbl.textContent=country;
+  document.querySelectorAll('#rlca-dd-country-list .dd-item').forEach(el=>{
+    el.classList.toggle('selected',el.textContent.trim()===country);
+  });
+  populateRlcaSectorDropdown(country,silent);
+}
+
+function populateRlcaSectorDropdown(country,silent){
+  buildCustomDropdown('rlca-sector-wrap','rlca-dd-sector-btn','rlca-dd-sector-list');
+  const allSectors=silverMap[country]||[];
+  const availForCountry=availableSectors[country]||new Set();
+  const list=document.getElementById('rlca-dd-sector-list');
+  list.innerHTML='';
+  const avail=allSectors.filter(s=>availForCountry.has(s));
+  const locked=allSectors.filter(s=>!availForCountry.has(s));
+  if(avail.length){
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Available Sectors</div>');
+    avail.forEach(s=>{
+      const item=document.createElement('div');
+      item.className='dd-item available';
+      item.innerHTML=`<span class="dd-dot"></span>${s}`;
+      item.addEventListener('click',()=>{rlcaSelectSector(s);closeAllDropdowns();});
+      list.appendChild(item);
+    });
+  }
+  if(locked.length){
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Not Yet Available</div>');
+    locked.forEach(s=>{
+      const item=document.createElement('div');
+      item.className='dd-item locked';
+      item.innerHTML=`<span class="dd-dot"></span>${s}`;
+      item.addEventListener('click',()=>{showUpsell(`Sector · ${s}`,`rLCA reports for <strong>${s}</strong> are available through TASA EFX. Contact us to get access.`);closeAllDropdowns();});
+      list.appendChild(item);
+    });
+  }
+  const defaultSector=avail[0]||null;
+  if(defaultSector) rlcaSelectSector(defaultSector,silent);
+  else {const lbl=document.getElementById('rlca-dd-sector-btn-label');if(lbl) lbl.textContent='No sectors available';}
+}
+
+function rlcaSelectSector(sector,silent){
+  ddState.sector=sector;
+  const lbl=document.getElementById('rlca-dd-sector-btn-label');
+  if(lbl) lbl.textContent=sector;
+  document.querySelectorAll('#rlca-dd-sector-list .dd-item').forEach(el=>{
+    el.classList.toggle('selected',el.textContent.trim()===sector);
+  });
+  if(!silent) rlcaLoadAndRender(sector);
+}
+
+// Legacy compat stubs (no-ops — dropdowns are now custom)
+function onCountryChange(){}
+function onSectorChange(){}
+
+function onYearChange() {
+  const y=document.getElementById('fb-year').value;
+  if(y===FREE_YEAR) { rlcaLoadAndRender(ddState.sector); return; }
+  showUpsell(`Year · ${y}`,`rLCA reports for <strong>${y}</strong> are available through TASA EFX. Contact us for access across all years.`);
+  document.getElementById('fb-year').value=FREE_YEAR;
+}
+
+async function rlcaLoadAndRender(silverSector){
+  if(!silverSector) return;
+  const country=ddState.country;
+  const key=country+'||'+silverSector;
+  const model=sectorToModelMap[key];
+  if(!model){ showUpsell(`Sector · ${silverSector}`,`rLCA reports for <strong>${silverSector}</strong> are available through TASA EFX.`); return; }
+
+  // Update header
+  const shortSector=silverSector.split('—').pop().trim();
+  const titleEl=document.getElementById('ph-title');
+  if(titleEl) titleEl.textContent='Multi-tier Global Emissions Structure';
+  const footerTag=document.getElementById('footer-tag');
+  if(footerTag) footerTag.textContent=`rLCA · ${shortSector} · ${country} ${model.year}`;
+  const freeTag=document.getElementById('rlca-free-tag');
+  if(freeTag) freeTag.textContent=`✓ ${model.code} · ${model.year}`;
+  const statCountry=document.getElementById('stat-country');
+  if(statCountry) statCountry.textContent=model.code;
+  const statYear=document.getElementById('stat-year');
+  if(statYear) statYear.textContent=model.year;
+
+  if(model.path===currentModelPath){
+    // Already loaded — just re-render
+    renderCallout(); renderTierBarChart(); render(); return;
+  }
+
+  document.getElementById('loading-state').style.display='flex';
+  document.getElementById('main-content').style.display='none';
+  const loadMsg=document.getElementById('loading-msg');
+  if(loadMsg) loadMsg.textContent='Loading '+model.path.split('/').pop()+'…';
+
+  try{
+    let wb=model._wb;
+    if(!wb){
+      const resp=await fetch(model.path);
+      if(!resp.ok) throw new Error('File not found: '+model.path);
+      const buf=await resp.arrayBuffer();
+      wb=XLSX.read(new Uint8Array(buf),{
+        type:'array',sheets:[SHEET_NAME,EF_SHEET],
+        cellStyles:false,cellFormula:false,cellHTML:false,cellNF:false,sheetStubs:false
+      });
+      model._wb=wb;
+    }
+    currentModelPath=model.path;
+    loadExcel(wb);
+  } catch(e){
+    showError('Failed to load model: <strong>'+e.message+'</strong>');
+  }
+}
+
+function showUpsell(what,msg){
+  document.getElementById('upsell-what').textContent=what||'Additional Data Available';
+  document.getElementById('upsell-msg').innerHTML=msg||'rLCA reports for additional countries, sectors, and years are available through TASA EFX. <strong>Contact us</strong> to get access.';
+  document.getElementById('upsell').classList.add('show');
+}
+function dismissUpsell(){ document.getElementById('upsell').classList.remove('show'); }
+document.getElementById('upsell').addEventListener('click',function(e){if(e.target===this)dismissUpsell();});
 
 // ── Excel loader ──────────────────────────────────────
 function loadExcel(wb) {
@@ -734,116 +1090,40 @@ function sortTable(col) {
   render();
 }
 
-// ── Silver CSV / filter bar ───────────────────────────
-function parseCSV(text) {
-  function parseLine(line) {
-    const vals=[]; let cur='',inQ=false;
-    for(let i=0;i<line.length;i++){
-      const ch=line[i];
-      if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
-      else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}
-      else cur+=ch;
-    }
-    vals.push(cur.trim()); return vals;
-  }
-  const lines=text.trim().split(/\r?\n/);
-  const hdr=parseLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
-  return lines.slice(1).filter(l=>l.trim()).map(ln=>{
-    const vals=parseLine(ln).map(v=>v.replace(/^"|"$/g,'').trim());
-    const o={}; hdr.forEach((h,i)=>o[h]=vals[i]??''); return o;
-  });
-}
-
-function buildSilverMap(csvText) {
-  const rows=parseCSV(csvText);
-  silverMap={};
-  rows.forEach(row=>{
-    const c=row['Country'],s=row['Country Sectors'];
-    if(!c||!s) return;
-    if(!silverMap[c]) silverMap[c]=new Set();
-    silverMap[c].add(s);
-  });
-  Object.keys(silverMap).forEach(c=>{silverMap[c]=[...silverMap[c]].sort();});
-  const cSel=document.getElementById('fb-country');
-  cSel.innerHTML='';
-  Object.keys(silverMap).sort().forEach(c=>{
-    const o=new Option(c,c); if(c===DEFAULT_COUNTRY) o.selected=true; cSel.add(o);
-  });
-  rebuildSectorDropdown(DEFAULT_COUNTRY, DEFAULT_SECTOR);
-}
-
-function rebuildSectorDropdown(country, selectValue) {
-  const sSel=document.getElementById('fb-sector');
-  sSel.innerHTML='';
-  (silverMap[country]||[]).forEach(s=>sSel.add(new Option(s,s)));
-  const match=[...sSel.options].find(o=>o.value===selectValue);
-  sSel.value=match?selectValue:(sSel.options[0]||{}).value||'';
-}
-
-function onCountryChange() {
-  const c=document.getElementById('fb-country').value;
-  if(c!==DEFAULT_COUNTRY){
-    showUpsell(`Country · ${c}`,`rLCA reports for <strong>${c}</strong> are available through TASA EFX. Contact us to get access.`);
-    document.getElementById('fb-country').value=DEFAULT_COUNTRY;
-    rebuildSectorDropdown(DEFAULT_COUNTRY,DEFAULT_SECTOR); return;
-  }
-  rebuildSectorDropdown(c,DEFAULT_SECTOR);
-}
-function onSectorChange() {
-  const s=document.getElementById('fb-sector').value;
-  if(s.toLowerCase().includes('abrasive material')) return;
-  showUpsell(`Sector · ${s}`,`rLCA reports for <strong>${s}</strong> are available through TASA EFX. Contact us to get access.`);
-  document.getElementById('fb-sector').value=DEFAULT_SECTOR;
-}
-function onYearChange() {
-  const y=document.getElementById('fb-year').value;
-  if(y===FREE_YEAR) return;
-  showUpsell(`Year · ${y}`,`rLCA reports for <strong>${y}</strong> are available through TASA EFX. Contact us for access across all years.`);
-  document.getElementById('fb-year').value=FREE_YEAR;
-}
-function showUpsell(what,msg){
-  document.getElementById('upsell-what').textContent=what;
-  document.getElementById('upsell-msg').innerHTML=msg;
-  document.getElementById('upsell').classList.add('show');
-}
-function dismissUpsell(){ document.getElementById('upsell').classList.remove('show'); }
-document.getElementById('upsell').addEventListener('click',function(e){if(e.target===this)dismissUpsell();});
+// ── Silver CSV / filter bar — handled above in manifest section ─
 
 // ── Boot ──────────────────────────────────────────────
 async function boot(){
   try {
-    const [silverResp, xlsxResp] = await Promise.all([
-      fetch(SILVER_CSV),
-      fetch(XLSX_FILE)
-    ]);
+    document.getElementById('loading-state').style.display='flex';
+    document.getElementById('main-content').style.display='none';
+
+    // 1. Fetch Silver CSV
+    const silverResp = await fetch(SILVER_CSV);
     if (!silverResp.ok) throw new Error(`Silver CSV not found (${silverResp.status})`);
-    if (!xlsxResp.ok)   throw new Error(`Excel file not found (${xlsxResp.status})`);
-
-    const [silverText, xlsxBuf] = await Promise.all([
-      silverResp.text(),
-      xlsxResp.arrayBuffer()
-    ]);
-
-    const wb = XLSX.read(new Uint8Array(xlsxBuf), {
-      type:         'array',
-      sheets:       [SHEET_NAME, EF_SHEET],
-      cellStyles:   false,
-      cellFormula:  false,
-      cellHTML:     false,
-      cellNF:       false,
-      sheetStubs:   false
-    });
-
-    loadExcel(wb);
+    const silverText = await silverResp.text();
     buildSilverMap(silverText);
 
+    // 2. Load manifest
+    const models = await loadManifest();
+    if(!models.length){
+      showError('No rLCA model files found. Create <code>data/rlca-manifest.json</code> listing your rLCA Excel files.');
+      return;
+    }
+
+    // 3. Probe models
+    await probeModels(models);
+
+    // 4. Build dropdowns — rlcaSelectSector will auto-load first available
+    populateRlcaCountryDropdown();
+
   } catch(e){
-    showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure both files are in the root of your GitHub repo.');
+    showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure all files are accessible.');
   }
 }
- 
+
 boot();
-window.addEventListener('tasaAuthChanged', boot);
+window.addEventListener('tasaAuthChanged', ()=>{ currentModelPath=null; tableData=[]; boot(); });
 </script>
 </body>
 </html>

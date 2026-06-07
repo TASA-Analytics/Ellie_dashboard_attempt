@@ -1,0 +1,9 @@
+{
+  "free": [
+    "data/free/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx"
+  ],
+  "premium": [
+    "data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
+    "data/premium/TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx"
+  ]
+}

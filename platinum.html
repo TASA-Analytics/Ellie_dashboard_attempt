@@ -131,6 +131,40 @@ table.raw td{padding:9px 13px;border-bottom:1px solid rgba(255,255,255,0.04);
 table.raw tr:last-child td{border-bottom:none;}
 table.raw tbody tr:hover td{background:rgba(0,69,171,0.06);}
 
+/* ── Custom tiered dropdowns ─────────────────────────── */
+.custom-dd-wrapper{position:relative;display:inline-block;}
+.custom-dd-trigger{
+  background:rgba(5,13,26,0.8);border:1.5px solid var(--bdr);
+  color:#F4F5F5;border-radius:7px;padding:7px 32px 7px 12px;
+  font-size:13px;font-family:inherit;min-width:220px;cursor:pointer;
+  text-align:left;appearance:none;transition:border-color .2s;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.custom-dd-trigger:focus,.custom-dd-trigger.open{outline:none;border-color:var(--primary-lt);}
+.custom-dd-trigger::after{content:'▾';font-size:11px;opacity:.6;flex-shrink:0;}
+.custom-dd-list{
+  position:absolute;top:calc(100% + 4px);left:0;z-index:300;
+  background:#0a1628;border:1.5px solid rgba(0,69,171,0.4);
+  border-radius:9px;min-width:260px;max-height:320px;overflow-y:auto;
+  box-shadow:0 12px 40px rgba(0,0,0,0.5);display:none;
+}
+.custom-dd-list.open{display:block;}
+.dd-section-label{
+  padding:8px 13px 4px;font-size:9px;letter-spacing:.13em;text-transform:uppercase;
+  color:rgba(167,204,231,0.5);font-weight:700;border-bottom:1px solid rgba(0,69,171,0.15);
+}
+.dd-item{
+  padding:8px 13px;font-size:13px;cursor:pointer;
+  transition:background .12s;border-left:2px solid transparent;
+  display:flex;align-items:center;gap:8px;
+}
+.dd-item:hover{background:rgba(0,69,171,0.15);}
+.dd-item.available{color:#F4F5F5;font-weight:600;border-left-color:var(--orange);}
+.dd-item.available .dd-dot{background:var(--orange);width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dd-item.locked{color:rgba(244,245,245,0.3);font-weight:400;}
+.dd-item.locked .dd-dot{background:rgba(244,245,245,0.15);width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dd-item.selected{background:rgba(0,69,171,0.2);color:#F4F5F5;}
+
 .loading{display:flex;align-items:center;justify-content:center;min-height:200px;color:var(--dim);gap:12px;font-size:14px;}
 .spin{width:18px;height:18px;border:2px solid rgba(255,255,255,0.1);border-top-color:var(--orange);
   border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
@@ -181,7 +215,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 
 <div class="ph">
   <p class="ey">Platinum Model · Supply-Chain Analysis</p>
-  <h1>Supply Chain  Emissions Flows and Hotspots</h1>
+  <h1>Supply Chain Emissions Flows and Hotspots</h1>
   <!-- EDIT: update description -->
   <p>Trace emissions of supply inputs using locationally-specific data. Select a country, NAICS category, and year to explore the supply-chain breakdown.</p>
 </div>
@@ -195,11 +229,16 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 <div class="filters">
   <div class="fg">
     <label>Country</label>
-    <select id="f-country" onchange="onCountryChange()"><option value="">Loading…</option></select>
+    <!-- Custom dropdown rendered by JS — select is replaced with a styled div -->
+    <div class="custom-select-wrap" id="country-wrap">
+      <select id="f-country" onchange="onCountryChange()"><option value="">Loading…</option></select>
+    </div>
   </div>
   <div class="fg">
     <label>Country Sector</label>
-    <select id="f-sector" onchange="onFilterChange()"><option value="">Loading…</option></select>
+    <div class="custom-select-wrap" id="sector-wrap">
+      <select id="f-sector" onchange="onFilterChange()"><option value="">Loading…</option></select>
+    </div>
   </div>
   <div class="fg">
     <label>Year</label>
@@ -243,17 +282,42 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 // ══════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════
-const XLSX_FILE = window.TASA_AUTH?.isUnlocked
-  ? 'data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx'
-  : 'data/free/TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx';
+//
+// MANIFEST FILE REQUIRED:
+//   Create data/platinum-manifest.json listing all Platinum_Model files.
+//   Browsers cannot list directory contents, so a manifest is the only
+//   way to discover files dynamically. Format:
+//
+//   {
+//     "free": [
+//       "data/free/TASA-EFX_KOR_Platinum_Model_2024_v3.0.xlsx",
+//       "data/free/TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx"
+//     ],
+//     "premium": [
+//       "data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0.xlsx"
+//     ]
+//   }
+//
+//   Any file whose path contains "Platinum_Model" will be included.
+//   The country code (e.g. KOR, MEX) and year are parsed from the filename.
+//
+// HARDCODING ISSUE: FREE_YEARS below is still used to gate the Year dropdown.
+// If you want the year dropdown to be derived from the manifest files instead,
+// remove FREE_YEARS gating and let the loaded Excel drive available years.
+//
+const MANIFEST_URL    = 'data/platinum-manifest.json';
 const SHEET_NAME      = 'Hotspots_USD';
 const SILVER_CSV      = 'TASA_open_silver_stacked_output_all.csv';
-
-const DEFAULT_COUNTRY = 'South Korea';
-const DEFAULT_SECTOR  = 'South Korea — Abrasive Material'; // EDIT: the one free sector
 const FREE_YEARS      = ['2017','2020','2022','2023'];
-// 2024 triggers upsell; any non-South-Korea country triggers upsell;
-// any sector not in South Korea list triggers upsell
+
+// Country code → display name map. Extend as needed.
+const COUNTRY_CODES = {
+  'KOR':'South Korea','MEX':'Mexico','USA':'United States','CHN':'China',
+  'JPN':'Japan','DEU':'Germany','GBR':'United Kingdom','AUS':'Australia',
+  'CAN':'Canada','BRA':'Brazil','IND':'India','FRA':'France',
+  'ITA':'Italy','ESP':'Spain','NLD':'Netherlands','CHE':'Switzerland'
+};
+
 // ══════════════════════════════════════════════════════════════
 
 const T1_COLORS=[
@@ -267,9 +331,31 @@ const S_COLORS=['#B98EFF','#3FA9F6','#A7F3D0'];
 const C={s1:'#B98EFF',s2:'#3FA9F6',s3:'#A7F3D0'};
 
 // silverMap[country] = sorted array of unique Country Sector strings
-let silverMap  = {};   // built from Silver CSV
-let allRows    = [];   // rows from Platinum Excel
+let silverMap  = {};
+// allRows for current loaded Excel
+let allRows    = [];
 let canvasMode = 'detail';
+
+// manifest-derived structures:
+// availableModels: array of { path, country, countryCode, year, tier }
+// availableCountries: Set of display-country names that have models
+// availableSectors: { countryName: Set<silverSectorString> }
+let availableModels    = [];
+let availableCountries = new Set();
+let availableSectors   = {};   // countryName → Set of silver sector strings that map to a platinum file
+let currentModelPath   = null;
+
+// ── Parse filename to extract metadata ────────────────────────
+// Expected pattern: TASA-EFX_{CODE}_Platinum_Model_{YEAR}_v{VER}.xlsx
+function parseModelFilename(path){
+  const name = path.split('/').pop();
+  const m = name.match(/TASA-EFX[_-]([A-Z]{2,4})[_-].*Platinum.*Model.*[_-](\d{4})[_-]/i);
+  if(!m) return null;
+  const code = m[1].toUpperCase();
+  const year = m[2];
+  const country = COUNTRY_CODES[code] || code;
+  return { path, code, country, year };
+}
 
 // ── CSV parser (handles quoted commas) ────────────────────────
 function parseCSVLine(line){
@@ -284,7 +370,6 @@ function parseCSVLine(line){
 }
 function parseCSV(text){
   const lines=text.trim().split("\n");
-
   const hdr=parseCSVLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
   return lines.slice(1).filter(l=>l.trim()).map(ln=>{
     const vals=parseCSVLine(ln).map(v=>v.replace(/^"|"$/g,'').trim());
@@ -303,87 +388,178 @@ function switchTab(id,btn){
 
 // ── Upsell ────────────────────────────────────────────────────
 function showUpsell(){ document.getElementById('upsell').classList.add('show'); }
-
-// Find the actual option value in the sector dropdown that matches DEFAULT_SECTOR
-// (handles cases where exact string may differ slightly)
-function findDefaultSectorOption(){
-  const sSel = document.getElementById('f-sector');
-  const opts = [...sSel.options].map(o=>o.value);
-  // Exact match first
-  if(opts.includes(DEFAULT_SECTOR)) return DEFAULT_SECTOR;
-  // Fallback: find option containing "Abrasive Material" (case-insensitive)
-  const fuzzy = opts.find(o=>o.toLowerCase().includes('abrasive material'));
-  if(fuzzy) return fuzzy;
-  // Last resort: first option
-  return opts[0] || '';
-}
-
-function resetToDefault(){
-  document.getElementById('f-country').value = DEFAULT_COUNTRY;
-  // Rebuild sector list for South Korea without triggering upsell
-  const sectors = silverMap[DEFAULT_COUNTRY] || [];
-  const sSel = document.getElementById('f-sector');
-  sSel.innerHTML = '';
-  sectors.forEach(s=>sSel.add(new Option(s,s)));
-  // Now find and select the default
-  const defVal = findDefaultSectorOption();
-  sSel.value = defVal;
-  document.getElementById('f-year').value = '2023';
-  return defVal;
-}
-
 function dismissUpsell(){
   document.getElementById('upsell').classList.remove('show');
-  const defVal = resetToDefault();
-  renderDashboard(defVal, '2023');
 }
 
-// ── Country change → rebuild sector dropdown ──────────────────
-function onCountryChange(silent){
-  const country  = document.getElementById('f-country').value;
-  const year     = document.getElementById('f-year').value;
+// ══════════════════════════════════════════════════════════════
+// CUSTOM DROPDOWN SYSTEM
+// Replaces native <select> with a tiered list showing:
+//   - Available items in bold at top (with orange dot)
+//   - Unavailable items greyed at bottom (locked, shows upsell on click)
+// ══════════════════════════════════════════════════════════════
 
-  // Non-South-Korea → upsell (unless called silently during reset)
-  if(!silent && country !== DEFAULT_COUNTRY){
-    showUpsell();
-    // Reset country back immediately so dropdown shows default
-    document.getElementById('f-country').value = DEFAULT_COUNTRY;
-    country_to_use = DEFAULT_COUNTRY;
+let ddState = { country: null, sector: null };
+
+function buildCustomDropdown(wrapperId, triggerId, listId){
+  const wrapper = document.getElementById(wrapperId);
+  if(!wrapper) return;
+  // Replace content with custom structure
+  wrapper.innerHTML = `
+    <div class="custom-dd-wrapper" id="${wrapperId}-dw">
+      <button class="custom-dd-trigger" id="${triggerId}" type="button">
+        <span id="${triggerId}-label">Loading…</span>
+      </button>
+      <div class="custom-dd-list" id="${listId}"></div>
+    </div>`;
+  document.getElementById(triggerId).addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const list = document.getElementById(listId);
+    const isOpen = list.classList.contains('open');
+    closeAllDropdowns();
+    if(!isOpen){ list.classList.add('open'); document.getElementById(triggerId).classList.add('open'); }
+  });
+}
+
+function closeAllDropdowns(){
+  document.querySelectorAll('.custom-dd-list').forEach(l=>l.classList.remove('open'));
+  document.querySelectorAll('.custom-dd-trigger').forEach(t=>t.classList.remove('open'));
+}
+
+document.addEventListener('click', closeAllDropdowns);
+
+function populateCountryDropdown(){
+  buildCustomDropdown('country-wrap','dd-country-btn','dd-country-list');
+  const allCountries = Object.keys(silverMap).sort();
+  const list = document.getElementById('dd-country-list');
+  list.innerHTML = '';
+
+  // Available at top
+  const avail = allCountries.filter(c=>availableCountries.has(c));
+  const locked = allCountries.filter(c=>!availableCountries.has(c));
+
+  if(avail.length){
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Available Models</div>');
+    avail.forEach(c=>{
+      const item = document.createElement('div');
+      item.className = 'dd-item available';
+      item.innerHTML = `<span class="dd-dot"></span>${c}`;
+      item.addEventListener('click', ()=>{ selectCountry(c); closeAllDropdowns(); });
+      list.appendChild(item);
+    });
+  }
+  if(locked.length){
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Not Yet Available</div>');
+    locked.forEach(c=>{
+      const item = document.createElement('div');
+      item.className = 'dd-item locked';
+      item.innerHTML = `<span class="dd-dot"></span>${c}`;
+      item.addEventListener('click', ()=>{ showUpsell(); closeAllDropdowns(); });
+      list.appendChild(item);
+    });
   }
 
-  const ctry = document.getElementById('f-country').value;
-  const sectors = silverMap[ctry] || [];
-  const sSel = document.getElementById('f-sector');
-  sSel.innerHTML = '';
-  sectors.forEach(s=>sSel.add(new Option(s,s)));
+  // Default selection: first available country
+  const defaultCountry = avail[0] || allCountries[0];
+  if(defaultCountry) selectCountry(defaultCountry, true);
+}
+
+function selectCountry(country, silent){
+  ddState.country = country;
+  const btn = document.getElementById('dd-country-btn');
+  if(btn) document.getElementById('dd-country-btn-label').textContent = country;
+  // Highlight selected
+  document.querySelectorAll('#dd-country-list .dd-item').forEach(el=>{
+    el.classList.toggle('selected', el.textContent.trim()===country);
+  });
+  populateSectorDropdown(country, silent);
+}
+
+function populateSectorDropdown(country, silent){
+  buildCustomDropdown('sector-wrap','dd-sector-btn','dd-sector-list');
+  const allSectors = silverMap[country] || [];
+  const availForCountry = availableSectors[country] || new Set();
+  const list = document.getElementById('dd-sector-list');
+  list.innerHTML = '';
+
+  const avail = allSectors.filter(s=>availForCountry.has(s));
+  const locked = allSectors.filter(s=>!availForCountry.has(s));
+
+  if(avail.length){
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Available Sectors</div>');
+    avail.forEach(s=>{
+      const item = document.createElement('div');
+      item.className = 'dd-item available';
+      item.innerHTML = `<span class="dd-dot"></span>${s}`;
+      item.addEventListener('click', ()=>{ selectSector(s); closeAllDropdowns(); });
+      list.appendChild(item);
+    });
+  }
+  if(locked.length){
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Not Yet Available</div>');
+    locked.forEach(s=>{
+      const item = document.createElement('div');
+      item.className = 'dd-item locked';
+      item.innerHTML = `<span class="dd-dot"></span>${s}`;
+      item.addEventListener('click', ()=>{ showUpsell(); closeAllDropdowns(); });
+      list.appendChild(item);
+    });
+  }
+
+  // Select first available sector
+  const defaultSector = avail[0] || null;
+  if(defaultSector) selectSector(defaultSector, silent);
+  else if(document.getElementById('dd-sector-btn-label'))
+    document.getElementById('dd-sector-btn-label').textContent = 'No sectors available';
+}
+
+function selectSector(sector, silent){
+  ddState.sector = sector;
+  const lbl = document.getElementById('dd-sector-btn-label');
+  if(lbl) lbl.textContent = sector;
+  document.querySelectorAll('#dd-sector-list .dd-item').forEach(el=>{
+    el.classList.toggle('selected', el.textContent.trim()===sector);
+  });
   if(!silent) onFilterChange();
 }
 
-// ── Filter change (sector or year) ───────────────────────────
-function onFilterChange(){
-  const sector = document.getElementById('f-sector').value;
-  const year   = document.getElementById('f-year').value;
-
-  // Any sector other than the default → upsell
-  if(sector && sector !== DEFAULT_SECTOR && !sector.toLowerCase().includes('abrasive material')){
-    showUpsell();
-    // Reset sector dropdown back to Abrasive Material immediately
-    const defVal = findDefaultSectorOption();
-    document.getElementById('f-sector').value = defVal;
-    return;
-  }
-
-  // Non-free year → upsell
-  if(!FREE_YEARS.includes(year)){
-    showUpsell();
-    document.getElementById('f-year').value = '2023';
-    return;
-  }
-
-  renderDashboard(sector, year);
+// ── Country/sector change hooks ────────────────────────────────
+function onCountryChange(){
+  // kept for legacy <select> compat — now handled by selectCountry
 }
 
-// ── Build silverMap from pre-fetched text ─────────────────────
+function onFilterChange(){
+  const sector = ddState.sector;
+  const year   = document.getElementById('f-year').value;
+  if(!sector) return;
+
+  // Check if year is free
+  if(!FREE_YEARS.includes(year)){
+    showUpsell();
+    document.getElementById('f-year').value = FREE_YEARS[FREE_YEARS.length-1];
+    return;
+  }
+
+  // Find matching model for current country+sector
+  const country = ddState.country;
+  const model = findModelForSector(country, sector);
+  if(!model){ showUpsell(); return; }
+
+  loadModelAndRender(model.path, sector, year);
+}
+
+// ── Find which model file covers a given country+silverSector ──
+function findModelForSector(country, silverSector){
+  // Match: model whose country matches AND whose loaded sectors contain silverSector
+  // We use the pre-built mapping from loadManifest: sectorToModel
+  const key = country+'||'+silverSector;
+  return sectorToModelMap[key] || null;
+}
+
+// sectorToModel: key "Country||SilverSector" → { path, country, ... }
+let sectorToModelMap = {};
+
+// ── Build Silver map ──────────────────────────────────────────
 function buildSilverMap(csvText){
   const rows = parseCSV(csvText);
   silverMap = {};
@@ -394,55 +570,138 @@ function buildSilverMap(csvText){
     silverMap[country].add(sector);
   });
   Object.keys(silverMap).forEach(c=>{ silverMap[c]=[...silverMap[c]].sort(); });
+}
 
-  // Country dropdown
-  const countries=Object.keys(silverMap).sort();
-  const cSel=document.getElementById('f-country');
-  cSel.innerHTML='';
-  countries.forEach(c=>{ const o=new Option(c,c); if(c===DEFAULT_COUNTRY) o.selected=true; cSel.add(o); });
+// ══════════════════════════════════════════════════════════════
+// MANIFEST: fetch list of model files and probe each to discover
+// which silver sectors they cover. Then build the tiered dropdowns.
+// ══════════════════════════════════════════════════════════════
 
-  // Sector dropdown for default country
-  const sSel=document.getElementById('f-sector');
-  sSel.innerHTML='';
-  (silverMap[DEFAULT_COUNTRY]||[]).forEach(s=>sSel.add(new Option(s,s)));
+async function loadManifest(){
+  let allFiles = [];
+  try {
+    const resp = await fetch(MANIFEST_URL);
+    if(resp.ok){
+      const json = await resp.json();
+      const isUnlocked = window.TASA_AUTH?.isUnlocked;
+      const freeFiles    = (json.free    || []).filter(f=>f.includes('Platinum_Model'));
+      const premiumFiles = (json.premium || []).filter(f=>f.includes('Platinum_Model'));
+      allFiles = isUnlocked ? [...freeFiles,...premiumFiles] : freeFiles;
+    }
+  } catch(e){
+    console.warn('[PT] Manifest fetch failed:', e.message,
+      '— falling back to empty model list. Create data/platinum-manifest.json');
+  }
+
+  // Parse each filename
+  availableModels = allFiles.map(parseModelFilename).filter(Boolean);
+
+  // Deduplicate by path
+  const seen = new Set();
+  availableModels = availableModels.filter(m=>{ if(seen.has(m.path)) return false; seen.add(m.path); return true; });
+
+  return availableModels;
+}
+
+// Probe each model file to discover which Platinum "Sectors" it contains,
+// then cross-reference against silverMap to find matching silver sector strings.
+// This is done by loading just the first sheet header+data (fast because SheetJS
+// only reads requested sheet).
+async function probeModels(models){
+  availableCountries = new Set();
+  availableSectors   = {};
+  sectorToModelMap   = {};
+
+  for(const model of models){
+    try {
+      const resp = await fetch(model.path);
+      if(!resp.ok) continue;
+      const buf  = await resp.arrayBuffer();
+      const wb   = XLSX.read(new Uint8Array(buf),{
+        type:'array', sheets:SHEET_NAME,
+        cellStyles:false, cellFormula:false, cellHTML:false, cellNF:false, sheetStubs:false
+      });
+      const ws = wb.Sheets[SHEET_NAME];
+      if(!ws) continue;
+      const raw     = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      let hdrIdx    = raw.findIndex(r=>r.some(c=>String(c).trim()==='Sectors'));
+      if(hdrIdx<0) hdrIdx=1;
+      const headers = raw[hdrIdx].map(h=>String(h).trim());
+      const platSectors = [...new Set(
+        raw.slice(hdrIdx+1)
+          .filter(r=>r.some(c=>c!==''))
+          .map(r=>String(r[headers.indexOf('Sectors')]||'').trim())
+          .filter(Boolean)
+      )];
+
+      availableCountries.add(model.country);
+
+      // Cross-reference: for each silver sector in this country,
+      // check if it matches any platinum sector in this file.
+      const silverSectors = silverMap[model.country] || [];
+      silverSectors.forEach(ss=>{
+        const matched = matchSilverToPlatinum(ss, platSectors);
+        if(matched){
+          if(!availableSectors[model.country]) availableSectors[model.country]=new Set();
+          availableSectors[model.country].add(ss);
+          const key = model.country+'||'+ss;
+          if(!sectorToModelMap[key]) sectorToModelMap[key] = { ...model, platSectors };
+        }
+      });
+    } catch(e){
+      console.warn('[PT] Could not probe model:', model.path, e.message);
+    }
+  }
+}
+
+function matchSilverToPlatinum(silverSector, platinumSectors){
+  if(platinumSectors.includes(silverSector)) return silverSector;
+  const cs = silverSector.toLowerCase();
+  const found = platinumSectors.find(p=>cs.includes(p.toLowerCase()));
+  if(found) return found;
+  const found2 = platinumSectors.find(p=>p.toLowerCase().split(' ').some(w=>w.length>3&&cs.includes(w)));
+  return found2||null;
+}
+
+// ── Load Platinum Excel (full, for rendering) ─────────────────
+async function loadModelAndRender(path, silverSector, year){
+  if(path === currentModelPath && allRows.length){
+    renderDashboard(silverSector, year);
+    return;
+  }
+  document.getElementById('dash-content').innerHTML=
+    '<div class="loading"><div class="spin"></div> Loading model…</div>';
+  try{
+    const resp = await fetch(path);
+    if(!resp.ok) throw new Error('File not found: '+path);
+    const buf  = await resp.arrayBuffer();
+    loadExcel(new Uint8Array(buf));
+    currentModelPath = path;
+    renderDashboard(silverSector, year);
+  } catch(e){
+    showError('Failed to load model: <strong>'+e.message+'</strong>');
+  }
 }
 
 // ── Load Platinum Excel ───────────────────────────────────────
 function loadExcel(buf){
-  console.time('[PT] XLSX.read');
   const wb = XLSX.read(buf,{
-    type:'array',
-    sheets: SHEET_NAME,
+    type:'array', sheets: SHEET_NAME,
     cellStyles:false, cellFormula:false, cellHTML:false, cellNF:false, sheetStubs:false
   });
-  console.timeEnd('[PT] XLSX.read');
-
   const ws = wb.Sheets[SHEET_NAME];
   if(!ws){ showError(`Sheet "${SHEET_NAME}" not found. Available: ${wb.SheetNames.join(', ')}`); return; }
-
-  console.time('[PT] sheet_to_json');
   const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  console.timeEnd('[PT] sheet_to_json');
-  console.log('[PT] raw rows:', raw.length);
-
   let hdrIdx = raw.findIndex(r=>r.some(c=>String(c).trim()==='Sectors'));
   if(hdrIdx<0) hdrIdx=1;
   const headers = raw[hdrIdx].map(h=>String(h).trim());
-  console.log('[PT] header row at index', hdrIdx, '| columns:', headers.length);
-
-  console.time('[PT] build allRows');
   allRows = raw.slice(hdrIdx+1).filter(r=>r.some(c=>c!=='')).map(r=>{
     const o={}; headers.forEach((h,i)=>{ o[h]=r[i]??''; }); return o;
   });
-  console.timeEnd('[PT] build allRows');
-  console.log('[PT] allRows:', allRows.length);
-
-  console.time('[PT] numeric conversion');
   headers.forEach(h=>{
     if(h==='Sectors'||/tier.*(input|sector)/i.test(h)) return;
     allRows.forEach(r=>{ const n=parseFloat(r[h]); if(!isNaN(n)) r[h]=n; });
   });
-  console.timeEnd('[PT] numeric conversion');
 }
 
 function showError(msg){
@@ -451,19 +710,12 @@ function showError(msg){
 }
 
 // ── Match a Country Sector string to a Platinum "Sectors" value ─
-// The Platinum Excel has a "Sectors" column (e.g. "Abrasive Material").
-// The Silver CSV has "Country Sector" (e.g. "Korea — Manufacture of abrasive products").
-// We match by finding a Platinum sector whose name appears as a substring
-// of the Country Sector, or fall back to first available.
 function matchPlatinumSector(countrySector){
   const platinum = [...new Set(allRows.map(r=>r['Sectors']).filter(Boolean))];
-  // Try direct match first
   if(platinum.includes(countrySector)) return countrySector;
-  // Try: platinum sector name is contained in the country sector string (case-insensitive)
   const cs = countrySector.toLowerCase();
   const found = platinum.find(p=>cs.includes(p.toLowerCase()));
   if(found) return found;
-  // Reverse: country sector words appear in platinum sector
   const found2 = platinum.find(p=>p.toLowerCase().split(' ').some(w=>w.length>3&&cs.includes(w)));
   if(found2) return found2;
   return platinum[0]||null;
@@ -473,13 +725,11 @@ function matchPlatinumSector(countrySector){
 function getSectorData(platSector, year){
   const rows = allRows.filter(r=>r['Sectors']===platSector);
   if(!rows.length) return null;
-
   const first=rows[0], yp=year+' ';
   const tot=parseFloat(first[yp+'Total Emissions Intensity'])||0;
   const s1 =parseFloat(first[yp+'Scope 1'])||0;
   const s2 =parseFloat(first[yp+'Scope 2'])||0;
   const s3 =parseFloat(first[yp+'Scope 3'])||0;
-
   const t1Key=yp+'Tier 1 Input Sector';
   const seen=new Set(); const tier1=[];
   rows.forEach(r=>{
@@ -499,7 +749,6 @@ function getSectorData(platSector, year){
   const notOther=tier1.filter(t=>t.label!=='Other').sort((a,b)=>b.total-a.total);
   const other   =tier1.filter(t=>t.label==='Other');
   const sorted  =[...notOther,...other];
-
   return {sector:platSector,year,tot,s1,s2,s3,tier1:sorted,
     s1pct:tot>0?+(s1/tot*100).toFixed(1):0,
     s2pct:tot>0?+(s2/tot*100).toFixed(1):0,
@@ -519,21 +768,16 @@ function renderDashboard(countrySector, year){
     el.innerHTML='<div class="empty"><div class="icon">🔍</div><p>Select a country sector above.</p></div>';
     return;
   }
-
-  // Match country sector to platinum sector name
   const platSector = matchPlatinumSector(countrySector);
   if(!platSector){
     el.innerHTML='<div class="empty"><div class="icon">⚠️</div><p>No matching Platinum data for this sector.</p></div>';
     return;
   }
-
   const d = getSectorData(platSector, year);
   if(!d||d.tot===0){
     el.innerHTML=`<div class="empty"><div class="icon">⚠️</div><p>No data for <strong>${platSector}</strong> in <strong>${year}</strong>.</p></div>`;
     return;
   }
-
-  // Display uses the Country Sector name from Silver, data from Platinum
   el.innerHTML=`
     <div class="data-header">
       <h2>${countrySector}</h2>
@@ -828,56 +1072,40 @@ function renderTable(){
   document.getElementById('tb').innerHTML=rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??'—'}</td>`).join('')}</tr>`).join('');
 }
 
-// ── Boot: fetch each file exactly once ───────────────────────
+// ── Boot ─────────────────────────────────────────────────────
 async function boot(){
   try{
-    console.time('[PT] total boot');
- 
-    const XLSX_FILE = window.TASA_AUTH?.isUnlocked
-      ? 'data/premium/TASA-EFX_rLCA_Manufacture-of-sweets,-chewing-gum-and-confectionery-products-other-than-chocolate_MEX_2023_v2.0.xlsx'
-      : 'data/free/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx';
- 
-    console.time('[PT] fetch both files');
-    const [silverResp, xlsxResp] = await Promise.all([
-      fetch(SILVER_CSV),
-      fetch(XLSX_FILE)
-    ]);
-    console.timeEnd('[PT] fetch both files');
- 
+    document.getElementById('dash-content').innerHTML=
+      '<div class="loading"><div class="spin"></div> Loading models…</div>';
+
+    // 1. Fetch Silver CSV (for dropdowns)
+    const silverResp = await fetch(SILVER_CSV);
     if(!silverResp.ok) throw new Error('Silver CSV not found: '+SILVER_CSV);
-    if(!xlsxResp.ok)   throw new Error('Platinum Excel not found: '+XLSX_FILE);
- 
-    console.time('[PT] read response bodies');
-    const [silverText, xlsxBuf] = await Promise.all([
-      silverResp.text(),
-      xlsxResp.arrayBuffer()
-    ]);
-    console.timeEnd('[PT] read response bodies');
-    console.log('[PT] Silver text size:', silverText.length, 'bytes');
-    console.log('[PT] Excel buffer size:', xlsxBuf.byteLength, 'bytes');
- 
-    console.time('[PT] buildSilverMap');
+    const silverText = await silverResp.text();
     buildSilverMap(silverText);
-    console.timeEnd('[PT] buildSilverMap');
- 
-    loadExcel(new Uint8Array(xlsxBuf));
- 
-    console.time('[PT] renderDashboard');
-    const sSel = document.getElementById('f-sector');
-    const defOpt = [...sSel.options].find(o=>o.value===DEFAULT_SECTOR);
-    if(defOpt) sSel.value = DEFAULT_SECTOR;
-    renderDashboard(sSel.value, '2023');
-    console.timeEnd('[PT] renderDashboard');
- 
-    console.timeEnd('[PT] total boot');
- 
+
+    // 2. Fetch manifest to discover all Platinum_Model files
+    const models = await loadManifest();
+
+    if(!models.length){
+      showError('No Platinum Model files found. Create <code>data/platinum-manifest.json</code> listing your Platinum_Model Excel files. See the comment at the top of the script for the required format.');
+      return;
+    }
+
+    // 3. Probe each model to find which silver sectors it covers
+    //    (This fetches each file — consider caching on server for speed)
+    await probeModels(models);
+
+    // 4. Build tiered dropdowns
+    populateCountryDropdown();
+
   } catch(e){
-    showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure both files are in the root of your GitHub repo.');
+    showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure all files are accessible.');
   }
 }
- 
+
 boot();
-window.addEventListener('tasaAuthChanged', boot);
+window.addEventListener('tasaAuthChanged', ()=>{ currentModelPath=null; allRows=[]; boot(); });
 </script>
 <script src="auth.js"></script>
 </body>

@@ -1,0 +1,9 @@
+{
+  "free": [
+    "data/free/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx"
+  ],
+  "premium": [
+    "data/premium/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx",
+    "data/premium/TASA-EFX_rLCA_Manufacture-of-sweets,-chewing-gum-and-confectionery-products-other-than-chocolate_MEX_2023_v2.0"
+  ]
+}
