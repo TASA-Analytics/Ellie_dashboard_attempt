@@ -461,6 +461,45 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 3: PATH RELATIONSHIPS                       -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section-divider" style="margin-top:32px;">
+  <span class="section-label">🔗 Path Relationships — 3-Tier Supply Chain</span>
+</div>
+
+<div style="margin:14px 24px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+  <div style="font-size:11px;color:var(--mid)">Top sectors by emissions at each tier · Scope 3 flows shown · hover for detail</div>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    <span style="font-size:10px;color:var(--mid);text-transform:uppercase;letter-spacing:0.1em;">Top N per tier</span>
+    <select id="sankey-topn" onchange="renderSankey()" style="min-width:80px;font-size:12px;padding:4px 8px;">
+      <option value="8">8</option>
+      <option value="12" selected>12</option>
+      <option value="16">16</option>
+      <option value="20">20</option>
+    </select>
+  </div>
+</div>
+
+<div class="chart-panel" style="margin:10px 24px 24px;">
+  <div id="sankey-state" style="display:flex;align-items:center;justify-content:center;min-height:200px;gap:10px;color:var(--mid);font-size:13px;">
+    <span>Select a sector above to view supply chain flows</span>
+  </div>
+  <div id="sankey-wrap" style="display:none;overflow-x:auto;padding:8px 4px 12px;">
+    <canvas id="sankey-canvas" style="display:block;"></canvas>
+  </div>
+</div>
+
+<!-- Sankey tooltip -->
+<div id="sankey-tip" style="
+  position:fixed;pointer-events:none;display:none;
+  background:rgba(10,22,40,0.97);color:#F4F5F5;
+  padding:10px 14px;border-radius:8px;font-size:12px;
+  border:1px solid rgba(0,69,171,0.5);line-height:1.7;z-index:9999;
+  max-width:260px;box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  font-family:'Segoe UI',sans-serif;
+"></div>
+
 </div><!-- /main-content -->
 
 <footer>
@@ -516,6 +555,8 @@ const MANIFEST_URL = 'data/rlca-manifest.json';
 const SHEET_NAME   = '10 Tiers_all_sectors';
 const EF_SHEET     = 'Sector Emissions Factors';
 const TR_SHEET     = 'Total Requirements';
+const T1_PATH_SHEET = 'Tier_1 Pathway Analysis';
+const T2_PATH_SHEET = 'Tier_2 Pathway Analysis';
 const SILVER_CSV   = 'TASA_open_silver_stacked_output_all.csv';
 const FREE_YEAR    = '2023';
 
@@ -785,7 +826,7 @@ async function rlcaLoadAndRender(silverSector){
   if(statYear) statYear.textContent=model.year;
 
   if(model.path===currentModelPath){
-    renderCallout(); renderTierBarChart(); render(); renderTRDonuts(); return;
+    renderCallout(); renderTierBarChart(); render(); renderTRDonuts(); renderSankey(); return;
   }
 
   document.getElementById('loading-state').style.display='flex';
@@ -800,13 +841,15 @@ async function rlcaLoadAndRender(silverSector){
       if(!resp.ok) throw new Error('File not found: '+model.path);
       const buf=await resp.arrayBuffer();
       wb=XLSX.read(new Uint8Array(buf),{
-        type:'array',sheets:[SHEET_NAME,EF_SHEET,TR_SHEET],
+        type:'array',sheets:[SHEET_NAME,EF_SHEET,TR_SHEET,T1_PATH_SHEET,T2_PATH_SHEET],
         cellStyles:false,cellFormula:false,cellHTML:false,cellNF:false,sheetStubs:false
       });
       model._wb=wb;
     }
     currentModelPath=model.path;
     loadExcel(wb);
+    loadSankeyData(wb, rlcaSector);
+    renderSankey();
   } catch(e){
     showError('Failed to load model: <strong>'+e.message+'</strong>');
   }
@@ -1111,6 +1154,9 @@ function drawDonut(svgId, segs, total, legendId) {
   }).join('');
 }
 
+// ── Sankey data ───────────────────────────────────────
+let sankeyData = null; // { focalSector, total, s1, s2, s3, tier1:[], tier2:{} }
+
 // ── Dollar label formatter (abbreviated, for donut labels) ──
 function fmtDollar(v) {
   if (v >= 1e6)  return '$' + (v/1e6).toFixed(2) + 'M';
@@ -1291,6 +1337,316 @@ function drawDonutTR(svgId, segs, legendId, tipId) {
     </div>`;
   }).join('');
 }
+}
+// ── Sankey: load pathway sheets and build data ────────
+function loadSankeyData(wb, rlcaSector) {
+  sankeyData = null;
+  const wsT1 = wb.Sheets[T1_PATH_SHEET];
+  const wsT2 = wb.Sheets[T2_PATH_SHEET];
+  if (!wsT1 || !wsT2) {
+    console.warn('[Sankey] Missing sheets. Need:', T1_PATH_SHEET, 'and', T2_PATH_SHEET);
+    return;
+  }
+
+  // ── Tier 1 ───────────────────────────────────────────
+  const t1Raw = XLSX.utils.sheet_to_json(wsT1, {defval:''});
+  const sectorCol = Object.keys(t1Raw[0]||{})[0];
+
+  // Find col names flexibly
+  function findCol(row, ...kws) {
+    return Object.keys(row).find(k => kws.every(w => k.toLowerCase().includes(w.toLowerCase()))) || null;
+  }
+  const sampleRow = t1Raw[0] || {};
+  const T1_INPUT = findCol(sampleRow, 'tier 1', 'input') || findCol(sampleRow, 'tier 1', 'sector');
+  const T1_TOT   = findCol(sampleRow, 'tier 1', 'total');
+  const T1_S1    = findCol(sampleRow, 'tier 1', 'scope 1');
+  const T1_S2    = findCol(sampleRow, 'tier 1', 'scope 2');
+  const T1_S3    = findCol(sampleRow, 'tier 1', 'scope 3');
+
+  if (!T1_INPUT || !T1_TOT) { console.warn('[Sankey] T1 columns not found'); return; }
+
+  const t1Rows = t1Raw
+    .filter(r => String(r[sectorCol]||'').trim() === rlcaSector)
+    .map(r => ({
+      label: String(r[T1_INPUT]||'').trim(),
+      val:   parseFloat(r[T1_TOT]) || 0,
+      s1:    parseFloat(r[T1_S1])  || 0,
+      s2:    parseFloat(r[T1_S2])  || 0,
+      s3:    parseFloat(r[T1_S3])  || 0,
+    }))
+    .filter(r => r.label && r.val > 0);
+
+  // De-dup, sort, bucket non-top into Other
+  const seen1 = new Set(); const t1Dedup = [];
+  t1Rows.sort((a,b) => b.val-a.val).forEach(r => {
+    if (!seen1.has(r.label)) { seen1.add(r.label); t1Dedup.push(r); }
+  });
+
+  const topN = parseInt(document.getElementById('sankey-topn')?.value||'12');
+  const isOther1 = r => r.label.toLowerCase() === 'other';
+  const t1Main  = t1Dedup.filter(r => !isOther1(r)).slice(0, topN);
+  const t1Rest  = [...t1Dedup.filter(r => !isOther1(r)).slice(topN), ...t1Dedup.filter(isOther1)];
+  if (t1Rest.length) {
+    t1Main.push({ label:'Other', val: t1Rest.reduce((a,r)=>a+r.val,0),
+      s1: t1Rest.reduce((a,r)=>a+r.s1,0), s2: t1Rest.reduce((a,r)=>a+r.s2,0), s3: t1Rest.reduce((a,r)=>a+r.s3,0) });
+  }
+  const t1Total = t1Main.reduce((a,r)=>a+r.val,0)||1;
+  const tier1 = t1Main.map(r => ({ ...r, pct: r.val/t1Total*100 }));
+
+  // ── Tier 2 ───────────────────────────────────────────
+  const t2Raw = XLSX.utils.sheet_to_json(wsT2, {defval:''});
+  const t2Sample = t2Raw[0] || {};
+  const T2_T1P  = findCol(t2Sample, 't1', 'parent') || Object.keys(t2Sample)[0];
+  const T2_SEC  = findCol(t2Sample, 't2', 'sector') || findCol(t2Sample, 'tier 2', 'input') || Object.keys(t2Sample)[1];
+  const T2_TOT  = findCol(t2Sample, 'total') || Object.keys(t2Sample)[2];
+  const T2_S1   = findCol(t2Sample, 's1') || findCol(t2Sample, 'scope 1');
+  const T2_S2   = findCol(t2Sample, 's2') || findCol(t2Sample, 'scope 2');
+  const T2_S3   = findCol(t2Sample, 's3') || findCol(t2Sample, 'scope 3');
+
+  // Group T2 rows by T1 parent
+  const tier2 = {};
+  const globalT2 = {}; // label → cumulative val for global top-N
+  t2Raw.forEach(r => {
+    const t1p = String(r[T2_T1P]||'').trim();
+    const lbl = String(r[T2_SEC]||'').trim();
+    const val = parseFloat(r[T2_TOT])||0;
+    if (!lbl || !t1p || val === 0) return;
+    if (!tier2[t1p]) tier2[t1p] = {};
+    if (!tier2[t1p][lbl]) tier2[t1p][lbl] = { val:0, s1:0, s2:0, s3:0 };
+    tier2[t1p][lbl].val += val;
+    tier2[t1p][lbl].s1  += parseFloat(r[T2_S1])||0;
+    tier2[t1p][lbl].s2  += parseFloat(r[T2_S2])||0;
+    tier2[t1p][lbl].s3  += parseFloat(r[T2_S3])||0;
+    globalT2[lbl] = (globalT2[lbl]||0) + val;
+  });
+
+  // Pick global top-N T2 sectors
+  const topT2 = new Set(
+    Object.entries(globalT2).filter(([l]) => l.toLowerCase()!=='other')
+      .sort((a,b)=>b[1]-a[1]).slice(0, topN).map(([l])=>l)
+  );
+
+  // For each T1 parent, bucket non-top T2 into Other
+  const tier2Final = {};
+  Object.entries(tier2).forEach(([t1p, children]) => {
+    const rows = Object.entries(children).map(([lbl, v]) => ({label:lbl, ...v}))
+      .sort((a,b) => b.val-a.val);
+    const main  = rows.filter(r => topT2.has(r.label));
+    const rest  = rows.filter(r => !topT2.has(r.label));
+    if (rest.length) {
+      main.push({ label:'Other', val: rest.reduce((a,r)=>a+r.val,0),
+        s1: rest.reduce((a,r)=>a+r.s1,0), s2: rest.reduce((a,r)=>a+r.s2,0), s3: rest.reduce((a,r)=>a+r.s3,0) });
+    }
+    const t2Tot = main.reduce((a,r)=>a+r.val,0)||1;
+    tier2Final[t1p] = main.map(r => ({ ...r, pct: r.val/t2Tot*100 }));
+  });
+
+  sankeyData = { focalSector: rlcaSector, tier1, tier2: tier2Final, t1Total };
+}
+
+// ── Sankey renderer ───────────────────────────────────
+function renderSankey() {
+  const stateEl = document.getElementById('sankey-state');
+  const wrapEl  = document.getElementById('sankey-wrap');
+  const canvas  = document.getElementById('sankey-canvas');
+  const tip     = document.getElementById('sankey-tip');
+
+  if (!sankeyData || !sankeyData.tier1.length) {
+    stateEl.style.display = 'flex';
+    wrapEl.style.display  = 'none';
+    stateEl.innerHTML = '<span>⚠️ Pathway Analysis sheets not found in this Excel file.<br><small style="color:var(--mid)">Requires sheets: <code>Tier_1 Pathway Analysis</code> and <code>Tier_2 Pathway Analysis</code></small></span>';
+    return;
+  }
+
+  stateEl.style.display = 'none';
+  wrapEl.style.display  = 'block';
+
+  const D = sankeyData;
+  const topN = parseInt(document.getElementById('sankey-topn')?.value||'12');
+
+  // Layout constants
+  const BOX_H    = 600;
+  const BOX_GAP  = 4;
+  const COL_W    = 160;
+  const GAP_X    = 90;
+  const PAD_L    = 16;
+  const PAD_T    = 30;
+  const PAD_B    = 20;
+  const CHEV     = 14;
+
+  // Colors
+  const T1_COLS = ['#0045AB','#1a5cbf','#8C5ACC','#3FA9F6','#D4AF37','#A7F3D0',
+                   '#FF66B3','#0d3d8a','#6a3aab','#2e6fd4','#B98EFF','#7a48bb','#6B7280'];
+  const T2_COLS = ['#3FA9F6','#A7CCE7','#6EE7B7','#93C5FD','#FCA5A5','#C4B5FD',
+                   '#FFBB00','#FF66B3','#D4AF37','#A7F3D0','#B98EFF','#6B7280','#3FA9F6'];
+  const S_COLS  = ['#B98EFF','#3FA9F6','#A7F3D0'];
+
+  // Compute T2 groups for each T1
+  const t1 = D.tier1;
+  let allT2 = []; // flat list of {t1idx, label, val, pct, s1,s2,s3}
+  t1.forEach((t, i) => {
+    const children = D.tier2[t.label] || [];
+    children.forEach(c => allT2.push({ t1idx:i, t1label:t.label, ...c }));
+  });
+
+  // Column X positions: Focal | T1 | T2
+  const COL0_X = PAD_L;
+  const COL1_X = COL0_X + COL_W + GAP_X;
+  const COL2_X = COL1_X + COL_W + GAP_X;
+  const TOTAL_W = COL2_X + COL_W + PAD_L;
+
+  // Heights proportional to value
+  function propH(items, totalH, gap) {
+    const tot = items.reduce((a,r)=>a+r.val,0)||1;
+    const avail = totalH - gap*(items.length-1);
+    const MIN = Math.max(3, avail/items.length*0.15);
+    let hs = items.map(r => Math.max(MIN, r.val/tot*avail));
+    const s = hs.reduce((a,b)=>a+b,0);
+    return hs.map(h => h/s*avail);
+  }
+
+  // T1 heights
+  const t1H = propH(t1, BOX_H, BOX_GAP);
+  // T2 heights (all together, proportional globally)
+  const t2H = allT2.length ? propH(allT2, BOX_H, BOX_GAP) : [];
+
+  const CANVAS_H = BOX_H + PAD_T + PAD_B;
+  canvas.width  = TOTAL_W;
+  canvas.height = CANVAS_H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const hitZones = [];
+
+  // ── Draw helpers ──────────────────────────────────────
+  function drawBox(x, y, w, h, color, label, val, pct, fontSize) {
+    const r = 4;
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.88;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-CHEV,y);
+    ctx.lineTo(x+w,y+h/2); ctx.lineTo(x+w-CHEV,y+h);
+    ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    if (h > 14) {
+      ctx.fillStyle = '#F4F5F5';
+      ctx.font = `600 ${fontSize}px 'Segoe UI',Arial,sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const cx = x + (w-CHEV)/2, cy = y + h*0.40;
+      const maxW = w - CHEV - 8;
+      // Word wrap
+      const words = label.split(' ');
+      const lines = []; let cur = '';
+      words.forEach(wd => {
+        const test = cur ? cur+' '+wd : wd;
+        if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur=wd; }
+        else cur = test;
+      });
+      if (cur) lines.push(cur);
+      const lh = fontSize + 2;
+      const startY = cy - (lines.length-1)*lh/2;
+      lines.forEach((ln,i) => ctx.fillText(ln, cx, startY+i*lh));
+      if (h > 28) {
+        ctx.font = `400 ${Math.max(7,fontSize-2)}px 'Segoe UI',Arial,sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillText(val.toFixed(2)+' Mg', cx, startY+lines.length*lh+3);
+      }
+    }
+  }
+
+  function drawRibbon(x0,y0Top,y0Bot, x1,y1Top,y1Bot, color, alpha) {
+    const cp = (x1-x0)*0.5;
+    ctx.beginPath();
+    ctx.moveTo(x0,y0Top);
+    ctx.bezierCurveTo(x0+cp,y0Top, x1-cp,y1Top, x1,y1Top);
+    ctx.lineTo(x1,y1Bot);
+    ctx.bezierCurveTo(x1-cp,y1Bot, x0+cp,y0Bot, x0,y0Bot);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // ── Column headers ────────────────────────────────────
+  ctx.fillStyle = 'rgba(167,243,208,0.5)';
+  ctx.font = "700 9px 'Segoe UI',sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  const headers = ['Focal Sector', 'Tier 1 Inputs', 'Tier 2 Inputs'];
+  [COL0_X, COL1_X, COL2_X].forEach((x,i) => ctx.fillText(headers[i], x+COL_W/2, 4));
+
+  // ── Focal sector box (single, full height) ────────────
+  const focalColor = '#0045AB';
+  drawBox(COL0_X, PAD_T, COL_W, BOX_H, focalColor, D.focalSector, D.t1Total, 100, 9);
+  hitZones.push({ x:COL0_X, y:PAD_T, w:COL_W, h:BOX_H,
+    label:D.focalSector, val:D.t1Total, extra:'Focal · Scope 3 total' });
+
+  // ── T1 boxes and ribbons ──────────────────────────────
+  let t1Y = PAD_T;
+  t1.forEach((t, i) => {
+    const h = t1H[i];
+    const color = T1_COLS[i % T1_COLS.length];
+    // Ribbon from focal → T1
+    const srcFrac = t.val / D.t1Total;
+    const srcTop = PAD_T + t1H.slice(0,i).reduce((a,b)=>a+b+BOX_GAP,0);
+    drawRibbon(COL0_X+COL_W-CHEV, PAD_T + t1H.slice(0,i).reduce((a,b)=>a+b+BOX_GAP,0),
+               PAD_T + t1H.slice(0,i+1).reduce((a,b)=>a+b+BOX_GAP,0) - BOX_GAP,
+               COL1_X, t1Y, t1Y+h, color, 0.22);
+    drawBox(COL1_X, t1Y, COL_W, h, color, t.label, t.val, t.pct, 9);
+    hitZones.push({ x:COL1_X, y:t1Y, w:COL_W, h,
+      label:'T1: '+t.label, val:t.val, extra:`${t.pct.toFixed(1)}% of Scope 3` });
+    t1Y += h + BOX_GAP;
+  });
+
+  // ── T2 boxes and ribbons ──────────────────────────────
+  let t2Y = PAD_T;
+  let t2BoxPositions = [];
+  allT2.forEach((t, i) => {
+    const h = t2H[i];
+    const color = T2_COLS[i % T2_COLS.length];
+    // Find T1 box position
+    const t1i = t.t1idx;
+    const t1BoxY = PAD_T + t1H.slice(0,t1i).reduce((a,b)=>a+b+BOX_GAP,0);
+    const t1BoxH = t1H[t1i];
+    // Proportion of this T2 within its T1 parent
+    const siblings = allT2.filter(x => x.t1idx===t1i);
+    const sibTot = siblings.reduce((a,s)=>a+s.val,0)||1;
+    const sibBefore = siblings.slice(0, siblings.indexOf(t));
+    const srcTop = t1BoxY + sibBefore.reduce((a,s)=>a+s.val/sibTot*t1BoxH,0);
+    const srcBot = srcTop + t.val/sibTot*t1BoxH;
+    drawRibbon(COL1_X+COL_W-CHEV, srcTop, srcBot, COL2_X, t2Y, t2Y+h, color, 0.20);
+    drawBox(COL2_X, t2Y, COL_W, h, color, t.label, t.val, t.pct, 8);
+    hitZones.push({ x:COL2_X, y:t2Y, w:COL_W, h,
+      label:'T2: '+t.label+'\n(via '+t.t1label+')', val:t.val,
+      extra:`${t.pct.toFixed(1)}% of ${t.t1label}` });
+    t2BoxPositions.push({ y:t2Y, h, color });
+    t2Y += h + BOX_GAP;
+  });
+
+  // ── Tooltip interaction ───────────────────────────────
+  canvas.onmousemove = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const hit = hitZones.find(z => mx>=z.x && mx<=z.x+z.w && my>=z.y && my<=z.y+z.h);
+    if (hit) {
+      tip.innerHTML = `<strong>${hit.label.replace('\n','<br>')}</strong><br>
+        ${hit.val.toFixed(3)} Mg CO₂e/M USD<br>
+        <span style="color:var(--mid)">${hit.extra}</span>`;
+      tip.style.display = 'block';
+      tip.style.left = (e.clientX+14)+'px';
+      tip.style.top  = (e.clientY-10)+'px';
+      canvas.style.cursor = 'pointer';
+    } else {
+      tip.style.display = 'none';
+      canvas.style.cursor = 'default';
+    }
+  };
+  canvas.onmouseleave = () => { tip.style.display='none'; };
+}
+
 function getRowValues(row, tierKey) {
   if (tierKey === 'total') {
     return { s1:s1Cols.reduce((a,c)=>a+row.s1[c],0), s2:s2Cols.reduce((a,c)=>a+row.s2[c],0) };
