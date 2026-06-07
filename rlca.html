@@ -1111,12 +1111,17 @@ function drawDonut(svgId, segs, total, legendId) {
   }).join('');
 }
 
-// ── Dollar label formatter ────────────────────────────
+// ── Dollar label formatter (abbreviated, for donut labels) ──
 function fmtDollar(v) {
-  if (v >= 1e6)  return '$' + (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e6)  return '$' + (v/1e6).toFixed(2) + 'M';
   if (v >= 1e3)  return '$' + (v/1e3).toFixed(1) + 'K';
   if (v >= 1)    return '$' + v.toFixed(1);
   return '$' + v.toFixed(3);
+}
+
+// ── Dollar formatter (full comma, for callouts) ───────
+function fmtComma(v) {
+  return '$' + Math.round(v).toLocaleString('en-US');
 }
 
 // ── Total Requirements Donuts ─────────────────────────
@@ -1129,7 +1134,7 @@ function renderTRDonuts() {
     '#A7F3D0','#3FA9F6','#B98EFF','#FFBB00','#FF66B3',
     '#D4AF37','#6EE7B7','#93C5FD','#C4B5FD','#FCA5A5','#6B7280'
   ];
-  const TOP_N = 9;
+  const TOP_N = 9; // fallback max, actual filter is 1% threshold
 
   // ── Donut 1: Direct Purchases — col B × 1000, INCLUDE focal sector ──
   const directRows = trData
@@ -1138,8 +1143,8 @@ function renderTRDonuts() {
     .sort((a,b) => b.val - a.val);
 
   const directTotal = directRows.reduce((a,r) => a + r.val, 0);
-  const directTop   = directRows.slice(0, TOP_N);
-  const directRest  = directRows.slice(TOP_N).reduce((a,r) => a + r.val, 0);
+  const directTop   = directRows.filter(r => (r.val / directTotal) >= 0.01);
+  const directRest  = directRows.filter(r => (r.val / directTotal) < 0.01).reduce((a,r) => a + r.val, 0);
   if (directRest > 0) directTop.push({ label: 'All Others', val: directRest });
 
   const directSegs = directTop.map((r,i) => ({
@@ -1157,9 +1162,15 @@ function renderTRDonuts() {
     .filter(r => !r.isFocal && r.val > 0)
     .sort((a,b) => b.val - a.val);
 
+  // Total upstream sum includes ALL rows (focal adjusted), for correct callout total
+  const totalSumAll = trData.reduce((a,r) => {
+    const isFocal = r.label.toLowerCase() === key.toLowerCase();
+    return a + (isFocal ? (r.total - 1) * 1000 : r.total * 1000);
+  }, 0);
+
   const totalSum  = totalRows.reduce((a,r) => a + r.val, 0);
-  const totalTop  = totalRows.slice(0, TOP_N);
-  const totalRest = totalRows.slice(TOP_N).reduce((a,r) => a + r.val, 0);
+  const totalTop  = totalRows.filter(r => (r.val / totalSum) >= 0.01);
+  const totalRest = totalRows.filter(r => (r.val / totalSum) < 0.01).reduce((a,r) => a + r.val, 0);
   if (totalRest > 0) totalTop.push({ label: 'All Others', val: totalRest });
 
   const totalSegs = totalTop.map((r,i) => ({
@@ -1167,11 +1178,11 @@ function renderTRDonuts() {
   }));
   drawDonutTR('donut-tr-total', totalSegs, 'donut-tr-total-legend', 'donut-tr-total-tip');
 
-  // ── Callout boxes ──
+  // ── Callout boxes — full comma-formatted dollar amounts ──
   const econDirect = document.getElementById('econ-direct-val');
   const econTotal  = document.getElementById('econ-total-val');
-  if (econDirect) econDirect.textContent = fmtDollar(directTotal);
-  if (econTotal)  econTotal.textContent  = fmtDollar(totalSum);
+  if (econDirect) econDirect.textContent = fmtComma(directTotal);
+  if (econTotal)  econTotal.textContent  = fmtComma(totalSumAll);
   const econDirectSub = document.getElementById('econ-direct-sub');
   const econTotalSub  = document.getElementById('econ-total-sub');
   if (econDirectSub) econDirectSub.textContent = `Tier 1 direct inputs · ${key || 'focal sector'}`;
