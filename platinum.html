@@ -1064,8 +1064,14 @@ async function boot(){
       return;
     }
 
-    // 3. Build tiered dropdowns immediately — no waiting for Excel files
+    // 3. Build tiered dropdowns and trigger initial load
     populateCountryDropdown();
+
+    // Auto-load the first available sector on boot
+    if(ddState.sector && ddState.country){
+      const model = findModelForSector(ddState.country, ddState.sector);
+      if(model) loadModelAndRender(model.path, ddState.sector, '');
+    }
 
   } catch(e){
     showError('Failed to load: <strong>'+e.message+'</strong>');
