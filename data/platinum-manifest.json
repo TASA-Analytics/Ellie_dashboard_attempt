@@ -19,12 +19,12 @@
         {
           "silverSector": "Abrasive Material",
           "platSector": "Abrasive Material"
-        }
-      ],
-      {
+       },
+        {
           "silverSector": "Printed Circuit Board and populated board",
           "platSector": "Printed Circuit Board and populated board"
         }
+      ]
     },
     {
       "path": "data/premium/TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx",
