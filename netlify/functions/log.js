@@ -6,7 +6,7 @@
    2. In Netlify dashboard → Site settings → Environment variables
       add these two variables:
         AIRTABLE_TOKEN   = patXXXXXXXXXXXXXX  (your API token)
-        AIRTABLE_BASE_ID = appiZd5etzC0Ydq0S  (your base ID)
+        AIRTABLE_BASE_ID = your-base-id-here  (your base ID)
    3. That's it — no secrets ever touch your repo or auth.js
    ============================================================ */
 
