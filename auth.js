@@ -1,67 +1,50 @@
 /* ============================================================
-   TASA EFX — auth.js
+   TASA EFX — auth.js  (Netlify version)
    Handles: sign-in modal, session management, feedback button,
-            Airtable logging for both sign-ins and feedback.
+            logging via Netlify Function (no API keys here).
 
    HOW TO USE:
    1. Add <script src="auth.js"></script> before </body> on
       every page (index, silver, platinum, rlca).
-   2. Fill in your Airtable keys in the CONFIG section below.
-   3. In platinum.html and rlca.html, use:
+   2. Add netlify/functions/log.js to your repo (provided).
+   3. Add AIRTABLE_TOKEN and AIRTABLE_BASE_ID to Netlify
+      environment variables — never in this file.
+   4. In platinum.html and rlca.html use:
         const XLSX_FILE = window.TASA_AUTH?.isUnlocked
           ? 'data/premium/platinum-full.xlsx'
           : 'data/free/platinum-preview.xlsx';
-      before your fetch() call.
-   4. Listen for the auth state change event if your page
-      needs to reload data after sign-in:
-        window.addEventListener('tasaAuthChanged', () => {
-          // re-run your boot / fetch logic here
-        });
+   5. Listen for auth state change to reload data:
+        window.addEventListener('tasaAuthChanged', boot);
 
    SWAPPING TO AWS LATER:
-   Replace the validateCode() function body with a single
-   fetch() to your Lambda URL. Nothing else changes.
+   Replace validateCode() with a fetch() to your Lambda URL.
+   Nothing else changes.
    ============================================================ */
 
 
 /* ── CONFIG ─────────────────────────────────────────────────── */
+// No API keys here — all secrets live in Netlify environment
+// variables and are only used inside netlify/functions/log.js
 
 const TASA_CONFIG = {
 
-  // --- Access codes ---
-  // Format: 'CODE': { expires: 'YYYY-MM-DD' }
-  // Codes are case-insensitive. Add as many as you need.
+  // Access codes — format: 'CODE': { expires: 'YYYY-MM-DD' }
+  // Codes are case-insensitive. Add more before each conference.
   accessCodes: {
-    'CONF-PLAT-2025':  { expires: '2025-12-31' },
-    'CONF-PLAT-2026':  { expires: '2026-12-31' },
-    'TASA-DEMO-01':    { expires: '2099-01-01' },
-    // Add more codes here before your conference
+    'CONF-PLAT-2025': { expires: '2025-12-31' },
+    'CONF-PLAT-2026': { expires: '2026-12-31' },
+    'TASA-DEMO-01':   { expires: '2099-01-01' },
   },
 
-  // --- Airtable: Sign-in logs ---
-  // Create a base called "TASA EFX Users" with a table "Sign-ins"
-  // Columns: Name, Email, Industry, Code, Page, Timestamp, Status
-  signInAirtable: {
-    baseId:  'appiZd5etzC0Ydq0S',        // e.g. appXXXXXXXXXXXXXX
-    table:   'Sign-ins',
-    apiKey:  'patqryb7n0PzvUHQH.8025c004c4d367125140fe0e2cb78ef430b3ca3e88471e07d72fa1b63a60d418'
-  },
-
-  // --- Airtable: Feedback ---
-  // Create a table "Feedback" in the same base
-  // Columns: Name, Email, Page, Comment, Feature Request, Timestamp
-  feedbackAirtable: {
-    baseId:  'appiZd5etzC0Ydq0S',        // same base, different table
-    table:   'Feedback',
-    apiKey:  'patqryb7n0PzvUHQH.8025c004c4d367125140fe0e2cb78ef430b3ca3e88471e07d72fa1b63a60d418'
-  }
+  // Netlify function endpoint — this never changes
+  logEndpoint: '/.netlify/functions/log'
 
 };
 
 
 /* ── SESSION ─────────────────────────────────────────────────── */
-// Uses sessionStorage so sign-in persists across page navigation
-// but clears when the browser tab is closed.
+// sessionStorage persists across page navigation but clears
+// when the browser tab is closed.
 
 function getSession() {
   try {
@@ -79,7 +62,7 @@ function clearSession() {
   sessionStorage.removeItem('tasa_session');
 }
 
-// Expose globally so platinum.html / rlca.html can check
+// Exposed globally so platinum.html / rlca.html can check
 // window.TASA_AUTH.isUnlocked before deciding which file to fetch
 window.TASA_AUTH = {
   isUnlocked: false,
@@ -99,13 +82,9 @@ function refreshAuthState() {
 
 
 /* ── CODE VALIDATION ─────────────────────────────────────────── */
-// Returns { valid: true/false, expired: true/false }
-// TO SWAP TO AWS: replace this entire function with:
-//   const res = await fetch('https://YOUR-LAMBDA-URL/validate', {
-//     method: 'POST',
-//     body: JSON.stringify({ code })
-//   });
-//   return res.json();
+// Runs entirely in the browser against the accessCodes list above.
+// TO SWAP TO AWS: replace this function body with a fetch() to
+// your Lambda URL and add async/await to submitSignin().
 
 function validateCode(code) {
   const upper = (code || '').trim().toUpperCase();
@@ -117,35 +96,31 @@ function validateCode(code) {
 }
 
 
-/* ── AIRTABLE LOGGING ────────────────────────────────────────── */
+/* ── LOGGING VIA NETLIFY FUNCTION ────────────────────────────── */
+// Posts to /.netlify/functions/log which holds the Airtable token
+// server-side. No secret is ever exposed to the browser.
 
-async function logToAirtable(cfg, fields) {
-  // Silently fails if keys aren't set yet — won't break the site
-  if (cfg.apiKey.startsWith('YOUR_')) return;
+async function logEvent(table, fields) {
   try {
-    await fetch(`https://api.airtable.com/v0/${cfg.baseId}/${encodeURIComponent(cfg.table)}`, {
+    await fetch(TASA_CONFIG.logEndpoint, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${cfg.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ fields })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table, fields })
     });
   } catch(e) {
-    console.warn('Airtable log failed (non-critical):', e.message);
+    console.warn('Log failed (non-critical):', e.message);
   }
 }
 
 function currentPage() {
   const p = window.location.pathname.split('/').pop() || 'index.html';
-  return p.replace('.html','').replace('index','home') || 'home';
+  return p.replace('.html', '').replace('index', 'home') || 'home';
 }
 
 
-/* ── INJECT STYLES ───────────────────────────────────────────── */
+/* ── STYLES ──────────────────────────────────────────────────── */
 
 const TASA_STYLES = `
-  /* Nav sign-in button */
   #tasa-signin-btn {
     background: #FFBB00;
     color: #050d1a;
@@ -161,7 +136,6 @@ const TASA_STYLES = `
   }
   #tasa-signin-btn:hover { opacity: 0.88; }
 
-  /* Nav user pill (shown after sign-in) */
   #tasa-user-pill {
     display: none;
     align-items: center;
@@ -189,7 +163,6 @@ const TASA_STYLES = `
   }
   #tasa-signout-link:hover { color: rgba(244,245,245,0.7); }
 
-  /* Modal overlay */
   #tasa-modal-overlay {
     position: fixed; inset: 0;
     background: rgba(2,6,16,0.88);
@@ -198,9 +171,7 @@ const TASA_STYLES = `
     opacity: 0; pointer-events: none;
     transition: opacity 0.2s;
   }
-  #tasa-modal-overlay.open {
-    opacity: 1; pointer-events: all;
-  }
+  #tasa-modal-overlay.open { opacity: 1; pointer-events: all; }
   #tasa-modal {
     background: #0a1628;
     border: 1px solid rgba(0,69,171,0.35);
@@ -219,9 +190,7 @@ const TASA_STYLES = `
     font-family: inherit; transition: color 0.15s;
   }
   .tasa-modal-close:hover { color: rgba(244,245,245,0.8); }
-  .tasa-modal-icon {
-    font-size: 28px; margin-bottom: 14px; display: block;
-  }
+  .tasa-modal-icon { font-size: 28px; margin-bottom: 14px; display: block; }
   .tasa-modal-title {
     font-size: 18px; font-weight: 700;
     color: #F4F5F5; margin-bottom: 6px;
@@ -250,10 +219,7 @@ const TASA_STYLES = `
     transition: border-color 0.2s;
     box-sizing: border-box;
   }
-  .tasa-modal-input:focus {
-    outline: none;
-    border-color: rgba(0,69,171,0.7);
-  }
+  .tasa-modal-input:focus { outline: none; border-color: rgba(0,69,171,0.7); }
   .tasa-modal-input::placeholder { color: rgba(244,245,245,0.2); }
   .tasa-code-input {
     font-family: monospace;
@@ -261,11 +227,7 @@ const TASA_STYLES = `
     font-size: 15px;
     text-transform: uppercase;
   }
-  .tasa-modal-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
+  .tasa-modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .tasa-submit-btn {
     width: 100%;
     background: #0045AB;
@@ -283,57 +245,41 @@ const TASA_STYLES = `
   .tasa-submit-btn:hover { opacity: 0.88; }
   .tasa-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .tasa-modal-note {
-    font-size: 11px;
-    color: rgba(244,245,245,0.3);
-    text-align: center;
-    margin-top: 12px;
-    line-height: 1.5;
+    font-size: 11px; color: rgba(244,245,245,0.3);
+    text-align: center; margin-top: 12px; line-height: 1.5;
   }
   .tasa-error-msg {
-    font-size: 12px;
-    color: #F09595;
+    font-size: 12px; color: #F09595;
     background: rgba(240,149,149,0.08);
     border: 1px solid rgba(240,149,149,0.2);
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    display: none;
+    border-radius: 6px; padding: 8px 12px;
+    margin-bottom: 12px; display: none;
   }
   .tasa-success-msg {
-    font-size: 12px;
-    color: #A7F3D0;
+    font-size: 12px; color: #A7F3D0;
     background: rgba(167,243,208,0.08);
     border: 1px solid rgba(167,243,208,0.2);
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    display: none;
+    border-radius: 6px; padding: 8px 12px;
+    margin-bottom: 12px; display: none;
   }
 
-  /* Access banner (shown on page when unlocked) */
   #tasa-access-banner {
     display: none;
     background: rgba(167,243,208,0.06);
     border-bottom: 1px solid rgba(167,243,208,0.15);
     padding: 8px 32px;
-    font-size: 12px;
-    color: #A7F3D0;
-    align-items: center;
-    gap: 8px;
+    font-size: 12px; color: #A7F3D0;
+    align-items: center; gap: 8px;
   }
   #tasa-access-banner.visible { display: flex; }
 
-  /* Preview banner (shown on platinum/rlca when NOT unlocked) */
   #tasa-preview-banner {
     display: none;
     background: rgba(255,187,0,0.06);
     border-bottom: 1px solid rgba(255,187,0,0.15);
     padding: 8px 32px;
-    font-size: 12px;
-    color: rgba(255,187,0,0.8);
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    font-size: 12px; color: rgba(255,187,0,0.8);
+    align-items: center; justify-content: space-between; gap: 8px;
   }
   #tasa-preview-banner.visible { display: flex; }
   #tasa-preview-banner button {
@@ -344,30 +290,18 @@ const TASA_STYLES = `
     font-family: inherit; white-space: nowrap;
   }
 
-  /* Feedback floating button */
   #tasa-feedback-btn {
-    position: fixed;
-    bottom: 28px; right: 28px;
-    background: #0045AB;
-    color: #F4F5F5;
-    border: none;
-    border-radius: 50px;
-    padding: 10px 20px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    z-index: 8000;
+    position: fixed; bottom: 28px; right: 28px;
+    background: #0045AB; color: #F4F5F5;
+    border: none; border-radius: 50px;
+    padding: 10px 20px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; z-index: 8000;
     display: flex; align-items: center; gap: 7px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.35);
     transition: background 0.15s, transform 0.15s;
   }
-  #tasa-feedback-btn:hover {
-    background: #0055d4;
-    transform: translateY(-2px);
-  }
+  #tasa-feedback-btn:hover { background: #0055d4; transform: translateY(-2px); }
 
-  /* Feedback modal */
   #tasa-feedback-overlay {
     position: fixed; inset: 0;
     background: rgba(2,6,16,0.88);
@@ -376,14 +310,11 @@ const TASA_STYLES = `
     opacity: 0; pointer-events: none;
     transition: opacity 0.2s;
   }
-  #tasa-feedback-overlay.open {
-    opacity: 1; pointer-events: all;
-  }
+  #tasa-feedback-overlay.open { opacity: 1; pointer-events: all; }
   #tasa-feedback-modal {
     background: #0a1628;
     border: 1px solid rgba(0,69,171,0.35);
-    border-radius: 16px;
-    padding: 32px 28px;
+    border-radius: 16px; padding: 32px 28px;
     width: 100%; max-width: 400px;
     transform: translateY(16px);
     transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
@@ -394,29 +325,19 @@ const TASA_STYLES = `
     width: 100%;
     background: #050d1a;
     border: 1px solid rgba(0,69,171,0.35);
-    border-radius: 8px;
-    color: #F4F5F5;
-    font-family: inherit;
-    font-size: 13px;
-    padding: 10px 12px;
-    resize: vertical;
-    min-height: 90px;
-    margin-bottom: 14px;
-    box-sizing: border-box;
-    transition: border-color 0.2s;
+    border-radius: 8px; color: #F4F5F5;
+    font-family: inherit; font-size: 13px;
+    padding: 10px 12px; resize: vertical;
+    min-height: 90px; margin-bottom: 14px;
+    box-sizing: border-box; transition: border-color 0.2s;
   }
-  #tasa-feedback-modal textarea:focus {
-    outline: none; border-color: rgba(0,69,171,0.7);
-  }
+  #tasa-feedback-modal textarea:focus { outline: none; border-color: rgba(0,69,171,0.7); }
   #tasa-feedback-modal textarea::placeholder { color: rgba(244,245,245,0.2); }
   .tasa-page-tag {
-    display: inline-block;
-    padding: 2px 9px; border-radius: 4px;
+    display: inline-block; padding: 2px 9px; border-radius: 4px;
     font-size: 11px; font-weight: 600;
-    background: rgba(0,69,171,0.2);
-    color: #A7CCE7;
-    border: 1px solid rgba(0,69,171,0.3);
-    margin-bottom: 16px;
+    background: rgba(0,69,171,0.2); color: #A7CCE7;
+    border: 1px solid rgba(0,69,171,0.3); margin-bottom: 16px;
   }
 `;
 
@@ -427,22 +348,18 @@ function injectStyles() {
 }
 
 
-/* ── INJECT NAV ELEMENTS ─────────────────────────────────────── */
-// Appends sign-in button / user pill to the existing nav.
-// Works with your current nav structure.
+/* ── NAV ─────────────────────────────────────────────────────── */
 
 function injectNav() {
   const nav = document.querySelector('nav');
   if (!nav) return;
 
-  // Sign-in button
   const signinBtn = document.createElement('button');
   signinBtn.id = 'tasa-signin-btn';
   signinBtn.textContent = 'Sign in';
   signinBtn.onclick = openSigninModal;
   nav.appendChild(signinBtn);
 
-  // User pill (hidden until signed in)
   const pill = document.createElement('div');
   pill.id = 'tasa-user-pill';
   pill.innerHTML = `
@@ -454,22 +371,17 @@ function injectNav() {
 }
 
 
-/* ── INJECT BANNERS ──────────────────────────────────────────── */
+/* ── BANNERS ─────────────────────────────────────────────────── */
 
 function injectBanners() {
   const nav = document.querySelector('nav');
   if (!nav) return;
 
-  // Access granted banner
   const accessBanner = document.createElement('div');
   accessBanner.id = 'tasa-access-banner';
-  accessBanner.innerHTML = `
-    <span>✓</span>
-    <span id="tasa-banner-text">Full access active</span>
-  `;
+  accessBanner.innerHTML = `<span>✓</span><span id="tasa-banner-text">Full access active</span>`;
   nav.after(accessBanner);
 
-  // Preview banner (platinum + rlca pages only)
   const page = currentPage();
   if (page === 'platinum' || page === 'rlca') {
     const previewBanner = document.createElement('div');
@@ -478,7 +390,6 @@ function injectBanners() {
       <span>⬡ Preview mode — showing sample data. Sign in with an access code to unlock the full dataset.</span>
       <button onclick="openSigninModal()">Sign in</button>
     `;
-    // Insert after access banner
     accessBanner.after(previewBanner);
   }
 }
@@ -499,9 +410,7 @@ function injectSigninModal() {
         to unlock the full Platinum and rLCA datasets.
       </p>
       <div id="tasa-signin-error" class="tasa-error-msg"></div>
-      <label class="tasa-modal-label">
-        Access code <span>required</span>
-      </label>
+      <label class="tasa-modal-label">Access code <span>required</span></label>
       <input
         class="tasa-modal-input tasa-code-input"
         id="tasa-code-input"
@@ -525,14 +434,10 @@ function injectSigninModal() {
       <button class="tasa-submit-btn" id="tasa-signin-submit" onclick="submitSignin()">
         Unlock access
       </button>
-      <p class="tasa-modal-note">
-        Silver data remains visible to all visitors without signing in.
-      </p>
+      <p class="tasa-modal-note">Silver data remains visible to all visitors without signing in.</p>
     </div>
   `;
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) closeSigninModal();
-  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeSigninModal(); });
   document.body.appendChild(overlay);
 }
 
@@ -547,10 +452,10 @@ function closeSigninModal() {
 }
 
 async function submitSignin() {
-  const code     = (document.getElementById('tasa-code-input').value || '').trim();
-  const name     = (document.getElementById('tasa-name-input').value || '').trim();
+  const code     = (document.getElementById('tasa-code-input').value     || '').trim();
+  const name     = (document.getElementById('tasa-name-input').value     || '').trim();
   const industry = (document.getElementById('tasa-industry-input').value || '').trim();
-  const email    = (document.getElementById('tasa-email-input').value || '').trim();
+  const email    = (document.getElementById('tasa-email-input').value    || '').trim();
   const errEl    = document.getElementById('tasa-signin-error');
   const btn      = document.getElementById('tasa-signin-submit');
 
@@ -567,8 +472,8 @@ async function submitSignin() {
 
   const result = validateCode(code);
 
-  // Log to Airtable regardless of outcome — useful to track attempts
-  await logToAirtable(TASA_CONFIG.signInAirtable, {
+  // Log attempt to Airtable via Netlify function — no token in this file
+  logEvent('Sign-ins', {
     'Name':      name      || '(not provided)',
     'Email':     email     || '(not provided)',
     'Industry':  industry  || '(not provided)',
@@ -579,25 +484,18 @@ async function submitSignin() {
   });
 
   if (result.valid) {
-    // Save session
-    setSession({
-      isUnlocked: true,
-      user: { name, email, industry, code }
-    });
+    setSession({ isUnlocked: true, user: { name, email, industry, code } });
     refreshAuthState();
     closeSigninModal();
     updateNavUI();
     updateBanners();
-    // Fire event so platinum.html / rlca.html can reload their data
     window.dispatchEvent(new Event('tasaAuthChanged'));
   } else {
     btn.disabled = false;
     btn.textContent = 'Unlock access';
-    if (result.expired) {
-      errEl.textContent = 'This access code has expired. Please contact TASA EFX for a new code.';
-    } else {
-      errEl.textContent = 'Code not recognised. Check for typos or contact your account manager.';
-    }
+    errEl.textContent = result.expired
+      ? 'This access code has expired. Please contact TASA EFX for a new code.'
+      : 'Code not recognised. Check for typos or contact your account manager.';
     errEl.style.display = 'block';
   }
 }
@@ -610,16 +508,12 @@ function tasaSignOut() {
   window.dispatchEvent(new Event('tasaAuthChanged'));
 }
 
-// Allow Enter key to submit
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    closeSigninModal();
-    closeFeedbackModal();
-  }
+  if (e.key === 'Escape') { closeSigninModal(); closeFeedbackModal(); }
 });
 
 
-/* ── UPDATE NAV UI ───────────────────────────────────────────── */
+/* ── NAV UI ──────────────────────────────────────────────────── */
 
 function updateNavUI() {
   const signinBtn = document.getElementById('tasa-signin-btn');
@@ -630,12 +524,11 @@ function updateNavUI() {
   if (window.TASA_AUTH.isUnlocked) {
     signinBtn.style.display = 'none';
     userPill.classList.add('visible');
-    const user = window.TASA_AUTH.user;
-    const name = user?.name || '';
+    const name = window.TASA_AUTH.user?.name || '';
     initials.textContent = name
-      ? name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
+      ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
       : '✓';
-    label.textContent = name ? name : 'Access active';
+    label.textContent = name || 'Access active';
   } else {
     signinBtn.style.display = '';
     userPill.classList.remove('visible');
@@ -643,7 +536,7 @@ function updateNavUI() {
 }
 
 
-/* ── UPDATE BANNERS ──────────────────────────────────────────── */
+/* ── BANNERS UI ──────────────────────────────────────────────── */
 
 function updateBanners() {
   const accessBanner  = document.getElementById('tasa-access-banner');
@@ -652,8 +545,7 @@ function updateBanners() {
 
   if (window.TASA_AUTH.isUnlocked) {
     if (accessBanner) {
-      const user = window.TASA_AUTH.user;
-      const name = user?.name ? ` · ${user.name}` : '';
+      const name = window.TASA_AUTH.user?.name ? ` · ${window.TASA_AUTH.user.name}` : '';
       bannerText.textContent = `Full Platinum & rLCA access active${name}`;
       accessBanner.classList.add('visible');
     }
@@ -665,7 +557,7 @@ function updateBanners() {
 }
 
 
-/* ── FEEDBACK BUTTON & MODAL ─────────────────────────────────── */
+/* ── FEEDBACK ────────────────────────────────────────────────── */
 
 function injectFeedbackButton() {
   const btn = document.createElement('button');
@@ -676,58 +568,42 @@ function injectFeedbackButton() {
 }
 
 function injectFeedbackModal() {
-  const user = window.TASA_AUTH.user;
   const overlay = document.createElement('div');
   overlay.id = 'tasa-feedback-overlay';
   overlay.innerHTML = `
     <div id="tasa-feedback-modal">
       <button class="tasa-modal-close" onclick="closeFeedbackModal()" aria-label="Close">×</button>
       <p class="tasa-modal-title">Share feedback</p>
-      <p class="tasa-modal-sub">
-        Help us improve TASA EFX — all feedback is reviewed by the team.
-      </p>
+      <p class="tasa-modal-sub">Help us improve TASA EFX — all feedback is reviewed by the team.</p>
       <div class="tasa-page-tag" id="tasa-fb-page-tag"></div>
-      <div id="tasa-feedback-success" class="tasa-success-msg">
-        Thanks — your feedback has been sent!
-      </div>
+      <div id="tasa-feedback-success" class="tasa-success-msg">Thanks — your feedback has been sent!</div>
       <div id="tasa-feedback-error" class="tasa-error-msg"></div>
       <div class="tasa-modal-row">
         <div>
           <label class="tasa-modal-label">Name</label>
-          <input class="tasa-modal-input" id="tasa-fb-name" type="text"
-            placeholder="Jane Smith"
-            value="${user?.name || ''}" />
+          <input class="tasa-modal-input" id="tasa-fb-name" type="text" placeholder="Jane Smith" />
         </div>
         <div>
           <label class="tasa-modal-label">Email</label>
-          <input class="tasa-modal-input" id="tasa-fb-email" type="email"
-            placeholder="jane@company.com"
-            value="${user?.email || ''}" />
+          <input class="tasa-modal-input" id="tasa-fb-email" type="email" placeholder="jane@company.com" />
         </div>
       </div>
       <label class="tasa-modal-label">Comment or question</label>
       <textarea id="tasa-fb-comment" placeholder="What's on your mind?"></textarea>
       <label class="tasa-modal-label">Feature request</label>
       <textarea id="tasa-fb-feature" placeholder="Is there something you'd like us to add or improve?" style="min-height:70px;"></textarea>
-      <button class="tasa-submit-btn" id="tasa-fb-submit" onclick="submitFeedback()">
-        Send feedback
-      </button>
+      <button class="tasa-submit-btn" id="tasa-fb-submit" onclick="submitFeedback()">Send feedback</button>
     </div>
   `;
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) closeFeedbackModal();
-  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeFeedbackModal(); });
   document.body.appendChild(overlay);
 }
 
 function openFeedbackModal() {
-  // Pre-fill name/email if user signed in after modal was created
   const user = window.TASA_AUTH.user;
   if (user?.name)  document.getElementById('tasa-fb-name').value  = user.name;
   if (user?.email) document.getElementById('tasa-fb-email').value = user.email;
-
-  document.getElementById('tasa-fb-page-tag').textContent =
-    'Page: ' + currentPage();
+  document.getElementById('tasa-fb-page-tag').textContent = 'Page: ' + currentPage();
   document.getElementById('tasa-feedback-success').style.display = 'none';
   document.getElementById('tasa-feedback-error').style.display   = 'none';
   document.getElementById('tasa-feedback-overlay').classList.add('open');
@@ -757,7 +633,7 @@ async function submitFeedback() {
   btn.disabled = true;
   btn.textContent = 'Sending…';
 
-  await logToAirtable(TASA_CONFIG.feedbackAirtable, {
+  await logEvent('Feedback', {
     'Name':            name    || '(not provided)',
     'Email':           email   || '(not provided)',
     'Page':            currentPage(),
@@ -771,8 +647,6 @@ async function submitFeedback() {
   sucEl.style.display = 'block';
   document.getElementById('tasa-fb-comment').value = '';
   document.getElementById('tasa-fb-feature').value = '';
-
-  // Auto-close after 2.5 seconds
   setTimeout(closeFeedbackModal, 2500);
 }
 
@@ -780,7 +654,6 @@ async function submitFeedback() {
 /* ── BOOT ────────────────────────────────────────────────────── */
 
 (function init() {
-  // Run after DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setup);
   } else {
