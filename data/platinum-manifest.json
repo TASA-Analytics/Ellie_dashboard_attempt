@@ -1,9 +1,36 @@
 {
   "free": [
-    "data/free/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx"
+    {
+      "path": "data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
+      "country": "South Korea",
+      "sectors": [
+        {
+          "silverSector": "South Korea — abrasive Material",
+          "platSector": "Abrasive Material"
+        }
+      ]
+    }
   ],
   "premium": [
-    "data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
-    "data/premium/TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx"
+    {
+      "path": "data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
+      "country": "South Korea",
+      "sectors": [
+        {
+          "silverSector": "South Korea — abrasive Material",
+          "platSector": "Abrasive Material"
+        }
+      ]
+    },
+    {
+      "path": "data/premium/TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx",
+      "country": "Mexico",
+      "sectors": [
+        {
+          "silverSector": "Mexico — Manufacturing of sugar, chocolate, candy, etc",
+          "platSector": "Manufacturing of sugar, chocolate, candy, etc"
+        }
+      ]
+    }
   ]
 }

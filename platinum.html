@@ -243,11 +243,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
   <div class="fg">
     <label>Year</label>
     <select id="f-year" onchange="onFilterChange()">
-      <option value="2024">2024</option>
-      <option value="2023" selected>2023</option>
-      <option value="2022">2022</option>
-      <option value="2020">2020</option>
-      <option value="2017">2017</option>
+      <option value="">—</option>
     </select>
   </div>
 </div>
@@ -308,15 +304,6 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 const MANIFEST_URL    = 'data/platinum-manifest.json';
 const SHEET_NAME      = 'Hotspots_USD';
 const SILVER_CSV      = 'TASA_open_silver_stacked_output_all.csv';
-const FREE_YEARS      = ['2017','2020','2022','2023'];
-
-// Country code → display name map. Extend as needed.
-const COUNTRY_CODES = {
-  'KOR':'South Korea','MEX':'Mexico','USA':'United States','CHN':'China',
-  'JPN':'Japan','DEU':'Germany','GBR':'United Kingdom','AUS':'Australia',
-  'CAN':'Canada','BRA':'Brazil','IND':'India','FRA':'France',
-  'ITA':'Italy','ESP':'Spain','NLD':'Netherlands','CHE':'Switzerland'
-};
 
 // ══════════════════════════════════════════════════════════════
 
@@ -344,18 +331,6 @@ let availableModels    = [];
 let availableCountries = new Set();
 let availableSectors   = {};   // countryName → Set of silver sector strings that map to a platinum file
 let currentModelPath   = null;
-
-// ── Parse filename to extract metadata ────────────────────────
-// Expected pattern: TASA-EFX_{CODE}_Platinum_Model_{YEAR}_v{VER}.xlsx
-function parseModelFilename(path){
-  const name = path.split('/').pop();
-  const m = name.match(/TASA-EFX[_-]([A-Z]{2,4})[_-].*Platinum.*Model.*[_-](\d{4})[_-]/i);
-  if(!m) return null;
-  const code = m[1].toUpperCase();
-  const year = m[2];
-  const country = COUNTRY_CODES[code] || code;
-  return { path, code, country, year };
-}
 
 // ── CSV parser (handles quoted commas) ────────────────────────
 function parseCSVLine(line){
@@ -533,14 +508,6 @@ function onFilterChange(){
   const year   = document.getElementById('f-year').value;
   if(!sector) return;
 
-  // Check if year is free
-  if(!FREE_YEARS.includes(year)){
-    showUpsell();
-    document.getElementById('f-year').value = FREE_YEARS[FREE_YEARS.length-1];
-    return;
-  }
-
-  // Find matching model for current country+sector
   const country = ddState.country;
   const model = findModelForSector(country, sector);
   if(!model){ showUpsell(); return; }
@@ -573,100 +540,105 @@ function buildSilverMap(csvText){
 }
 
 // ══════════════════════════════════════════════════════════════
-// MANIFEST: fetch list of model files and probe each to discover
-// which silver sectors they cover. Then build the tiered dropdowns.
+// MANIFEST — explicit Silver→Platinum sector mapping, no fuzzy matching.
+//
+// platinum-manifest.json structure:
+// {
+//   "free": [
+//     {
+//       "path": "data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
+//       "country": "South Korea",
+//       "sectors": [
+//         {
+//           "silverSector": "South Korea — Manufacture of abrasive products",
+//           "platSector":   "Abrasive Material"
+//         }
+//       ]
+//     }
+//   ],
+//   "premium": [
+//     {
+//       "path": "data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
+//       "country": "South Korea",
+//       "sectors": [
+//         { "silverSector": "South Korea — Manufacture of abrasive products", "platSector": "Abrasive Material" },
+//         { "silverSector": "South Korea — Flour milling",                    "platSector": "Flour Milling" }
+//       ]
+//     },
+//     {
+//       "path": "data/premium/TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx",
+//       "country": "Mexico",
+//       "sectors": [
+//         { "silverSector": "Mexico — Grain milling", "platSector": "Grain Milling" }
+//       ]
+//     }
+//   ]
+// }
+//
+// KEY POINTS:
+// - "silverSector" must exactly match the Silver CSV "Country Sectors" column.
+//   This is what appears in the dropdown and drives the bold/grey split.
+// - "platSector" must exactly match the "Sectors" column in the Excel file.
+//   This is what filters the Excel rows when rendering the dashboard.
+// - No fuzzy matching anywhere — the mapping is fully explicit.
+// - One file entry per country. Same file can appear in free + premium
+//   with a smaller sectors list in free.
+// - Years shown in the dropdown are derived from the Excel data columns
+//   automatically — no need to list them in the manifest.
 // ══════════════════════════════════════════════════════════════
 
 async function loadManifest(){
-  let allFiles = [];
+  availableCountries = new Set();
+  availableSectors   = {};  // country → Set of silverSector strings (bolded in dropdown)
+  sectorToModelMap   = {};  // "country||silverSector" → { path, country, platSector }
+  availableModels    = [];
+
   try {
     const resp = await fetch(MANIFEST_URL);
-    if(resp.ok){
-      const json = await resp.json();
-      const isUnlocked = window.TASA_AUTH?.isUnlocked;
-      const freeFiles    = (json.free    || []).filter(f=>f.includes('Platinum_Model'));
-      const premiumFiles = (json.premium || []).filter(f=>f.includes('Platinum_Model'));
-      allFiles = isUnlocked ? [...freeFiles,...premiumFiles] : freeFiles;
-    }
+    if(!resp.ok) throw new Error(`${MANIFEST_URL} returned ${resp.status}`);
+    const json = await resp.json();
+    const isUnlocked = window.TASA_AUTH?.isUnlocked;
+    const entries = isUnlocked ? (json.premium||[]) : (json.free||[]);
+
+    const seen = new Set();
+    entries.forEach(entry=>{
+      if(!entry.path || !entry.country || !entry.sectors?.length) return;
+
+      availableCountries.add(entry.country);
+      if(!availableSectors[entry.country]) availableSectors[entry.country] = new Set();
+
+      entry.sectors.forEach(({ silverSector, platSector })=>{
+        if(!silverSector || !platSector) return;
+        availableSectors[entry.country].add(silverSector);
+        const key = entry.country+'||'+silverSector;
+        if(!sectorToModelMap[key]){
+          sectorToModelMap[key] = {
+            path:       entry.path,
+            country:    entry.country,
+            platSector  // exact Excel "Sectors" column value — no matching needed
+          };
+        }
+      });
+
+      if(!seen.has(entry.path)){ seen.add(entry.path); availableModels.push(entry); }
+    });
+
   } catch(e){
-    console.warn('[PT] Manifest fetch failed:', e.message,
-      '— falling back to empty model list. Create data/platinum-manifest.json');
+    console.warn('[PT] Manifest error:', e.message);
+    availableModels = [];
   }
-
-  // Parse each filename
-  availableModels = allFiles.map(parseModelFilename).filter(Boolean);
-
-  // Deduplicate by path
-  const seen = new Set();
-  availableModels = availableModels.filter(m=>{ if(seen.has(m.path)) return false; seen.add(m.path); return true; });
 
   return availableModels;
 }
 
-// Probe each model file to discover which Platinum "Sectors" it contains,
-// then cross-reference against silverMap to find matching silver sector strings.
-// This is done by loading just the first sheet header+data (fast because SheetJS
-// only reads requested sheet).
-async function probeModels(models){
-  availableCountries = new Set();
-  availableSectors   = {};
-  sectorToModelMap   = {};
-
-  for(const model of models){
-    try {
-      const resp = await fetch(model.path);
-      if(!resp.ok) continue;
-      const buf  = await resp.arrayBuffer();
-      const wb   = XLSX.read(new Uint8Array(buf),{
-        type:'array', sheets:SHEET_NAME,
-        cellStyles:false, cellFormula:false, cellHTML:false, cellNF:false, sheetStubs:false
-      });
-      const ws = wb.Sheets[SHEET_NAME];
-      if(!ws) continue;
-      const raw     = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      let hdrIdx    = raw.findIndex(r=>r.some(c=>String(c).trim()==='Sectors'));
-      if(hdrIdx<0) hdrIdx=1;
-      const headers = raw[hdrIdx].map(h=>String(h).trim());
-      const platSectors = [...new Set(
-        raw.slice(hdrIdx+1)
-          .filter(r=>r.some(c=>c!==''))
-          .map(r=>String(r[headers.indexOf('Sectors')]||'').trim())
-          .filter(Boolean)
-      )];
-
-      availableCountries.add(model.country);
-
-      // Cross-reference: for each silver sector in this country,
-      // check if it matches any platinum sector in this file.
-      const silverSectors = silverMap[model.country] || [];
-      silverSectors.forEach(ss=>{
-        const matched = matchSilverToPlatinum(ss, platSectors);
-        if(matched){
-          if(!availableSectors[model.country]) availableSectors[model.country]=new Set();
-          availableSectors[model.country].add(ss);
-          const key = model.country+'||'+ss;
-          if(!sectorToModelMap[key]) sectorToModelMap[key] = { ...model, platSectors };
-        }
-      });
-    } catch(e){
-      console.warn('[PT] Could not probe model:', model.path, e.message);
-    }
-  }
-}
-
-function matchSilverToPlatinum(silverSector, platinumSectors){
-  if(platinumSectors.includes(silverSector)) return silverSector;
-  const cs = silverSector.toLowerCase();
-  const found = platinumSectors.find(p=>cs.includes(p.toLowerCase()));
-  if(found) return found;
-  const found2 = platinumSectors.find(p=>p.toLowerCase().split(' ').some(w=>w.length>3&&cs.includes(w)));
-  return found2||null;
-}
-
 // ── Load Platinum Excel (full, for rendering) ─────────────────
 async function loadModelAndRender(path, silverSector, year){
+  const key = ddState.country+'||'+silverSector;
+  const modelMeta = sectorToModelMap[key];
+  const platSector = modelMeta?.platSector || silverSector;
+
   if(path === currentModelPath && allRows.length){
-    renderDashboard(silverSector, year);
+    renderDashboard(silverSector, platSector, year);
     return;
   }
   document.getElementById('dash-content').innerHTML=
@@ -677,7 +649,7 @@ async function loadModelAndRender(path, silverSector, year){
     const buf  = await resp.arrayBuffer();
     loadExcel(new Uint8Array(buf));
     currentModelPath = path;
-    renderDashboard(silverSector, year);
+    renderDashboard(silverSector, platSector, year);
   } catch(e){
     showError('Failed to load model: <strong>'+e.message+'</strong>');
   }
@@ -707,18 +679,6 @@ function loadExcel(buf){
 function showError(msg){
   document.getElementById('dash-content').innerHTML=
     `<div class="empty"><div class="icon">⚠️</div><p>${msg}</p></div>`;
-}
-
-// ── Match a Country Sector string to a Platinum "Sectors" value ─
-function matchPlatinumSector(countrySector){
-  const platinum = [...new Set(allRows.map(r=>r['Sectors']).filter(Boolean))];
-  if(platinum.includes(countrySector)) return countrySector;
-  const cs = countrySector.toLowerCase();
-  const found = platinum.find(p=>cs.includes(p.toLowerCase()));
-  if(found) return found;
-  const found2 = platinum.find(p=>p.toLowerCase().split(' ').some(w=>w.length>3&&cs.includes(w)));
-  if(found2) return found2;
-  return platinum[0]||null;
 }
 
 // ── Parse sector data from Platinum Excel ────────────────────
@@ -762,32 +722,44 @@ function getSectorData(platSector, year){
 }
 
 // ── Render dashboard ─────────────────────────────────────────
-function renderDashboard(countrySector, year){
+function renderDashboard(silverSector, platSector, year){
   const el=document.getElementById('dash-content');
-  if(!countrySector){
+  if(!platSector){
     el.innerHTML='<div class="empty"><div class="icon">🔍</div><p>Select a country sector above.</p></div>';
     return;
   }
-  const platSector = matchPlatinumSector(countrySector);
-  if(!platSector){
-    el.innerHTML='<div class="empty"><div class="icon">⚠️</div><p>No matching Platinum data for this sector.</p></div>';
-    return;
-  }
-  const d = getSectorData(platSector, year);
+
+  // Derive available years from the data columns (e.g. "2023 Total Emissions Intensity")
+  const yearPattern = /^(\d{4})\s+Total Emissions Intensity$/;
+  const dataYears = [...new Set(
+    Object.keys(allRows[0]||{})
+      .map(k=>{ const m=k.match(yearPattern); return m?m[1]:null; })
+      .filter(Boolean)
+  )].sort((a,b)=>b-a);
+
+  // Populate year dropdown from actual data
+  const ySel = document.getElementById('f-year');
+  const currentYear = ySel.value;
+  ySel.innerHTML = dataYears.map(y=>`<option value="${y}"${y===year?' selected':''}>${y}</option>`).join('');
+  // If requested year not in data, fall back to first available
+  const useYear = dataYears.includes(year) ? year : dataYears[0];
+  ySel.value = useYear;
+
+  const d = getSectorData(platSector, useYear);
   if(!d||d.tot===0){
-    el.innerHTML=`<div class="empty"><div class="icon">⚠️</div><p>No data for <strong>${platSector}</strong> in <strong>${year}</strong>.</p></div>`;
+    el.innerHTML=`<div class="empty"><div class="icon">⚠️</div><p>No data for <strong>${platSector}</strong> in <strong>${useYear}</strong>.</p></div>`;
     return;
   }
   el.innerHTML=`
     <div class="data-header">
-      <h2>${countrySector}</h2>
-      <span class="tag tag-gold">${year}</span>
+      <h2>${silverSector}</h2>
+      <span class="tag tag-gold">${useYear}</span>
       <span class="tag tag-dim">${d.tot.toFixed(2)} Mg CO₂e / M USD</span>
     </div>
     <div class="cg2">
       <div class="cb">
         <h3>Scope Breakdown</h3>
-        <p class="cs">${countrySector} · ${year}</p>
+        <p class="cs">${platSector} · ${useYear}</p>
         <div class="scope-bar-list" id="scope-bars"></div>
       </div>
       <div class="cb">
@@ -1076,31 +1048,27 @@ function renderTable(){
 async function boot(){
   try{
     document.getElementById('dash-content').innerHTML=
-      '<div class="loading"><div class="spin"></div> Loading models…</div>';
+      '<div class="loading"><div class="spin"></div> Loading…</div>';
 
-    // 1. Fetch Silver CSV (for dropdowns)
+    // 1. Fetch Silver CSV (for full dropdown lists)
     const silverResp = await fetch(SILVER_CSV);
     if(!silverResp.ok) throw new Error('Silver CSV not found: '+SILVER_CSV);
     const silverText = await silverResp.text();
     buildSilverMap(silverText);
 
-    // 2. Fetch manifest to discover all Platinum_Model files
+    // 2. Read manifest — no file probing, all sector metadata is declared in the JSON
     const models = await loadManifest();
 
     if(!models.length){
-      showError('No Platinum Model files found. Create <code>data/platinum-manifest.json</code> listing your Platinum_Model Excel files. See the comment at the top of the script for the required format.');
+      showError('No Platinum Model entries found in <code>data/platinum-manifest.json</code>. Add at least one entry to the free or premium array.');
       return;
     }
 
-    // 3. Probe each model to find which silver sectors it covers
-    //    (This fetches each file — consider caching on server for speed)
-    await probeModels(models);
-
-    // 4. Build tiered dropdowns
+    // 3. Build tiered dropdowns immediately — no waiting for Excel files
     populateCountryDropdown();
 
   } catch(e){
-    showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure all files are accessible.');
+    showError('Failed to load: <strong>'+e.message+'</strong>');
   }
 }
 
