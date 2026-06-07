@@ -106,12 +106,21 @@ select option{background:var(--navy2);color:var(--white);}
 .donut-panel-title{font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px;}
 .donut-panel-sub{font-size:10px;color:var(--mid);}
 .donut-wrap{display:flex;align-items:center;gap:14px;margin-top:12px;}
+.donut-wrap-lg{display:flex;align-items:flex-start;gap:18px;margin-top:14px;}
 .donut-legend{display:flex;flex-direction:column;gap:8px;flex:1;}
 .donut-leg-row{display:flex;align-items:flex-start;gap:7px;}
 .donut-leg-swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;margin-top:2px;}
 .donut-leg-name{font-size:11px;color:var(--dim);flex:1;line-height:1.3;}
 .donut-leg-val{font-size:11px;font-weight:700;color:var(--white);}
 .donut-leg-pct{font-size:10px;color:var(--mid);}
+.donut-tip{
+  position:absolute;pointer-events:none;display:none;
+  background:rgba(10,22,40,0.97);border:1px solid rgba(0,69,171,0.5);
+  border-radius:8px;padding:8px 12px;font-size:11px;color:#F4F5F5;
+  white-space:nowrap;z-index:999;line-height:1.6;
+  box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  transform:translate(10px,-50%);
+}
 
 .scope-pills{display:flex;gap:6px;flex-wrap:wrap;}
 .scope-pill{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;
@@ -287,31 +296,46 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <span class="section-label">📦 Economic Supply Chain Activity</span>
 </div>
 
-<!-- EI callout + TR donuts -->
-<div class="insight-row" style="margin-top:14px;grid-template-columns:1fr 1fr 1fr;">
-
+<!-- Economic summary callouts -->
+<div class="insight-row" style="margin-top:14px;grid-template-columns:1fr 1fr;">
   <div class="callout-panel">
-    <div class="callout-eyebrow">🌿 Total Emissions Intensity</div>
-    <div class="callout-val" id="total-ei">—</div>
-    <div class="callout-unit">Mg CO₂e / Million USD</div>
-    <div class="callout-sub" id="total-ei-sub">—</div>
+    <div class="callout-eyebrow">💵 Total Direct Purchases</div>
+    <div class="callout-val" id="econ-direct-val">—</div>
+    <div class="callout-unit">thousands USD · per $1M of focal sector output</div>
+    <div class="callout-sub" id="econ-direct-sub">Tier 1 direct inputs only</div>
   </div>
+  <div class="callout-panel">
+    <div class="callout-eyebrow">🔗 Total Economic Upstream Activity</div>
+    <div class="callout-val" id="econ-total-val">—</div>
+    <div class="callout-unit">thousands USD · per $1M of focal sector output</div>
+    <div class="callout-sub" id="econ-total-sub">Full upstream supply chain</div>
+  </div>
+</div>
+
+<!-- TR Donuts — bigger, interactive -->
+<div class="insight-row" style="margin-top:12px;grid-template-columns:1fr 1fr;">
 
   <div class="donut-panel">
     <div class="donut-panel-title">Tier 1 Direct Purchases</div>
-    <div class="donut-panel-sub" id="tr-direct-sub">Direct inputs per $1M output</div>
-    <div class="donut-wrap">
-      <svg id="donut-tr-direct" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
-      <div class="donut-legend" id="donut-tr-direct-legend" style="max-height:200px;overflow-y:auto;"></div>
+    <div class="donut-panel-sub" id="tr-direct-sub">Direct inputs · in thousands (USD) · per $1M output</div>
+    <div class="donut-wrap-lg">
+      <div style="position:relative;flex-shrink:0;">
+        <svg id="donut-tr-direct" width="160" height="160" viewBox="0 0 160 160"></svg>
+        <div id="donut-tr-direct-tip" class="donut-tip"></div>
+      </div>
+      <div class="donut-legend" id="donut-tr-direct-legend" style="max-height:260px;overflow-y:auto;"></div>
     </div>
   </div>
 
   <div class="donut-panel">
     <div class="donut-panel-title">Total Economic Upstream Activity</div>
-    <div class="donut-panel-sub" id="tr-total-sub">Full upstream chain per $1M output</div>
-    <div class="donut-wrap">
-      <svg id="donut-tr-total" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
-      <div class="donut-legend" id="donut-tr-total-legend" style="max-height:200px;overflow-y:auto;"></div>
+    <div class="donut-panel-sub" id="tr-total-sub">Full upstream chain · in thousands (USD) · per $1M output</div>
+    <div class="donut-wrap-lg">
+      <div style="position:relative;flex-shrink:0;">
+        <svg id="donut-tr-total" width="160" height="160" viewBox="0 0 160 160"></svg>
+        <div id="donut-tr-total-tip" class="donut-tip"></div>
+      </div>
+      <div class="donut-legend" id="donut-tr-total-legend" style="max-height:260px;overflow-y:auto;"></div>
     </div>
   </div>
 
@@ -324,8 +348,15 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <span class="section-label">🌿 Emissions Structure</span>
 </div>
 
-<!-- Scope Split + Tier Depth donuts -->
-<div class="insight-row" style="margin-top:14px;grid-template-columns:1fr 1fr;">
+<!-- EI callout + Scope Split + Tier Depth donuts -->
+<div class="insight-row" style="margin-top:14px;grid-template-columns:1fr 1fr 1fr;">
+
+  <div class="callout-panel">
+    <div class="callout-eyebrow">🌿 Total Emissions Intensity</div>
+    <div class="callout-val" id="total-ei">—</div>
+    <div class="callout-unit">Mg CO₂e / Million USD</div>
+    <div class="callout-sub" id="total-ei-sub">—</div>
+  </div>
 
   <div class="donut-panel">
     <div class="donut-panel-title">Scope Split</div>
@@ -1106,14 +1137,15 @@ function renderTRDonuts() {
     .map(r => ({ label: r.label, val: r.direct * 1000 }))
     .sort((a,b) => b.val - a.val);
 
-  const directTop  = directRows.slice(0, TOP_N);
-  const directRest = directRows.slice(TOP_N).reduce((a,r) => a + r.val, 0);
+  const directTotal = directRows.reduce((a,r) => a + r.val, 0);
+  const directTop   = directRows.slice(0, TOP_N);
+  const directRest  = directRows.slice(TOP_N).reduce((a,r) => a + r.val, 0);
   if (directRest > 0) directTop.push({ label: 'All Others', val: directRest });
 
   const directSegs = directTop.map((r,i) => ({
     label: r.label, val: r.val, color: TR_COLORS[i % TR_COLORS.length]
   }));
-  drawDonutTR('donut-tr-direct', directSegs, 'donut-tr-direct-legend');
+  drawDonutTR('donut-tr-direct', directSegs, 'donut-tr-direct-legend', 'donut-tr-direct-tip');
 
   // ── Donut 2: Total Upstream — col C × 1000, focal row C − 1, EXCLUDE focal ──
   const totalRows = trData
@@ -1125,6 +1157,7 @@ function renderTRDonuts() {
     .filter(r => !r.isFocal && r.val > 0)
     .sort((a,b) => b.val - a.val);
 
+  const totalSum  = totalRows.reduce((a,r) => a + r.val, 0);
   const totalTop  = totalRows.slice(0, TOP_N);
   const totalRest = totalRows.slice(TOP_N).reduce((a,r) => a + r.val, 0);
   if (totalRest > 0) totalTop.push({ label: 'All Others', val: totalRest });
@@ -1132,28 +1165,43 @@ function renderTRDonuts() {
   const totalSegs = totalTop.map((r,i) => ({
     label: r.label, val: r.val, color: TR_COLORS[i % TR_COLORS.length]
   }));
-  drawDonutTR('donut-tr-total', totalSegs, 'donut-tr-total-legend');
+  drawDonutTR('donut-tr-total', totalSegs, 'donut-tr-total-legend', 'donut-tr-total-tip');
 
-  document.getElementById('tr-direct-sub').textContent = 'Direct inputs per $1M of ' + (key || 'output');
-  document.getElementById('tr-total-sub').textContent  = 'Full upstream chain per $1M of ' + (key || 'output');
+  // ── Callout boxes ──
+  const econDirect = document.getElementById('econ-direct-val');
+  const econTotal  = document.getElementById('econ-total-val');
+  if (econDirect) econDirect.textContent = fmtDollar(directTotal);
+  if (econTotal)  econTotal.textContent  = fmtDollar(totalSum);
+  const econDirectSub = document.getElementById('econ-direct-sub');
+  const econTotalSub  = document.getElementById('econ-total-sub');
+  if (econDirectSub) econDirectSub.textContent = `Tier 1 direct inputs · ${key || 'focal sector'}`;
+  if (econTotalSub)  econTotalSub.textContent  = `All upstream tiers · ${key || 'focal sector'}`;
+
+  // ── Subtitles ──
+  document.getElementById('tr-direct-sub').textContent = `Direct inputs · in thousands (USD) · per $1M of ${key || 'output'}`;
+  document.getElementById('tr-total-sub').textContent  = `Full upstream chain · in thousands (USD) · per $1M of ${key || 'output'}`;
 }
 
-function drawDonutTR(svgId, segs, legendId) {
+function drawDonutTR(svgId, segs, legendId, tipId) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
   svg.innerHTML = '';
-  const cx=48, cy=48, R=42, r=26, TAU=2*Math.PI;
+
+  // Larger donut: 160×160 viewBox
+  const cx=80, cy=80, R=72, r=46, TAU=2*Math.PI;
   const tot = segs.reduce((a,s)=>a+s.val,0) || 1;
+  const paths = [];
 
   if (segs.length === 1) {
     const outer = document.createElementNS('http://www.w3.org/2000/svg','circle');
     outer.setAttribute('cx',cx); outer.setAttribute('cy',cy); outer.setAttribute('r',R);
-    outer.setAttribute('fill',segs[0].color); outer.setAttribute('opacity','0.9');
+    outer.setAttribute('fill',segs[0].color); outer.setAttribute('opacity','0.88');
     svg.appendChild(outer);
+    paths.push({ el: outer, seg: segs[0] });
   } else {
     let angle = -Math.PI/2;
     segs.forEach(seg => {
-      const sweep=(seg.val/tot)*TAU; if(sweep<0.001) return;
+      const sweep=(seg.val/tot)*TAU; if(sweep<0.001){angle+=sweep;return;}
       const large=sweep>Math.PI?1:0;
       const x1=cx+R*Math.cos(angle), y1=cy+R*Math.sin(angle);
       const a2=angle+sweep;
@@ -1162,16 +1210,65 @@ function drawDonutTR(svgId, segs, legendId) {
       const ix2=cx+r*Math.cos(a2),   iy2=cy+r*Math.sin(a2);
       const p=document.createElementNS('http://www.w3.org/2000/svg','path');
       p.setAttribute('d',`M${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${r},${r} 0 ${large},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z`);
-      p.setAttribute('fill',seg.color); p.setAttribute('opacity','0.9');
-      svg.appendChild(p); angle+=sweep;
+      p.setAttribute('fill',seg.color); p.setAttribute('opacity','0.88');
+      p.style.cursor='pointer';
+      p.style.transition='opacity 0.15s, transform 0.15s';
+      p.style.transformOrigin=`${cx}px ${cy}px`;
+      svg.appendChild(p);
+      paths.push({ el: p, seg, midAngle: angle + sweep/2 });
+      angle+=sweep;
     });
   }
 
   const hole=document.createElementNS('http://www.w3.org/2000/svg','circle');
   hole.setAttribute('cx',cx); hole.setAttribute('cy',cy); hole.setAttribute('r',r-1);
-  hole.setAttribute('fill','rgba(18,21,34,0.97)'); svg.appendChild(hole);
+  hole.setAttribute('fill','rgba(10,22,40,0.97)'); svg.appendChild(hole);
 
-  document.getElementById(legendId).innerHTML = segs.map(s => {
+  // Center label (updates on hover)
+  const centerLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+  centerLabel.setAttribute('x',cx); centerLabel.setAttribute('y',cy-6);
+  centerLabel.setAttribute('text-anchor','middle'); centerLabel.setAttribute('font-size','13');
+  centerLabel.setAttribute('font-weight','700'); centerLabel.setAttribute('fill','#F4F5F5');
+  centerLabel.setAttribute('font-family',"'Segoe UI',sans-serif");
+  svg.appendChild(centerLabel);
+
+  const centerPct = document.createElementNS('http://www.w3.org/2000/svg','text');
+  centerPct.setAttribute('x',cx); centerPct.setAttribute('y',cy+12);
+  centerPct.setAttribute('text-anchor','middle'); centerPct.setAttribute('font-size','10');
+  centerPct.setAttribute('fill','rgba(244,245,245,0.45)');
+  centerPct.setAttribute('font-family',"'Segoe UI',sans-serif");
+  svg.appendChild(centerPct);
+
+  // Hover interactivity
+  const tip = tipId ? document.getElementById(tipId) : null;
+  paths.forEach(({el, seg}) => {
+    el.addEventListener('mouseenter', () => {
+      paths.forEach(p => { if(p.el !== el) p.el.style.opacity='0.4'; });
+      el.style.opacity='1';
+      el.style.transform='scale(1.04)';
+      const pct=(seg.val/tot*100).toFixed(1);
+      centerLabel.textContent = fmtDollar(seg.val);
+      centerPct.textContent   = pct + '%';
+      if (tip) {
+        tip.innerHTML = `<strong style="color:${seg.color}">${seg.label}</strong><br>${fmtDollar(seg.val)} &nbsp;·&nbsp; ${pct}%`;
+        tip.style.display='block';
+      }
+    });
+    el.addEventListener('mousemove', (e) => {
+      if (!tip) return;
+      const rect = svg.parentElement.getBoundingClientRect();
+      tip.style.left = (e.clientX - rect.left + 12) + 'px';
+      tip.style.top  = (e.clientY - rect.top) + 'px';
+    });
+    el.addEventListener('mouseleave', () => {
+      paths.forEach(p => { p.el.style.opacity='0.88'; p.el.style.transform=''; });
+      centerLabel.textContent=''; centerPct.textContent='';
+      if (tip) tip.style.display='none';
+    });
+  });
+
+  // Legend
+  document.getElementById(legendId).innerHTML = segs.map((s,i) => {
     const pct=(s.val/tot*100).toFixed(1);
     return `<div class="donut-leg-row">
       <div class="donut-leg-swatch" style="background:${s.color}"></div>
