@@ -197,6 +197,14 @@ table.dt tbody tr:hover td{background:rgba(0,69,171,0.06);}
 .dd-item.locked .dd-dot{background:rgba(244,245,245,0.15);width:6px;height:6px;border-radius:50%;flex-shrink:0;}
 .dd-item.selected{background:rgba(0,69,171,0.2);}
 
+.sankey-toggle{
+  padding:4px 12px;border-radius:20px;border:1.5px solid var(--bdr);
+  font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;
+  background:none;color:var(--dim);transition:all .2s;
+}
+.sankey-toggle.on{background:rgba(167,243,208,0.18);border-color:var(--teal);color:var(--teal);}
+.sankey-toggle:hover{border-color:var(--white);color:var(--white);}
+
 .section-divider{
   margin:0 24px;padding:10px 0 8px;
   border-bottom:1px solid rgba(167,243,208,0.15);
@@ -468,16 +476,24 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <span class="section-label">🔗 Path Relationships — 3-Tier Supply Chain</span>
 </div>
 
-<div style="margin:14px 24px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-  <div style="font-size:11px;color:var(--mid)">Top sectors by emissions at each tier · Scope 3 flows shown · hover for detail</div>
-  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
-    <span style="font-size:10px;color:var(--mid);text-transform:uppercase;letter-spacing:0.1em;">Top N per tier</span>
-    <select id="sankey-topn" onchange="renderSankey()" style="min-width:80px;font-size:12px;padding:4px 8px;">
-      <option value="8">8</option>
-      <option value="12" selected>12</option>
-      <option value="16">16</option>
-      <option value="20">20</option>
-    </select>
+<div style="margin:14px 24px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+  <div style="font-size:11px;color:var(--mid)">Scope 1 · 2 · 3 flows shown between tiers · hover for detail</div>
+  <div style="margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+    <div style="display:flex;gap:6px;align-items:center;">
+      <span style="font-size:10px;color:var(--mid);text-transform:uppercase;letter-spacing:0.1em;">Scope view</span>
+      <button id="sankey-mode-split" class="sankey-toggle on" onclick="setSankeyMode('split')">Split S1/S2/S3</button>
+      <button id="sankey-mode-sum"   class="sankey-toggle"    onclick="setSankeyMode('sum')">Summed</button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <span style="font-size:10px;color:var(--mid);text-transform:uppercase;letter-spacing:0.1em;">Top N</span>
+      <select id="sankey-topn" onchange="reloadAndRenderSankey()" style="min-width:70px;font-size:12px;padding:4px 8px;">
+        <option value="6">6</option>
+        <option value="8">8</option>
+        <option value="12" selected>12</option>
+        <option value="16">16</option>
+        <option value="20">20</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -848,6 +864,8 @@ async function rlcaLoadAndRender(silverSector){
       model._wb=wb;
     }
     currentModelPath=model.path;
+    _sankeyWb = wb;
+    _sankeyRlcaSector = rlcaSector;
     loadExcel(wb);
     loadSankeyData(wb, rlcaSector);
     renderSankey();
@@ -1156,7 +1174,24 @@ function drawDonut(svgId, segs, total, legendId) {
 }
 
 // ── Sankey data ───────────────────────────────────────
-let sankeyData = null; // { focalSector, total, s1, s2, s3, tier1:[], tier2:{} }
+let sankeyData = null;
+let sankeyMode = 'split'; // 'split' | 'sum'
+let _sankeyWb  = null;    // cached workbook for topN re-render
+let _sankeyRlcaSector = '';
+
+function setSankeyMode(mode) {
+  sankeyMode = mode;
+  document.getElementById('sankey-mode-split').classList.toggle('on', mode==='split');
+  document.getElementById('sankey-mode-sum').classList.toggle('on', mode==='sum');
+  renderSankey();
+}
+
+function reloadAndRenderSankey() {
+  if (_sankeyWb && _sankeyRlcaSector) {
+    loadSankeyData(_sankeyWb, _sankeyRlcaSector);
+    renderSankey();
+  }
+}
 
 // ── Dollar label formatter (abbreviated, for donut labels) ──
 function fmtDollar(v) {
@@ -1491,172 +1526,208 @@ function renderSankey() {
   const tip     = document.getElementById('sankey-tip');
 
   if (!sankeyData || !sankeyData.tier1.length) {
-    stateEl.style.display = 'flex';
-    wrapEl.style.display  = 'none';
-    stateEl.innerHTML = '<span>⚠️ Pathway Analysis sheets not found in this Excel file.<br><small style="color:var(--mid)">Requires sheets: <code>Tier_1 Pathway Analysis</code>, <code>Tier_2 Pathway Analysis</code>, <code>Tier_3 Pathway Analysis</code></small></span>';
+    stateEl.style.display='flex'; wrapEl.style.display='none';
+    stateEl.innerHTML='<span>⚠️ Pathway Analysis sheets not found.<br><small style="color:var(--mid)">Requires: <code>Tier_1 Pathway Analysis</code>, <code>Tier_2 Pathway Analysis</code>, <code>Tier_3 Pathway Analysis</code></small></span>';
     return;
   }
-
-  stateEl.style.display = 'none';
-  wrapEl.style.display  = 'block';
+  stateEl.style.display='none'; wrapEl.style.display='block';
 
   const D    = sankeyData;
-  const topN = parseInt(document.getElementById('sankey-topn')?.value||'12');
+  const mode = sankeyMode;
+  const SC   = ['#B98EFF','#3FA9F6','#A7F3D0'];
+  const SCL  = ['S1','S2','S3'];
 
-  // Layout
-  const BOX_H  = 700;
-  const BOX_GAP = 3;
-  const COL_W  = 150;
-  const GAP_X  = 80;
-  const PAD_L  = 12;
-  const PAD_T  = 28;
-  const PAD_B  = 16;
-  const CHEV   = 12;
+  const DPR   = window.devicePixelRatio || 1;
+  const BOX_H = 720, GAP = 3;
+  const COL_W = 140, SC_W = 36, GAP_X = 68, SC_GAP = 48;
+  const PAD_L = 14, PAD_T = 32, PAD_B = 28, CHEV = 10;
 
-  const T1_COLS = ['#0045AB','#1a5cbf','#8C5ACC','#3FA9F6','#D4AF37','#A7F3D0',
-                   '#FF66B3','#0d3d8a','#6a3aab','#2e6fd4','#B98EFF','#7a48bb','#6B7280'];
-  const T2_COLS = ['#3FA9F6','#A7CCE7','#6EE7B7','#93C5FD','#FCA5A5','#C4B5FD',
-                   '#FFBB00','#FF66B3','#D4AF37','#A7F3D0','#B98EFF','#6B7280','#0045AB'];
-  const T3_COLS = ['#A7F3D0','#FFBB00','#B98EFF','#3FA9F6','#FF66B3','#D4AF37',
-                   '#93C5FD','#FCA5A5','#6EE7B7','#C4B5FD','#A7CCE7','#6B7280','#0045AB'];
+  const T1C=['#0045AB','#1a5cbf','#8C5ACC','#3FA9F6','#D4AF37','#FF66B3','#0d3d8a','#6a3aab','#2e6fd4','#B98EFF','#7a48bb','#A7F3D0','#6B7280'];
+  const T2C=['#3FA9F6','#A7CCE7','#6EE7B7','#93C5FD','#FCA5A5','#C4B5FD','#FFBB00','#FF66B3','#D4AF37','#A7F3D0','#B98EFF','#6B7280','#0045AB'];
+  const T3C=['#A7F3D0','#FFBB00','#B98EFF','#3FA9F6','#FF66B3','#D4AF37','#93C5FD','#FCA5A5','#6EE7B7','#C4B5FD','#A7CCE7','#6B7280','#0045AB'];
 
-  const COL0_X = PAD_L;
-  const COL1_X = COL0_X + COL_W + GAP_X;
-  const COL2_X = COL1_X + COL_W + GAP_X;
-  const COL3_X = COL2_X + COL_W + GAP_X;
-  const TOTAL_W = COL3_X + COL_W + PAD_L;
+  const C0=PAD_L, CSC0=C0+COL_W+GAP_X, C1=CSC0+SC_W+SC_GAP;
+  const CSC1=C1+COL_W+GAP_X, C2=CSC1+SC_W+SC_GAP;
+  const CSC2=C2+COL_W+GAP_X, C3=CSC2+SC_W+SC_GAP;
+  const CW=C3+COL_W+PAD_L, CH=BOX_H+PAD_T+PAD_B;
 
-  function propH(items, totalH, gap) {
-    const tot = items.reduce((a,r)=>a+r.val,0)||1;
-    const avail = totalH - gap*(items.length-1);
-    const MIN = Math.max(3, avail/items.length*0.12);
-    let hs = items.map(r=>Math.max(MIN, r.val/tot*avail));
-    const s = hs.reduce((a,b)=>a+b,0);
-    return hs.map(h=>h/s*avail);
+  canvas.style.width=CW+'px'; canvas.style.height=CH+'px';
+  canvas.width=Math.round(CW*DPR); canvas.height=Math.round(CH*DPR);
+  const ctx=canvas.getContext('2d');
+  ctx.scale(DPR,DPR); ctx.clearRect(0,0,CW,CH);
+
+  const hits=[];
+
+  function propH(items,total,gap){
+    if(!items.length)return[];
+    const tot=items.reduce((a,r)=>a+(r.val||0),0)||1;
+    const av=total-gap*(items.length-1);
+    const MIN=Math.max(4,av/items.length*0.10);
+    let hs=items.map(r=>Math.max(MIN,(r.val/tot)*av));
+    const s=hs.reduce((a,b)=>a+b,0);
+    return hs.map(h=>h/s*av);
   }
 
-  const t1  = D.tier1;
-  // Flatten T2 across all T1 parents in order
-  const allT2 = [];
-  t1.forEach((t,i) => {
-    (D.tier2[t.label]||[]).forEach(c => allT2.push({t1idx:i, t1label:t.label, ...c}));
-  });
-  // Flatten T3 across all T2 in order
-  const allT3 = [];
-  allT2.forEach((t2item, t2i) => {
-    const key = t2item.t1label+'|||'+t2item.label;
-    (D.tier3[key]||[]).forEach(c => allT3.push({t2idx:t2i, t2label:t2item.label, t1label:t2item.t1label, ...c}));
-  });
-
-  const t1H = propH(t1, BOX_H, BOX_GAP);
-  const t2H = allT2.length ? propH(allT2, BOX_H, BOX_GAP) : [];
-  const t3H = allT3.length ? propH(allT3, BOX_H, BOX_GAP) : [];
-
-  const CANVAS_H = BOX_H + PAD_T + PAD_B;
-  canvas.width  = TOTAL_W;
-  canvas.height = CANVAS_H;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  const hitZones = [];
-
-  function drawBox(x,y,w,h,color,label,val,fontSize) {
-    ctx.fillStyle=color; ctx.globalAlpha=0.88;
+  function drawBox(x,y,w,h,col,lbl,val,fs){
+    if(h<1)return;
+    ctx.fillStyle=col;ctx.globalAlpha=0.90;
     ctx.beginPath();
-    ctx.moveTo(x+4,y); ctx.lineTo(x+w-CHEV,y);
-    ctx.lineTo(x+w,y+h/2); ctx.lineTo(x+w-CHEV,y+h);
-    ctx.lineTo(x+4,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-4);
-    ctx.lineTo(x,y+4); ctx.quadraticCurveTo(x,y,x+4,y);
-    ctx.closePath(); ctx.fill(); ctx.globalAlpha=1;
-    if (h>12) {
-      ctx.fillStyle='#F4F5F5'; ctx.font=`600 ${fontSize}px 'Segoe UI',Arial,sans-serif`;
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      const cx=x+(w-CHEV)/2, cy=y+h*0.40, maxW=w-CHEV-6;
-      const words=label.split(' '); const lines=[]; let cur='';
-      words.forEach(wd=>{const t=cur?cur+' '+wd:wd;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=wd;}else cur=t;});
-      if(cur)lines.push(cur);
-      const lh=fontSize+2, startY=cy-(lines.length-1)*lh/2;
-      lines.forEach((ln,i)=>ctx.fillText(ln,cx,startY+i*lh));
-      if(h>26){ctx.font=`400 ${Math.max(7,fontSize-2)}px 'Segoe UI',sans-serif`;ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillText(val.toFixed(2)+' Mg',cx,startY+lines.length*lh+3);}
+    ctx.moveTo(x+4,y);ctx.lineTo(x+w-CHEV,y);
+    ctx.lineTo(x+w,y+h/2);ctx.lineTo(x+w-CHEV,y+h);
+    ctx.lineTo(x+4,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-4);
+    ctx.lineTo(x,y+4);ctx.quadraticCurveTo(x,y,x+4,y);
+    ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+    if(h>11){
+      ctx.fillStyle='#F4F5F5';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font=`600 ${fs}px 'Segoe UI',Arial,sans-serif`;
+      const cx=x+(w-CHEV)/2,mW=w-CHEV-6;
+      const wds=lbl.split(' ');const ls=[];let c='';
+      wds.forEach(w2=>{const t=c?c+' '+w2:w2;if(ctx.measureText(t).width>mW&&c){ls.push(c);c=w2;}else c=t;});
+      if(c)ls.push(c);
+      const lh=fs+2,sY=(y+h*0.40)-(ls.length-1)*lh/2;
+      ls.forEach((ln,i)=>ctx.fillText(ln,cx,sY+i*lh));
+      if(h>26){ctx.font=`400 ${Math.max(7,fs-2)}px 'Segoe UI',sans-serif`;ctx.fillStyle='rgba(255,255,255,0.45)';ctx.fillText(val.toFixed(2),cx,sY+ls.length*lh+4);}
     }
   }
 
-  function drawRibbon(x0,y0t,y0b,x1,y1t,y1b,color,alpha) {
-    const cp=(x1-x0)*0.5;
+  function drawScBox(x,y,w,h,col,lbl){
+    if(h<1)return;
+    ctx.fillStyle=col;ctx.globalAlpha=0.80;ctx.fillRect(x,y,w,h);ctx.globalAlpha=1;
+    if(h>12){
+      ctx.save();ctx.translate(x+w/2,y+h/2);ctx.rotate(-Math.PI/2);
+      ctx.fillStyle='rgba(255,255,255,0.65)';ctx.font='700 8px \'Segoe UI\',sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,0,0);ctx.restore();
+    }
+  }
+
+  function ribbon(x0,y0t,y0b,x1,y1t,y1b,col,alpha){
+    if(y0b<=y0t||y1b<=y1t)return;
+    const cp=(x1-x0)*0.48;
     ctx.beginPath();
-    ctx.moveTo(x0,y0t); ctx.bezierCurveTo(x0+cp,y0t,x1-cp,y1t,x1,y1t);
-    ctx.lineTo(x1,y1b); ctx.bezierCurveTo(x1-cp,y1b,x0+cp,y0b,x0,y0b);
-    ctx.closePath(); ctx.fillStyle=color; ctx.globalAlpha=alpha; ctx.fill(); ctx.globalAlpha=1;
+    ctx.moveTo(x0,y0t);ctx.bezierCurveTo(x0+cp,y0t,x1-cp,y1t,x1,y1t);
+    ctx.lineTo(x1,y1b);ctx.bezierCurveTo(x1-cp,y1b,x0+cp,y0b,x0,y0b);
+    ctx.closePath();ctx.fillStyle=col;ctx.globalAlpha=alpha;ctx.fill();ctx.globalAlpha=1;
   }
 
   // Headers
-  ctx.fillStyle='rgba(167,243,208,0.5)'; ctx.font="700 9px 'Segoe UI',sans-serif";
-  ctx.textAlign='center'; ctx.textBaseline='top';
-  ['Focal Sector','Tier 1 Inputs','Tier 2 Inputs','Tier 3 Inputs']
-    .forEach((h,i)=>ctx.fillText(h,[COL0_X,COL1_X,COL2_X,COL3_X][i]+COL_W/2,4));
+  ctx.fillStyle='rgba(167,243,208,0.55)';ctx.font='700 9px \'Segoe UI\',sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='top';
+  [['Focal',C0,COL_W],['Scope',CSC0,SC_W],['Tier 1',C1,COL_W],['Scope',CSC1,SC_W],['Tier 2',C2,COL_W],['Scope',CSC2,SC_W],['Tier 3',C3,COL_W]]
+    .forEach(([l,x,w])=>ctx.fillText(l,x+w/2,8));
+
+  // Data
+  const t1=D.tier1;
+  const allT2=[];
+  t1.forEach((t,i)=>(D.tier2[t.label]||[]).forEach(c=>allT2.push({t1idx:i,t1label:t.label,...c})));
+  const allT3=[];
+  allT2.forEach((t,t2i)=>(D.tier3[t.t1label+'|||'+t.label]||[]).forEach(c=>allT3.push({t2idx:t2i,t2label:t.label,t1label:t.t1label,...c})));
+
+  const t1H=propH(t1,BOX_H,GAP);
+  const t2H=propH(allT2,BOX_H,GAP);
+  const t3H=propH(allT3,BOX_H,GAP);
+
+  function scH(items,hs){
+    return items.map((t,i)=>{
+      const h=hs[i]||0,tot=(t.s1||0)+(t.s2||0)+(t.s3||0)||1;
+      return {s1:(t.s1||0)/tot*h,s2:(t.s2||0)/tot*h,s3:(t.s3||0)/tot*h};
+    });
+  }
+  const t1SC=scH(t1,t1H), t2SC=scH(allT2,t2H), t3SC=scH(allT3,t3H);
+
+  function summedSC(arr){
+    const s=[0,0,0];
+    arr.forEach(t=>{s[0]+=(t.s1||0);s[1]+=(t.s2||0);s[2]+=(t.s3||0);});
+    const tot=s.reduce((a,b)=>a+b,0)||1;
+    return s.map(v=>v/tot*BOX_H);
+  }
 
   // Focal box
-  drawBox(COL0_X,PAD_T,COL_W,BOX_H,'#0045AB',D.focalSector,D.t1Total,9);
-  hitZones.push({x:COL0_X,y:PAD_T,w:COL_W,h:BOX_H,label:D.focalSector,val:D.t1Total,extra:'Focal sector · Scope 3 total'});
+  drawBox(C0,PAD_T,COL_W,BOX_H,'#0045AB',D.focalSector,D.t1Total,9);
+  hits.push({x:C0,y:PAD_T,w:COL_W,h:BOX_H,label:D.focalSector,val:D.t1Total,extra:'Focal sector'});
 
-  // T1 boxes + ribbons from focal
-  let t1Y=PAD_T;
-  const t1BoxY=[];
+  // SC0 — scopes of T1 layer
+  if(mode==='sum'){
+    let y=PAD_T; summedSC(t1).forEach((h,si)=>{drawScBox(CSC0,y,SC_W,h,SC[si],SCL[si]);y+=h;});
+  } else {
+    let y=PAD_T; t1SC.forEach(s=>{[s.s1,s.s2,s.s3].forEach((h,si)=>{drawScBox(CSC0,y,SC_W,h,SC[si],SCL[si]);y+=h;});});
+  }
+
+  // T1 boxes — ribbons from SC0 right edge
+  let y1=PAD_T; const by1=[];
   t1.forEach((t,i)=>{
-    const h=t1H[i], color=T1_COLS[i%T1_COLS.length];
-    const prevH=t1H.slice(0,i).reduce((a,b)=>a+b+BOX_GAP,0);
-    drawRibbon(COL0_X+COL_W-CHEV,PAD_T+prevH,PAD_T+prevH+h,COL1_X,t1Y,t1Y+h,color,0.22);
-    drawBox(COL1_X,t1Y,COL_W,h,color,t.label,t.val,9);
-    hitZones.push({x:COL1_X,y:t1Y,w:COL_W,h,label:'T1: '+t.label,val:t.val,extra:`${t.pct.toFixed(1)}% of Scope 3`});
-    t1BoxY.push(t1Y); t1Y+=h+BOX_GAP;
+    const h=t1H[i],col=T1C[i%T1C.length];
+    const sTop=mode==='sum'?PAD_T:PAD_T+t1SC.slice(0,i).reduce((a,s)=>a+s.s1+s.s2+s.s3,0);
+    const sBot=sTop+(mode==='sum'?BOX_H:(t1SC[i].s1+t1SC[i].s2+t1SC[i].s3));
+    ribbon(CSC0+SC_W,sTop,sBot,C1,y1,y1+h,col,0.20);
+    drawBox(C1,y1,COL_W,h,col,t.label,t.val,9);
+    hits.push({x:C1,y:y1,w:COL_W,h,label:'T1: '+t.label,val:t.val,extra:`S1:${(t.s1||0).toFixed(2)} S2:${(t.s2||0).toFixed(2)} S3:${(t.s3||0).toFixed(2)}`});
+    by1.push(y1);y1+=h+GAP;
   });
 
-  // T2 boxes + ribbons from T1
-  let t2Y=PAD_T;
-  const t2BoxY=[];
+  // SC1 — scopes of T2 layer
+  if(mode==='sum'){
+    let y=PAD_T; summedSC(allT2).forEach((h,si)=>{drawScBox(CSC1,y,SC_W,h,SC[si],SCL[si]);y+=h;});
+  } else {
+    let y=PAD_T; t2SC.forEach(s=>{[s.s1,s.s2,s.s3].forEach((h,si)=>{drawScBox(CSC1,y,SC_W,h,SC[si],SCL[si]);y+=h;});});
+  }
+
+  // T2 boxes — ribbons from SC1 right edge
+  let y2=PAD_T; const by2=[];
   allT2.forEach((t,i)=>{
-    const h=t2H[i], color=T2_COLS[i%T2_COLS.length];
-    const t1i=t.t1idx;
-    const siblings=allT2.filter(x=>x.t1idx===t1i);
-    const sibTot=siblings.reduce((a,s)=>a+s.val,0)||1;
-    const sibBefore=siblings.slice(0,siblings.indexOf(t));
-    const srcTop=t1BoxY[t1i]+sibBefore.reduce((a,s)=>a+s.val/sibTot*t1H[t1i],0);
-    const srcBot=srcTop+t.val/sibTot*t1H[t1i];
-    drawRibbon(COL1_X+COL_W-CHEV,srcTop,srcBot,COL2_X,t2Y,t2Y+h,color,0.20);
-    drawBox(COL2_X,t2Y,COL_W,h,color,t.label,t.val,8);
-    hitZones.push({x:COL2_X,y:t2Y,w:COL_W,h,label:'T2: '+t.label,val:t.val,extra:`via ${t.t1label} · ${t.pct.toFixed(1)}%`});
-    t2BoxY.push(t2Y); t2Y+=h+BOX_GAP;
+    const h=t2H[i],col=T2C[i%T2C.length];
+    const sibs=allT2.filter(x=>x.t1idx===t.t1idx);
+    const sibTot=sibs.reduce((a,s)=>a+s.val,0)||1;
+    const sbef=sibs.slice(0,sibs.indexOf(t));
+    const sTop=mode==='sum'?PAD_T:PAD_T+t2SC.slice(0,i).reduce((a,s)=>a+s.s1+s.s2+s.s3,0);
+    const sBot=sTop+(mode==='sum'?BOX_H:(t2SC[i].s1+t2SC[i].s2+t2SC[i].s3));
+    ribbon(CSC1+SC_W,sTop,sBot,C2,y2,y2+h,col,0.20);
+    drawBox(C2,y2,COL_W,h,col,t.label,t.val,8);
+    hits.push({x:C2,y:y2,w:COL_W,h,label:'T2: '+t.label,val:t.val,extra:`via ${t.t1label} · S1:${(t.s1||0).toFixed(2)} S2:${(t.s2||0).toFixed(2)} S3:${(t.s3||0).toFixed(2)}`});
+    by2.push(y2);y2+=h+GAP;
   });
 
-  // T3 boxes + ribbons from T2
-  let t3Y=PAD_T;
+  // SC2 — scopes of T3 layer
+  if(mode==='sum'){
+    let y=PAD_T; summedSC(allT3).forEach((h,si)=>{drawScBox(CSC2,y,SC_W,h,SC[si],SCL[si]);y+=h;});
+  } else {
+    let y=PAD_T; t3SC.forEach(s=>{[s.s1,s.s2,s.s3].forEach((h,si)=>{drawScBox(CSC2,y,SC_W,h,SC[si],SCL[si]);y+=h;});});
+  }
+
+  // T3 boxes — ribbons from SC2 right edge
+  let y3=PAD_T;
   allT3.forEach((t,i)=>{
-    if (!t3H[i]) return;
-    const h=t3H[i], color=T3_COLS[i%T3_COLS.length];
-    const t2i=t.t2idx;
-    const siblings=allT3.filter(x=>x.t2idx===t2i);
-    const sibTot=siblings.reduce((a,s)=>a+s.val,0)||1;
-    const sibBefore=siblings.slice(0,siblings.indexOf(t));
-    const srcTop=t2BoxY[t2i]+sibBefore.reduce((a,s)=>a+s.val/sibTot*t2H[t2i],0);
-    const srcBot=srcTop+t.val/sibTot*t2H[t2i];
-    drawRibbon(COL2_X+COL_W-CHEV,srcTop,srcBot,COL3_X,t3Y,t3Y+h,color,0.18);
-    drawBox(COL3_X,t3Y,COL_W,h,color,t.label,t.val,7);
-    hitZones.push({x:COL3_X,y:t3Y,w:COL_W,h,label:'T3: '+t.label,val:t.val,extra:`via ${t.t2label} · ${t.pct.toFixed(1)}%`});
-    t3Y+=h+BOX_GAP;
+    if(!t3H[i])return;
+    const h=t3H[i],col=T3C[i%T3C.length];
+    const sTop=mode==='sum'?PAD_T:PAD_T+t3SC.slice(0,i).reduce((a,s)=>a+s.s1+s.s2+s.s3,0);
+    const sBot=sTop+(mode==='sum'?BOX_H:(t3SC[i].s1+t3SC[i].s2+t3SC[i].s3));
+    ribbon(CSC2+SC_W,sTop,sBot,C3,y3,y3+h,col,0.18);
+    drawBox(C3,y3,COL_W,h,col,t.label,t.val,7);
+    hits.push({x:C3,y:y3,w:COL_W,h,label:'T3: '+t.label,val:t.val,extra:`via ${t.t2label} · S1:${(t.s1||0).toFixed(2)} S2:${(t.s2||0).toFixed(2)} S3:${(t.s3||0).toFixed(2)}`});
+    y3+=h+GAP;
   });
 
-  // Tooltip
+  // Scope legend
+  ctx.textAlign='left';ctx.textBaseline='middle';
+  const LY=PAD_T+BOX_H+10;
+  SC.forEach((c,i)=>{
+    ctx.fillStyle=c;ctx.globalAlpha=0.85;ctx.fillRect(CSC0+i*68,LY,10,10);ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(244,245,245,0.5)';ctx.font='400 9px \'Segoe UI\',sans-serif';
+    ctx.fillText(['Scope 1 · Direct','Scope 2 · Electricity','Scope 3 · Upstream'][i],CSC0+i*68+14,LY+5);
+  });
+
+  // Tooltip — correct for CSS scaling
   canvas.onmousemove=(e)=>{
-    const rect=canvas.getBoundingClientRect();
-    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
-    const hit=hitZones.find(z=>mx>=z.x&&mx<=z.x+z.w&&my>=z.y&&my<=z.y+z.h);
+    const r=canvas.getBoundingClientRect();
+    const scX=CW/r.width,scY=CH/r.height;
+    const mx=(e.clientX-r.left)*scX,my=(e.clientY-r.top)*scY;
+    const hit=hits.find(z=>mx>=z.x&&mx<=z.x+z.w&&my>=z.y&&my<=z.y+z.h);
     if(hit){
-      tip.innerHTML=`<strong>${hit.label}</strong><br>${hit.val.toFixed(3)} Mg CO₂e/M USD<br><span style="color:var(--mid)">${hit.extra}</span>`;
-      tip.style.display='block'; tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-10)+'px';
+      tip.innerHTML=`<strong>${hit.label}</strong><br>${hit.val.toFixed(3)} Mg CO₂e/M USD<br><span style="color:var(--mid);font-size:11px">${hit.extra}</span>`;
+      tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';
       canvas.style.cursor='pointer';
-    } else { tip.style.display='none'; canvas.style.cursor='default'; }
+    } else {tip.style.display='none';canvas.style.cursor='default';}
   };
-  canvas.onmouseleave=()=>{ tip.style.display='none'; };
+  canvas.onmouseleave=()=>{tip.style.display='none';};
 }
 
 function getRowValues(row, tierKey) {
