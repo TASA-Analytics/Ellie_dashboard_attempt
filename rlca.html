@@ -188,6 +188,16 @@ table.dt tbody tr:hover td{background:rgba(0,69,171,0.06);}
 .dd-item.locked .dd-dot{background:rgba(244,245,245,0.15);width:6px;height:6px;border-radius:50%;flex-shrink:0;}
 .dd-item.selected{background:rgba(0,69,171,0.2);}
 
+.section-divider{
+  margin:0 24px;padding:10px 0 8px;
+  border-bottom:1px solid rgba(167,243,208,0.15);
+  display:flex;align-items:center;gap:10px;
+}
+.section-label{
+  font-size:11px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;
+  color:rgba(167,243,208,0.7);
+}
+
 footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-content:space-between;
   align-items:center;color:var(--mid);font-size:12px;margin-top:4px;}
 @media(max-width:900px){.insight-row{grid-template-columns:1fr;}}
@@ -270,15 +280,52 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
 <div id="main-content" style="display:none">
 
-<!-- INSIGHT ROW: EI callout + 2 donuts -->
-<div class="insight-row" style="margin-top:14px">
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 1: ECONOMIC                                 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section-divider">
+  <span class="section-label">📦 Economic Supply Chain Activity</span>
+</div>
+
+<!-- EI callout + TR donuts -->
+<div class="insight-row" style="margin-top:14px;grid-template-columns:1fr 1fr 1fr;">
 
   <div class="callout-panel">
     <div class="callout-eyebrow">🌿 Total Emissions Intensity</div>
     <div class="callout-val" id="total-ei">—</div>
     <div class="callout-unit">Mg CO₂e / Million USD</div>
-    <div class="callout-sub" id="total-ei-sub">Abrasive Materials · South Korea · 2023</div>
+    <div class="callout-sub" id="total-ei-sub">—</div>
   </div>
+
+  <div class="donut-panel">
+    <div class="donut-panel-title">Tier 1 Direct Purchases</div>
+    <div class="donut-panel-sub" id="tr-direct-sub">Direct inputs per $1M output</div>
+    <div class="donut-wrap">
+      <svg id="donut-tr-direct" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
+      <div class="donut-legend" id="donut-tr-direct-legend" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <div class="donut-panel">
+    <div class="donut-panel-title">Total Economic Upstream Activity</div>
+    <div class="donut-panel-sub" id="tr-total-sub">Full upstream chain per $1M output</div>
+    <div class="donut-wrap">
+      <svg id="donut-tr-total" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
+      <div class="donut-legend" id="donut-tr-total-legend" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 2: EMISSIONS                                -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section-divider" style="margin-top:32px;">
+  <span class="section-label">🌿 Emissions Structure</span>
+</div>
+
+<!-- Scope Split + Tier Depth donuts -->
+<div class="insight-row" style="margin-top:14px;grid-template-columns:1fr 1fr;">
 
   <div class="donut-panel">
     <div class="donut-panel-title">Scope Split</div>
@@ -301,7 +348,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 </div>
 
 <!-- CHART FILTERS: scope + input sector -->
-<div class="controls" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none;">
+<div class="controls" style="margin-top:14px;margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none;">
   <div class="ctrl-group">
     <span class="ctrl-label">Scope</span>
     <div class="scope-pills">
@@ -323,7 +370,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <div class="chart-hdr">
     <div>
       <div class="chart-title">Lifecycle Emissions by Tier</div>
-      <div class="chart-sub" id="chart-sub-text">Scope 1 (red) and Scope 2 (amber) · all input sectors · each upstream tier</div>
+      <div class="chart-sub" id="chart-sub-text">Scope 1 (lavender) and Scope 2 (blue) · all input sectors · each upstream tier</div>
     </div>
     <div class="legend-inline">
       <div class="leg-item"><div class="leg-swatch" style="background:var(--s1)"></div>Scope 1 · Direct</div>
@@ -353,7 +400,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
     <span class="ctrl-label">Show</span>
     <select id="f-topn" onchange="render()">
       <option value="0">All sectors</option>
-      <option value="10">Top 10</option>
+      <option value="10" selected>Top 10</option>
       <option value="15">Top 15</option>
       <option value="20">Top 20</option>
     </select>
@@ -366,16 +413,18 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
     <div class="table-title">Sector Detail</div>
     <div style="font-size:11px;color:var(--mid)">Click column headers to sort · % share of visible total</div>
   </div>
-  <div class="tbl-scroll">
+  <div class="tbl-scroll" style="max-height:380px;overflow-y:auto;">
     <table class="dt">
-      <thead><tr>
-        <th onclick="sortTable('sector')">Sector</th>
-        <th onclick="sortTable('s1')" style="text-align:right">Scope 1</th>
-        <th onclick="sortTable('s2')" style="text-align:right">Scope 2</th>
-        <th>S1 Share</th>
-        <th>S2 Share</th>
-        <th onclick="sortTable('combined')" style="text-align:right">Combined</th>
-      </tr></thead>
+      <thead style="position:sticky;top:0;z-index:2;background:#0a1628;">
+        <tr>
+          <th onclick="sortTable('sector')">Sector</th>
+          <th onclick="sortTable('s1')" style="text-align:right">Scope 1</th>
+          <th onclick="sortTable('s2')" style="text-align:right">Scope 2</th>
+          <th>S1 Share</th>
+          <th>S2 Share</th>
+          <th onclick="sortTable('combined')" style="text-align:right">Combined</th>
+        </tr>
+      </thead>
       <tbody id="tbl-body"></tbody>
     </table>
   </div>
@@ -435,6 +484,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 const MANIFEST_URL = 'data/rlca-manifest.json';
 const SHEET_NAME   = '10 Tiers_all_sectors';
 const EF_SHEET     = 'Sector Emissions Factors';
+const TR_SHEET     = 'Total Requirements';
 const SILVER_CSV   = 'TASA_open_silver_stacked_output_all.csv';
 const FREE_YEAR    = '2023';
 
@@ -704,7 +754,7 @@ async function rlcaLoadAndRender(silverSector){
   if(statYear) statYear.textContent=model.year;
 
   if(model.path===currentModelPath){
-    renderCallout(); renderTierBarChart(); render(); return;
+    renderCallout(); renderTierBarChart(); render(); renderTRDonuts(); return;
   }
 
   document.getElementById('loading-state').style.display='flex';
@@ -719,7 +769,7 @@ async function rlcaLoadAndRender(silverSector){
       if(!resp.ok) throw new Error('File not found: '+model.path);
       const buf=await resp.arrayBuffer();
       wb=XLSX.read(new Uint8Array(buf),{
-        type:'array',sheets:[SHEET_NAME,EF_SHEET],
+        type:'array',sheets:[SHEET_NAME,EF_SHEET,TR_SHEET],
         cellStyles:false,cellFormula:false,cellHTML:false,cellNF:false,sheetStubs:false
       });
       model._wb=wb;
@@ -740,6 +790,10 @@ function dismissUpsell(){ document.getElementById('upsell').classList.remove('sh
 document.getElementById('upsell').addEventListener('click',function(e){if(e.target===this)dismissUpsell();});
 
 // ── Excel loader ──────────────────────────────────────
+const TR_SHEET = 'Total Requirements';
+let trData = []; // { label, direct, total }
+let currentRlcaSector = '';
+
 function loadExcel(wb) {
   // Sheet 1: tier data
   const ws = wb.Sheets[SHEET_NAME];
@@ -796,6 +850,27 @@ function loadExcel(wb) {
     });
   }
 
+  // Sheet 3: Total Requirements — col A "Sectors", col B "Direct Requirements", col C "Total Requirements"
+  trData = [];
+  const wsTR = wb.Sheets[TR_SHEET];
+  if (wsTR) {
+    // Use sheet_to_json with header row so we get named columns
+    const trRaw = XLSX.utils.sheet_to_json(wsTR, {defval:''});
+    trRaw.forEach(row => {
+      // Find col A (Sectors), col B (Direct...), col C (Total...)
+      const keys = Object.keys(row);
+      const labelKey  = keys.find(k => /sector/i.test(k)) || keys[0];
+      const directKey = keys.find(k => /direct/i.test(k)) || keys[1];
+      const totalKey  = keys.find(k => /total/i.test(k) && k !== labelKey) || keys[2];
+      const label  = String(row[labelKey]||'').trim();
+      const direct = parseFloat(row[directKey]) || 0;
+      const total  = parseFloat(row[totalKey])  || 0;
+      if (label && (direct !== 0 || total !== 0)) {
+        trData.push({ label, direct, total });
+      }
+    });
+  }
+
   document.getElementById('stat-sectors').textContent = tableData.length;
   document.getElementById('loading-state').style.display = 'none';
   document.getElementById('main-content').style.display  = '';
@@ -803,6 +878,7 @@ function loadExcel(wb) {
   renderCallout();
   renderTierBarChart();
   render();
+  renderTRDonuts();
 }
 
 function showError(msg) {
@@ -1008,7 +1084,109 @@ function drawDonut(svgId, segs, total, legendId) {
   }).join('');
 }
 
-// ── Row values helper ─────────────────────────────────
+// ── Dollar label formatter ────────────────────────────
+function fmtDollar(v) {
+  if (v >= 1e6)  return '$' + (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3)  return '$' + (v/1e3).toFixed(1) + 'K';
+  if (v >= 1)    return '$' + v.toFixed(1);
+  return '$' + v.toFixed(3);
+}
+
+// ── Total Requirements Donuts ─────────────────────────
+function renderTRDonuts() {
+  if (!trData.length) return;
+
+  const key = (sectorToModelMap[ddState.country + '||' + ddState.sector] || {}).rlcaSector || '';
+
+  const TR_COLORS = [
+    '#A7F3D0','#3FA9F6','#B98EFF','#FFBB00','#FF66B3',
+    '#D4AF37','#6EE7B7','#93C5FD','#C4B5FD','#FCA5A5','#6B7280'
+  ];
+  const TOP_N = 9;
+
+  // ── Donut 1: Direct Purchases — col B × 1000, INCLUDE focal sector ──
+  const directRows = trData
+    .filter(r => r.direct > 0)
+    .map(r => ({ label: r.label, val: r.direct * 1000 }))
+    .sort((a,b) => b.val - a.val);
+
+  const directTop  = directRows.slice(0, TOP_N);
+  const directRest = directRows.slice(TOP_N).reduce((a,r) => a + r.val, 0);
+  if (directRest > 0) directTop.push({ label: 'All Others', val: directRest });
+
+  const directSegs = directTop.map((r,i) => ({
+    label: r.label, val: r.val, color: TR_COLORS[i % TR_COLORS.length]
+  }));
+  drawDonutTR('donut-tr-direct', directSegs, 'donut-tr-direct-legend');
+
+  // ── Donut 2: Total Upstream — col C × 1000, focal row C − 1, EXCLUDE focal ──
+  const totalRows = trData
+    .map(r => {
+      const isFocal = r.label.toLowerCase() === key.toLowerCase();
+      const adjVal  = isFocal ? (r.total - 1) * 1000 : r.total * 1000;
+      return { label: r.label, val: adjVal, isFocal };
+    })
+    .filter(r => !r.isFocal && r.val > 0)
+    .sort((a,b) => b.val - a.val);
+
+  const totalTop  = totalRows.slice(0, TOP_N);
+  const totalRest = totalRows.slice(TOP_N).reduce((a,r) => a + r.val, 0);
+  if (totalRest > 0) totalTop.push({ label: 'All Others', val: totalRest });
+
+  const totalSegs = totalTop.map((r,i) => ({
+    label: r.label, val: r.val, color: TR_COLORS[i % TR_COLORS.length]
+  }));
+  drawDonutTR('donut-tr-total', totalSegs, 'donut-tr-total-legend');
+
+  document.getElementById('tr-direct-sub').textContent = 'Direct inputs per $1M of ' + (key || 'output');
+  document.getElementById('tr-total-sub').textContent  = 'Full upstream chain per $1M of ' + (key || 'output');
+}
+
+function drawDonutTR(svgId, segs, legendId) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  svg.innerHTML = '';
+  const cx=48, cy=48, R=42, r=26, TAU=2*Math.PI;
+  const tot = segs.reduce((a,s)=>a+s.val,0) || 1;
+
+  if (segs.length === 1) {
+    const outer = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    outer.setAttribute('cx',cx); outer.setAttribute('cy',cy); outer.setAttribute('r',R);
+    outer.setAttribute('fill',segs[0].color); outer.setAttribute('opacity','0.9');
+    svg.appendChild(outer);
+  } else {
+    let angle = -Math.PI/2;
+    segs.forEach(seg => {
+      const sweep=(seg.val/tot)*TAU; if(sweep<0.001) return;
+      const large=sweep>Math.PI?1:0;
+      const x1=cx+R*Math.cos(angle), y1=cy+R*Math.sin(angle);
+      const a2=angle+sweep;
+      const x2=cx+R*Math.cos(a2), y2=cy+R*Math.sin(a2);
+      const ix1=cx+r*Math.cos(angle), iy1=cy+r*Math.sin(angle);
+      const ix2=cx+r*Math.cos(a2),   iy2=cy+r*Math.sin(a2);
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d',`M${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${ix2.toFixed(2)},${iy2.toFixed(2)} A${r},${r} 0 ${large},0 ${ix1.toFixed(2)},${iy1.toFixed(2)} Z`);
+      p.setAttribute('fill',seg.color); p.setAttribute('opacity','0.9');
+      svg.appendChild(p); angle+=sweep;
+    });
+  }
+
+  const hole=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  hole.setAttribute('cx',cx); hole.setAttribute('cy',cy); hole.setAttribute('r',r-1);
+  hole.setAttribute('fill','rgba(18,21,34,0.97)'); svg.appendChild(hole);
+
+  document.getElementById(legendId).innerHTML = segs.map(s => {
+    const pct=(s.val/tot*100).toFixed(1);
+    return `<div class="donut-leg-row">
+      <div class="donut-leg-swatch" style="background:${s.color}"></div>
+      <span class="donut-leg-name">${s.label}</span>
+      <span style="text-align:right;white-space:nowrap">
+        <span class="donut-leg-val">${fmtDollar(s.val)}</span>
+        <span class="donut-leg-pct"> ${pct}%</span>
+      </span>
+    </div>`;
+  }).join('');
+}
 function getRowValues(row, tierKey) {
   if (tierKey === 'total') {
     return { s1:s1Cols.reduce((a,c)=>a+row.s1[c],0), s2:s2Cols.reduce((a,c)=>a+row.s2[c],0) };
