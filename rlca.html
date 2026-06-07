@@ -394,20 +394,43 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 // ══════════════════════════════════════════════════════
 //
 // MANIFEST FILE REQUIRED:
-//   Create data/rlca-manifest.json listing all rLCA Excel files.
-//   Browsers cannot list directory contents. Format:
+//   Create data/rlca-manifest.json with explicit sector mappings.
+//   Same format as platinum-manifest.json. Format:
 //
 //   {
 //     "free": [
-//       "data/free/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx"
+//       {
+//         "path": "data/free/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx",
+//         "country": "South Korea",
+//         "year": "2023",
+//         "sectors": [
+//           {
+//             "silverSector": "Abrasive Material",
+//             "rlcaSector":   "Abrasive Material"
+//           }
+//         ]
+//       }
 //     ],
 //     "premium": [
-//       "data/premium/TASA-EFX_rLCA_SomeOtherSector_MEX_2023_v2.0.xlsx"
+//       {
+//         "path": "data/premium/TASA-EFX_rLCA_SomeOtherSector_MEX_2023_v2.0.xlsx",
+//         "country": "Mexico",
+//         "year": "2023",
+//         "sectors": [
+//           {
+//             "silverSector": "Manufacture of sweets, chewing gum and confectionery products",
+//             "rlcaSector":   "Sugar and Confectionery"
+//           }
+//         ]
+//       }
 //     ]
 //   }
 //
-//   Files need not contain "Platinum_Model" — any rLCA xlsx works.
-//   Country code and year are parsed from the filename.
+//   KEY POINTS:
+//   - "silverSector" must exactly match the Silver CSV "Country Sectors" column.
+//   - "rlcaSector" must exactly match the "Sectors" column in the Excel file.
+//   - No fuzzy matching — the mapping is fully explicit.
+//   - Same file can appear in free + premium with fewer sectors in free.
 //
 const MANIFEST_URL = 'data/rlca-manifest.json';
 const SHEET_NAME   = '10 Tiers_all_sectors';
@@ -445,16 +468,9 @@ let sectorToModelMap   = {};    // "country||sector" → { path, country, code, 
 let currentModelPath   = null;
 let ddState = { country: null, sector: null };
 
-// ── Parse filename ────────────────────────────────────
-function parseModelFilename(path){
-  const name = path.split('/').pop();
-  // Try rLCA pattern: TASA-EFX_rLCA_{SectorWords}_{CODE}_{YEAR}
-  const m = name.match(/TASA-EFX[_-].*?[_-]([A-Z]{2,4})[_-](\d{4})/i);
-  if(!m) return null;
-  const code = m[1].toUpperCase();
-  const year = m[2];
-  const country = COUNTRY_CODES[code] || code;
-  return { path, code, country, year };
+// ── Parse country code from country name ──────────────
+function getCountryCode(country){
+  return Object.entries(COUNTRY_CODES).find(([,v])=>v===country)?.[0] || country.slice(0,3).toUpperCase();
 }
 
 // ── CSV parser ────────────────────────────────────────
@@ -489,76 +505,58 @@ function buildSilverMap(csvText) {
   Object.keys(silverMap).forEach(c=>{silverMap[c]=[...silverMap[c]].sort();});
 }
 
-// ── Manifest & model probing ──────────────────────────
+// ── Manifest — explicit Silver→rLCA sector mapping ────
 async function loadManifest(){
-  let allFiles=[];
-  try{
-    const resp=await fetch(MANIFEST_URL);
-    if(resp.ok){
-      const json=await resp.json();
-      const isUnlocked=window.TASA_AUTH?.isUnlocked;
-      const free=(json.free||[]);
-      const prem=(json.premium||[]);
-      allFiles=isUnlocked?[...free,...prem]:free;
-    }
+  availableCountries = new Set();
+  availableSectors   = {};
+  sectorToModelMap   = {};
+  availableModels    = [];
+
+  try {
+    const resp = await fetch(MANIFEST_URL);
+    if(!resp.ok) throw new Error(`${MANIFEST_URL} returned ${resp.status}`);
+    const json = await resp.json();
+    const isUnlocked = window.TASA_AUTH?.isUnlocked;
+    const entries = isUnlocked ? (json.premium||[]) : (json.free||[]);
+
+    const seen = new Set();
+    entries.forEach(entry => {
+      if(!entry.path || !entry.country || !entry.sectors?.length) return;
+      const code = getCountryCode(entry.country);
+      const year = entry.year || '';
+
+      availableCountries.add(entry.country);
+      if(!availableSectors[entry.country]) availableSectors[entry.country] = new Set();
+
+      entry.sectors.forEach(({ silverSector, rlcaSector }) => {
+        if(!silverSector || !rlcaSector) return;
+        availableSectors[entry.country].add(silverSector);
+        const key = entry.country+'||'+silverSector;
+        if(!sectorToModelMap[key]){
+          sectorToModelMap[key] = {
+            path: entry.path,
+            country: entry.country,
+            code,
+            year,
+            rlcaSector
+          };
+        }
+      });
+
+      if(!seen.has(entry.path)){ seen.add(entry.path); availableModels.push(entry); }
+    });
+
   } catch(e){
-    console.warn('[rLCA] Manifest fetch failed:',e.message,'— create data/rlca-manifest.json');
+    console.warn('[rLCA] Manifest error:', e.message);
+    availableModels = [];
   }
-  availableModels=allFiles.map(parseModelFilename).filter(Boolean);
-  const seen=new Set();
-  availableModels=availableModels.filter(m=>{if(seen.has(m.path))return false;seen.add(m.path);return true;});
+
   return availableModels;
 }
 
 async function probeModels(models){
-  availableCountries=new Set();
-  availableSectors={};
-  sectorToModelMap={};
-
-  for(const model of models){
-    try{
-      const resp=await fetch(model.path);
-      if(!resp.ok) continue;
-      const buf=await resp.arrayBuffer();
-      const wb=XLSX.read(new Uint8Array(buf),{
-        type:'array',sheets:[SHEET_NAME,EF_SHEET],
-        cellStyles:false,cellFormula:false,cellHTML:false,cellNF:false,sheetStubs:false
-      });
-      const ws=wb.Sheets[SHEET_NAME];
-      if(!ws) continue;
-      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      let hdrIdx=raw.findIndex(r=>r.some(c=>String(c).trim()==='Sectors'));
-      if(hdrIdx<0) hdrIdx=0;
-      const headers=raw[hdrIdx].map(h=>String(h).trim());
-      // Note: rLCA files don't have a "Sectors" column in the same sense as platinum —
-      // the ENTIRE file IS one sector/commodity. We match by filename keyword.
-      // Extract commodity name from filename: everything between "rLCA_" and "_{CODE}_"
-      const fnMatch=model.path.split('/').pop().match(/rLCA[_-](.+?)[_-][A-Z]{2,4}[_-]\d{4}/i);
-      const commodityKw=(fnMatch?fnMatch[1]:'').replace(/[-_]/g,' ').toLowerCase();
-
-      availableCountries.add(model.country);
-
-      // Match silver sectors for this country to this file by keyword
-      const silverSectors=silverMap[model.country]||[];
-      silverSectors.forEach(ss=>{
-        const sl=ss.toLowerCase();
-        // Does the silver sector string contain words from the commodity keyword?
-        const words=commodityKw.split(/\s+/).filter(w=>w.length>3);
-        const matched=words.length>0 && words.some(w=>sl.includes(w));
-        if(matched){
-          if(!availableSectors[model.country]) availableSectors[model.country]=new Set();
-          availableSectors[model.country].add(ss);
-          const key=model.country+'||'+ss;
-          if(!sectorToModelMap[key]) sectorToModelMap[key]={...model,wb};
-        }
-      });
-
-      // Store wb for later use (avoid double-fetch)
-      model._wb=wb;
-    } catch(e){
-      console.warn('[rLCA] Could not probe model:',model.path,e.message);
-    }
-  }
+  // No-op: sector mapping is now explicit via manifest.
+  // Models are loaded on demand when user selects a sector.
 }
 
 // ── Custom dropdowns ──────────────────────────────────
@@ -689,21 +687,23 @@ async function rlcaLoadAndRender(silverSector){
   const model=sectorToModelMap[key];
   if(!model){ showUpsell(`Sector · ${silverSector}`,`rLCA reports for <strong>${silverSector}</strong> are available through TASA EFX.`); return; }
 
+  // Use explicit rlcaSector from manifest for Excel filtering
+  const rlcaSector = model.rlcaSector || silverSector;
+
   // Update header
   const shortSector=silverSector.split('—').pop().trim();
   const titleEl=document.getElementById('ph-title');
-  if(titleEl) titleEl.textContent='Multi-tier Global Emissions Structure';
+  if(titleEl) titleEl.textContent=shortSector+' · Multi-tier Emissions Structure';
   const footerTag=document.getElementById('footer-tag');
   if(footerTag) footerTag.textContent=`rLCA · ${shortSector} · ${country} ${model.year}`;
   const freeTag=document.getElementById('rlca-free-tag');
-  if(freeTag) freeTag.textContent=`✓ ${model.code} · ${model.year}`;
+  if(freeTag) freeTag.textContent=window.TASA_AUTH?.isUnlocked ? `✓ ${model.code} · ${model.year} · Full Access` : `✓ ${model.code} · ${model.year} · Demo`;
   const statCountry=document.getElementById('stat-country');
   if(statCountry) statCountry.textContent=model.code;
   const statYear=document.getElementById('stat-year');
   if(statYear) statYear.textContent=model.year;
 
   if(model.path===currentModelPath){
-    // Already loaded — just re-render
     renderCallout(); renderTierBarChart(); render(); return;
   }
 
@@ -1104,17 +1104,14 @@ async function boot(){
     const silverText = await silverResp.text();
     buildSilverMap(silverText);
 
-    // 2. Load manifest
+    // 2. Load manifest — sector mapping is explicit, no probing needed
     const models = await loadManifest();
     if(!models.length){
       showError('No rLCA model files found. Create <code>data/rlca-manifest.json</code> listing your rLCA Excel files.');
       return;
     }
 
-    // 3. Probe models
-    await probeModels(models);
-
-    // 4. Build dropdowns — rlcaSelectSector will auto-load first available
+    // 3. Build dropdowns — rlcaSelectSector will auto-load first available
     populateRlcaCountryDropdown();
 
   } catch(e){
@@ -1125,5 +1122,6 @@ async function boot(){
 boot();
 window.addEventListener('tasaAuthChanged', ()=>{ currentModelPath=null; tableData=[]; boot(); });
 </script>
+<script src="auth.js"></script>
 </body>
 </html>

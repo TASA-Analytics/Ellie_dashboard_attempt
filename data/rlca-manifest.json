@@ -1,9 +1,41 @@
+
 {
   "free": [
-    "data/free/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx"
+    {
+      "path": "data/free/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx",
+      "country": "South Korea",
+      "year": "2023",
+      "sectors": [
+        {
+          "silverSector": "Abrasive Material",
+          "rlcaSector":   "Abrasive Material"
+        }
+      ]
+    }
   ],
-  "premium": [
-    "data/premium/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx",
-    "data/premium/TASA-EFX_rLCA_Manufacture-of-sweets,-chewing-gum-and-confectionery-products-other-than-chocolate_MEX_2023_v2.0"
+    "premium": [
+    {
+      "path": "data/premium/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx",
+      "country": "South Korea",
+      "year": "2023",
+      "sectors": [
+        {
+          "silverSector": "Abrasive Material",
+          "rlcaSector": "Abrasive Material"
+       }
+      ]
+    },
+    {
+      "path": "data/premium/TASA-EFX_rLCA_Manufacture-of-sweets,-chewing-gum-and-confectionery-products-other-than-chocolate_MEX_2023_v2.0.xlsx",
+      "country": "Mexico",
+      "year": "2023",
+      "sectors": [
+        {
+          "silverSector": "Manufacture of sweets, chewing gum and confectionery products other than chocolate",
+          "rlcaSector": "Manufacturing of sugar, chocolate, candy, etc"
+        }
+      ]
+    }
   ]
 }
+
