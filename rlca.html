@@ -1519,215 +1519,377 @@ function loadSankeyData(wb, rlcaSector) {
 }
 
 // ── Sankey renderer ───────────────────────────────────
+// Layout mirrors the platinum Sankey, extended to 3 tiers:
+//   Baseline → Scopes → T1 → T1-Scopes → T2 → T2-Scopes → T3
+// "Broken Out" mode: each tier sector fans into S1/S2/S3 leaf boxes
+// "Summed" mode: all leaves collapse into three merged scope bars
 function renderSankey() {
-  const stateEl = document.getElementById('sankey-state');
-  const wrapEl  = document.getElementById('sankey-wrap');
-  const canvas  = document.getElementById('sankey-canvas');
-  const tip     = document.getElementById('sankey-tip');
+  const stateEl=document.getElementById('sankey-state');
+  const wrapEl =document.getElementById('sankey-wrap');
+  const canvasEl=document.getElementById('sankey-canvas');
+  const tip=document.getElementById('sankey-tip');
 
-  if (!sankeyData || !sankeyData.tier1.length) {
-    stateEl.style.display='flex'; wrapEl.style.display='none';
-    stateEl.innerHTML='<span>⚠️ Pathway Analysis sheets not found.<br><small style="color:var(--mid)">Requires: <code>Tier_1 Pathway Analysis</code>, <code>Tier_2 Pathway Analysis</code>, <code>Tier_3 Pathway Analysis</code></small></span>';
+  if(!sankeyData||!sankeyData.tier1.length){
+    stateEl.style.display='flex';wrapEl.style.display='none';
+    stateEl.innerHTML='<span>Pathway Analysis sheets not found.<br><small style="color:var(--mid)">Need: Tier_1/Tier_2/Tier_3 Pathway Analysis sheets</small></span>';
     return;
   }
-  stateEl.style.display='none'; wrapEl.style.display='block';
+  stateEl.style.display='none';wrapEl.style.display='block';
 
-  const D    = sankeyData;
-  const mode = sankeyMode;
-  const SC   = ['#B98EFF','#3FA9F6','#A7F3D0'];
-  const SCL  = ['S1','S2','S3'];
+  const D=sankeyData, mode=sankeyMode;
+  const S_COLORS=['#B98EFF','#3FA9F6','#A7F3D0'];
+  const T1_COLORS=['#0045AB','#1a5cbf','#8C5ACC','#3FA9F6','#D4AF37','#FF66B3','#0d3d8a','#6a3aab','#2e6fd4','#B98EFF','#7a48bb','#A7F3D0','#6B7280'];
+  const T2_COLORS=['#3FA9F6','#A7CCE7','#6EE7B7','#93C5FD','#FCA5A5','#C4B5FD','#FFBB00','#FF66B3','#D4AF37','#A7F3D0','#B98EFF','#6B7280','#0045AB'];
+  const T3_COLORS=['#A7F3D0','#FFBB00','#B98EFF','#3FA9F6','#FF66B3','#D4AF37','#93C5FD','#FCA5A5','#6EE7B7','#C4B5FD','#A7CCE7','#6B7280','#0045AB'];
 
-  const DPR   = window.devicePixelRatio || 1;
-  const BOX_H = 720, GAP = 3;
-  const COL_W = 140, SC_W = 36, GAP_X = 68, SC_GAP = 48;
-  const PAD_L = 14, PAD_T = 32, PAD_B = 28, CHEV = 10;
-
-  const T1C=['#0045AB','#1a5cbf','#8C5ACC','#3FA9F6','#D4AF37','#FF66B3','#0d3d8a','#6a3aab','#2e6fd4','#B98EFF','#7a48bb','#A7F3D0','#6B7280'];
-  const T2C=['#3FA9F6','#A7CCE7','#6EE7B7','#93C5FD','#FCA5A5','#C4B5FD','#FFBB00','#FF66B3','#D4AF37','#A7F3D0','#B98EFF','#6B7280','#0045AB'];
-  const T3C=['#A7F3D0','#FFBB00','#B98EFF','#3FA9F6','#FF66B3','#D4AF37','#93C5FD','#FCA5A5','#6EE7B7','#C4B5FD','#A7CCE7','#6B7280','#0045AB'];
-
-  const C0=PAD_L, CSC0=C0+COL_W+GAP_X, C1=CSC0+SC_W+SC_GAP;
-  const CSC1=C1+COL_W+GAP_X, C2=CSC1+SC_W+SC_GAP;
-  const CSC2=C2+COL_W+GAP_X, C3=CSC2+SC_W+SC_GAP;
-  const CW=C3+COL_W+PAD_L, CH=BOX_H+PAD_T+PAD_B;
-
-  canvas.style.width=CW+'px'; canvas.style.height=CH+'px';
-  canvas.width=Math.round(CW*DPR); canvas.height=Math.round(CH*DPR);
-  const ctx=canvas.getContext('2d');
-  ctx.scale(DPR,DPR); ctx.clearRect(0,0,CW,CH);
-
-  const hits=[];
-
-  function propH(items,total,gap){
-    if(!items.length)return[];
-    const tot=items.reduce((a,r)=>a+(r.val||0),0)||1;
-    const av=total-gap*(items.length-1);
-    const MIN=Math.max(4,av/items.length*0.10);
-    let hs=items.map(r=>Math.max(MIN,(r.val/tot)*av));
-    const s=hs.reduce((a,b)=>a+b,0);
-    return hs.map(h=>h/s*av);
-  }
-
-  function drawBox(x,y,w,h,col,lbl,val,fs){
-    if(h<1)return;
-    ctx.fillStyle=col;ctx.globalAlpha=0.90;
-    ctx.beginPath();
-    ctx.moveTo(x+4,y);ctx.lineTo(x+w-CHEV,y);
-    ctx.lineTo(x+w,y+h/2);ctx.lineTo(x+w-CHEV,y+h);
-    ctx.lineTo(x+4,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-4);
-    ctx.lineTo(x,y+4);ctx.quadraticCurveTo(x,y,x+4,y);
-    ctx.closePath();ctx.fill();ctx.globalAlpha=1;
-    if(h>11){
-      ctx.fillStyle='#F4F5F5';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.font=`600 ${fs}px 'Segoe UI',Arial,sans-serif`;
-      const cx=x+(w-CHEV)/2,mW=w-CHEV-6;
-      const wds=lbl.split(' ');const ls=[];let c='';
-      wds.forEach(w2=>{const t=c?c+' '+w2:w2;if(ctx.measureText(t).width>mW&&c){ls.push(c);c=w2;}else c=t;});
-      if(c)ls.push(c);
-      const lh=fs+2,sY=(y+h*0.40)-(ls.length-1)*lh/2;
-      ls.forEach((ln,i)=>ctx.fillText(ln,cx,sY+i*lh));
-      if(h>26){ctx.font=`400 ${Math.max(7,fs-2)}px 'Segoe UI',sans-serif`;ctx.fillStyle='rgba(255,255,255,0.45)';ctx.fillText(val.toFixed(2),cx,sY+ls.length*lh+4);}
-    }
-  }
-
-  function drawScBox(x,y,w,h,col,lbl){
-    if(h<1)return;
-    ctx.fillStyle=col;ctx.globalAlpha=0.80;ctx.fillRect(x,y,w,h);ctx.globalAlpha=1;
-    if(h>12){
-      ctx.save();ctx.translate(x+w/2,y+h/2);ctx.rotate(-Math.PI/2);
-      ctx.fillStyle='rgba(255,255,255,0.65)';ctx.font='700 8px \'Segoe UI\',sans-serif';
-      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,0,0);ctx.restore();
-    }
-  }
-
-  function ribbon(x0,y0t,y0b,x1,y1t,y1b,col,alpha){
-    if(y0b<=y0t||y1b<=y1t)return;
-    const cp=(x1-x0)*0.48;
-    ctx.beginPath();
-    ctx.moveTo(x0,y0t);ctx.bezierCurveTo(x0+cp,y0t,x1-cp,y1t,x1,y1t);
-    ctx.lineTo(x1,y1b);ctx.bezierCurveTo(x1-cp,y1b,x0+cp,y0b,x0,y0b);
-    ctx.closePath();ctx.fillStyle=col;ctx.globalAlpha=alpha;ctx.fill();ctx.globalAlpha=1;
-  }
-
-  // Headers
-  ctx.fillStyle='rgba(167,243,208,0.55)';ctx.font='700 9px \'Segoe UI\',sans-serif';
-  ctx.textAlign='center';ctx.textBaseline='top';
-  [['Focal',C0,COL_W],['Scope',CSC0,SC_W],['Tier 1',C1,COL_W],['Scope',CSC1,SC_W],['Tier 2',C2,COL_W],['Scope',CSC2,SC_W],['Tier 3',C3,COL_W]]
-    .forEach(([l,x,w])=>ctx.fillText(l,x+w/2,8));
-
-  // Data
+  // Flatten T2 and T3
   const t1=D.tier1;
   const allT2=[];
   t1.forEach((t,i)=>(D.tier2[t.label]||[]).forEach(c=>allT2.push({t1idx:i,t1label:t.label,...c})));
   const allT3=[];
   allT2.forEach((t,t2i)=>(D.tier3[t.t1label+'|||'+t.label]||[]).forEach(c=>allT3.push({t2idx:t2i,t2label:t.label,t1label:t.t1label,...c})));
 
-  const t1H=propH(t1,BOX_H,GAP);
-  const t2H=propH(allT2,BOX_H,GAP);
-  const t3H=propH(allT3,BOX_H,GAP);
+  // Canvas sizing — fill container width
+  const wrap=canvasEl.parentElement;
+  const CW=Math.max(wrap?wrap.clientWidth:1100,900);
+  const LPAD=16, TOP=56, BOX_GAP=3, MIN_BOX=6;
+  const FULL_H=Math.max(600,Math.max(t1.length,allT2.length,allT3.length)*38);
+  const LEAF_GAP=2;
 
-  function scH(items,hs){
-    return items.map((t,i)=>{
-      const h=hs[i]||0,tot=(t.s1||0)+(t.s2||0)+(t.s3||0)||1;
-      return {s1:(t.s1||0)/tot*h,s2:(t.s2||0)/tot*h,s3:(t.s3||0)/tot*h};
+  // Column widths as fractions of CW
+  const ANC_W=Math.round(CW*0.07);
+  const SC_W =Math.round(CW*0.055);
+  const T1_W =Math.round(CW*0.12);
+  const LF_W =Math.round(CW*0.055);
+  const T2_W =Math.round(CW*0.12);
+  const LF2_W=Math.round(CW*0.055);
+  const T3_W =Math.round(CW*0.12);
+  const GCOL =Math.round(CW*0.045); // gap between columns
+
+  const ANC_X=LPAD;
+  const SC_X =ANC_X+ANC_W+GCOL;
+  const T1_X =SC_X+SC_W+GCOL;
+  const LF_X =T1_X+T1_W+GCOL;
+  const T2_X =LF_X+LF_W+GCOL;
+  const LF2_X=T2_X+T2_W+GCOL;
+  const T3_X =LF2_X+LF2_W+GCOL;
+  const TW=Math.max(CW,T3_X+T3_W+LPAD);
+  const TH=TOP+FULL_H+36;
+
+  const DPR=window.devicePixelRatio||1;
+  canvasEl.width=Math.round(TW*DPR);canvasEl.height=Math.round(TH*DPR);
+  canvasEl.style.width=TW+'px';canvasEl.style.height=TH+'px';
+  const ctx=canvasEl.getContext('2d');ctx.scale(DPR,DPR);
+
+  // Dark background
+  ctx.fillStyle='#0a1628';ctx.fillRect(0,0,TW,TH);
+
+  const hits=[];
+  function regHit(x,y,w,h,label,val){hits.push({x,y,w,h,label,val});}
+
+  // Mouse tooltip
+  canvasEl.onmousemove=function(e){
+    const cr=canvasEl.getBoundingClientRect();
+    const mx=(e.clientX-cr.left)*(TW/cr.width),my=(e.clientY-cr.top)*(TH/cr.height);
+    const hit=hits.find(b=>mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h);
+    if(hit){
+      tip.innerHTML='<strong>'+hit.label+'</strong><br>'+hit.val.toFixed(3)+' Mg CO\u2082e / M USD';
+      tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-8)+'px';
+      canvasEl.style.cursor='crosshair';
+    } else {tip.style.display='none';canvasEl.style.cursor='default';}
+  };
+  canvasEl.onmouseleave=()=>tip.style.display='none';
+
+  // Helpers
+  function hr(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+  function rgba(h,a){const[r,g,b]=hr(h);return`rgba(${r},${g},${b},${a})`;}
+
+  function propH(vals,totalH,gap){
+    const n=vals.length; if(!n)return[];
+    const tot=vals.reduce((a,b)=>a+b,0)||1,avail=totalH-gap*(n-1);
+    let hs=vals.map(v=>Math.max(MIN_BOX,(v/tot)*avail));
+    let diff=hs.reduce((a,b)=>a+b,0)-avail;
+    if(Math.abs(diff)>0.5){
+      const adj=hs.map((h,i)=>({i,h})).filter(o=>o.h>MIN_BOX).sort((a,b)=>b.h-a.h);
+      for(const o of adj){const cut=Math.min(Math.abs(diff),hs[o.i]-MIN_BOX);hs[o.i]-=Math.sign(diff)*cut;diff-=Math.sign(diff)*cut;if(Math.abs(diff)<0.5)break;}
+    }
+    return hs;
+  }
+
+  function drawBox(x,y,w,h,color,label,pct,val,fs){
+    if(h<2)return;
+    const[r,g,b]=hr(color);
+    const gr=ctx.createLinearGradient(x,y,x,y+h);
+    gr.addColorStop(0,`rgba(${Math.min(r+30,255)},${Math.min(g+30,255)},${Math.min(b+30,255)},1)`);
+    gr.addColorStop(1,color);
+    ctx.fillStyle=gr;
+    ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.fill();
+    ctx.strokeStyle=rgba(color,0.4);ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.stroke();
+    regHit(x,y,w,h,label,val);
+    if(h<7)return;
+    ctx.textBaseline='middle';ctx.textAlign='left';
+    if(h>=18){
+      ctx.font=`600 ${fs}px 'Segoe UI',Arial,sans-serif`;ctx.fillStyle='rgba(255,255,255,0.95)';
+      let txt=label;const mW=w-8;
+      while(ctx.measureText(txt).width>mW&&txt.length>3)txt=txt.slice(0,-1);
+      if(txt!==label)txt=txt.slice(0,-1)+'…';
+      ctx.fillText(txt,x+4,y+h*0.36);
+      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`;ctx.fillStyle='rgba(255,255,255,0.55)';
+      ctx.fillText(typeof pct==='number'?pct.toFixed(1)+'%':'',x+4,y+h*0.70);
+    } else {
+      ctx.font=`${Math.max(7,fs-2)}px 'Segoe UI',Arial,sans-serif`;ctx.fillStyle='rgba(255,255,255,0.8)';
+      ctx.fillText(typeof pct==='number'?pct.toFixed(1)+'%':'',x+4,y+h/2);
+    }
+  }
+
+  function drawChevron(x,y,w,h,color,label,val){
+    if(h<2)return;
+    const chev=Math.min(16,h/2);
+    const[r,g,b]=hr(color);
+    const gr=ctx.createLinearGradient(x,y,x,y+h);
+    gr.addColorStop(0,`rgba(${Math.min(r+28,255)},${Math.min(g+28,255)},${Math.min(b+28,255)},1)`);
+    gr.addColorStop(1,color);
+    ctx.fillStyle=gr;
+    ctx.beginPath();
+    ctx.moveTo(x,y);ctx.lineTo(x+w-chev,y);
+    ctx.lineTo(x+w,y+h/2);ctx.lineTo(x+w-chev,y+h);
+    ctx.lineTo(x,y+h);ctx.closePath();ctx.fill();
+    regHit(x,y,w,h,label,val);
+    if(h<8)return;
+    const cx=x+(w-chev)/2,mW=w-chev-8;
+    ctx.font="600 10px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='#F4F5F5';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    const wds=label.split(' ');const ls=[];let c='';
+    wds.forEach(w2=>{const t=c?c+' '+w2:w2;if(ctx.measureText(t).width>mW&&c){ls.push(c);c=w2;}else c=t;});
+    if(c)ls.push(c);
+    const lh=12,sY=y+h*0.38-(ls.length-1)*lh/2;
+    ls.forEach((ln,i)=>ctx.fillText(ln,cx,sY+i*lh));
+    if(h>28){ctx.font="400 8px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillText(val.toFixed(2)+' Mg',cx,sY+ls.length*lh+5);}
+  }
+
+  function ribbon(x1,y1t,y1b,x2,y2t,y2b,color,a){
+    if(y1b<=y1t||y2b<=y2t)return;
+    const mx=x1+(x2-x1)*0.52;
+    ctx.beginPath();ctx.moveTo(x1,y1t);
+    ctx.bezierCurveTo(mx,y1t,mx,y2t,x2,y2t);ctx.lineTo(x2,y2b);
+    ctx.bezierCurveTo(mx,y2b,mx,y1b,x1,y1b);ctx.closePath();
+    ctx.fillStyle=rgba(color,a);ctx.fill();
+  }
+
+  function hdr(x,w,l1,l2){
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#A7CCE7';
+    ctx.font="700 9px 'Segoe UI',Arial,sans-serif";ctx.fillText(l1,x+w/2,TOP-(l2?22:12));
+    if(l2){ctx.font="400 8px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='rgba(167,204,231,0.5)';ctx.fillText(l2,x+w/2,TOP-9);}
+    ctx.strokeStyle='rgba(0,69,171,0.3)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x+3,TOP-2);ctx.lineTo(x+w-3,TOP-2);ctx.stroke();
+  }
+
+  // ── Headers ──────────────────────────────────────────
+  hdr(ANC_X,ANC_W,'BASELINE','STRUCTURE');
+  hdr(SC_X,SC_W,'SCOPE',null);
+  hdr(T1_X,T1_W,'TIER 1','Input Sector');
+  hdr(LF_X,LF_W,'TIER 1',mode==='split'?'Scope':'Scope (sum)');
+  hdr(T2_X,T2_W,'TIER 2','Input Sector');
+  hdr(LF2_X,LF2_W,'TIER 2',mode==='split'?'Scope':'Scope (sum)');
+  hdr(T3_X,T3_W,'TIER 3','Input Sector');
+
+  // ── Baseline chevron ──────────────────────────────────
+  drawChevron(ANC_X,TOP,ANC_W,FULL_H,'#0045AB',D.focalSector,D.t1Total);
+
+  // ── Scope boxes (S1/S2/S3 of the whole focal sector) ─
+  // Use T1 data to derive focal scope totals
+  const focalS1=t1.reduce((a,t)=>a+(t.s1||0),0);
+  const focalS2=t1.reduce((a,t)=>a+(t.s2||0),0);
+  const focalS3=t1.reduce((a,t)=>a+(t.s3||0),0);
+  const focalTot=focalS1+focalS2+focalS3||1;
+  const scPcts=[focalS1/focalTot*100,focalS2/focalTot*100,focalS3/focalTot*100];
+  const scVals=[focalS1,focalS2,focalS3];
+  const scH=propH(scPcts,FULL_H,BOX_GAP);
+  const scY=[];let sy=TOP;scH.forEach(h=>{scY.push(sy);sy+=h+BOX_GAP;});
+
+  // Ribbons: baseline → scopes (sliced from right chevron edge)
+  const ancSl=[];let ac2=TOP;const scTot=scPcts.reduce((a,b)=>a+b,0)||1;
+  scPcts.forEach((p,i)=>{const sh=(p/scTot)*FULL_H;ancSl.push({top:ac2,bot:ac2+sh,color:S_COLORS[i]});ac2+=sh;});
+  [2,1,0].forEach(i=>{const sl=ancSl[i];ribbon(ANC_X+ANC_W,sl.top,sl.bot,SC_X,scY[i],scY[i]+scH[i],sl.color,0.22);});
+  const scopeBoxes=[];
+  scH.forEach((h,i)=>{
+    drawBox(SC_X,scY[i],SC_W,h,S_COLORS[i],['Scope 1','Scope 2','Scope 3'][i],scPcts[i],scVals[i],10);
+    scopeBoxes.push({y:scY[i],h,pct:scPcts[i],color:S_COLORS[i]});
+  });
+
+  // ── Tier 1 sector boxes ───────────────────────────────
+  const t1Vals=t1.map(t=>t.val);
+  const t1H=propH(t1Vals,FULL_H,BOX_GAP);
+  // Ribbons from S3 scope box → T1 sectors
+  const s3box=scopeBoxes[2];let s3cur=s3box.y;
+  let tY=TOP;
+  t1.forEach((t,i)=>{
+    const h=t1H[i],col=T1_COLORS[i%T1_COLORS.length];
+    const slH=(t.pct/(s3box.pct||1))*s3box.h;
+    ribbon(SC_X+SC_W,s3cur,s3cur+slH,T1_X,tY,tY+h,col,0.20);
+    s3cur+=slH;tY+=h+BOX_GAP;
+  });
+  const t1Boxes=[];tY=TOP;
+  t1.forEach((t,i)=>{
+    const h=t1H[i],col=T1_COLORS[i%T1_COLORS.length];
+    t1Boxes.push({y:tY,h,color:col,pct:t.pct,label:t.label,val:t.val,s1:t.s1||0,s2:t.s2||0,s3:t.s3||0});
+    drawBox(T1_X,tY,T1_W,h,col,t.label,t.pct,t.val,8);
+    tY+=h+BOX_GAP;
+  });
+
+  // ── T1 Scope leaf column ──────────────────────────────
+  // Each T1 sector fans into S1/S2/S3 leaf boxes
+  let lfBoxes=[];
+  if(mode==='split'){
+    const allLPcts=[];t1.forEach(t=>allLPcts.push(t.s1||0,t.s2||0,t.s3||0));
+    const lTot=allLPcts.reduce((a,b)=>a+b,0)||1;
+    const N=allLPcts.length,LAVAIL=FULL_H-LEAF_GAP*(N-1);
+    const MIN_L=Math.max(3,LAVAIL/N*0.18);
+    let alH=allLPcts.map(p=>Math.max(MIN_L,(p/lTot)*LAVAIL));
+    const ls=alH.reduce((a,b)=>a+b,0);alH=alH.map(h=>h/ls*LAVAIL);
+    let fi=0,lY=TOP;
+    t1.forEach((t,i)=>{
+      const tb=t1Boxes[i];const lPcts=[t.s1||0,t.s2||0,t.s3||0];
+      const lhs=[alH[fi],alH[fi+1],alH[fi+2]];
+      const ptot=lPcts.reduce((a,b)=>a+b,0)||1;let t1c=tb.y;
+      lhs.forEach((lh,si)=>{
+        const slH=(lPcts[si]/ptot)*tb.h;
+        ribbon(T1_X+T1_W,t1c,t1c+slH,LF_X,lY,lY+lh,S_COLORS[si],0.20);
+        t1c+=slH;
+        drawBox(LF_X,lY,LF_W,lh,S_COLORS[si],['S1','S2','S3'][si],lPcts[si]/ptot*100,lPcts[si],8);
+        lfBoxes.push({y:lY,h:lh,color:S_COLORS[si],si,t1idx:i,t1label:t.label,pct:lPcts[si]/ptot});
+        lY+=lh+LEAF_GAP;
+      });
+      fi+=3;
+    });
+  } else {
+    // Summed: three merged scope bars
+    const smVals=[t1.reduce((a,t)=>a+(t.s1||0),0),t1.reduce((a,t)=>a+(t.s2||0),0),t1.reduce((a,t)=>a+(t.s3||0),0)];
+    const smTot=smVals.reduce((a,b)=>a+b,0)||1;
+    const smH=propH(smVals,FULL_H,BOX_GAP);
+    let smY=TOP;const bTops=smH.map(h=>{const y=smY;smY+=h+BOX_GAP;return y;});
+    t1Boxes.forEach((tb,i)=>{
+      const t=t1[i];const lP=[t.s1||0,t.s2||0,t.s3||0];const ptot=lP.reduce((a,b)=>a+b,0)||1;
+      let t1c=tb.y;
+      lP.forEach((p,si)=>{const slH=(p/ptot)*tb.h;ribbon(T1_X+T1_W,t1c,t1c+slH,LF_X,bTops[si],bTops[si]+smH[si],S_COLORS[si],0.10);t1c+=slH;});
+    });
+    smH.forEach((h,si)=>{
+      drawBox(LF_X,bTops[si],LF_W,h,S_COLORS[si],['S1','S2','S3'][si],smVals[si]/smTot*100,smVals[si],9);
+      // Carry s3 bucket proportionally for T2 ribbons
+      t1.forEach((t,i)=>{
+        const share=(t.s3||0)/smVals[2]||0;
+        lfBoxes.push({y:bTops[si]+smH[si]*t1.slice(0,i).reduce((a,x)=>{return a+(x.s3||0)/smVals[2];},0)*smH[si],
+          h:smH[si]*share,color:S_COLORS[si],si:2,t1idx:i,t1label:t.label,pct:share});
+      });
+    });
+    // Simplified: use s3 top/bottom from bTops for ribbon source
+    lfBoxes=[];
+    const s3sumH=smH[2],s3sumY=bTops[2];
+    let sc3cur=s3sumY;
+    t1.forEach((t,i)=>{
+      const share=(t.s3||0)/(smVals[2]||1);
+      lfBoxes.push({y:sc3cur,h:s3sumH*share,color:S_COLORS[2],si:2,t1idx:i,t1label:t.label});
+      sc3cur+=s3sumH*share;
     });
   }
-  const t1SC=scH(t1,t1H), t2SC=scH(allT2,t2H), t3SC=scH(allT3,t3H);
 
-  function summedSC(arr){
-    const s=[0,0,0];
-    arr.forEach(t=>{s[0]+=(t.s1||0);s[1]+=(t.s2||0);s[2]+=(t.s3||0);});
-    const tot=s.reduce((a,b)=>a+b,0)||1;
-    return s.map(v=>v/tot*BOX_H);
+  // ── Tier 2 sector boxes ───────────────────────────────
+  if(allT2.length){
+    const t2Vals=allT2.map(t=>t.val);
+    const t2H=propH(t2Vals,FULL_H,BOX_GAP);
+    // Ribbons from T1 S3 leaf → T2 sectors
+    let t2Y=TOP;
+    allT2.forEach((t,i)=>{
+      const h=t2H[i],col=T2_COLORS[i%T2_COLORS.length];
+      const lf=lfBoxes.find(b=>b.si===2&&b.t1idx===t.t1idx);
+      if(lf){
+        const sibs=allT2.filter(x=>x.t1idx===t.t1idx);
+        const sibTot=sibs.reduce((a,s)=>a+(s.s3||s.val||0),0)||1;
+        const sibBefore=sibs.slice(0,sibs.indexOf(t));
+        const srcOff=sibBefore.reduce((a,s)=>a+(s.s3||s.val||0)/sibTot*lf.h,0);
+        const srcH=(t.s3||t.val||0)/sibTot*lf.h;
+        ribbon(LF_X+LF_W,lf.y+srcOff,lf.y+srcOff+srcH,T2_X,t2Y,t2Y+h,col,0.20);
+      }
+      t2Y+=h+BOX_GAP;
+    });
+    const t2Boxes=[];t2Y=TOP;
+    allT2.forEach((t,i)=>{
+      const h=t2H[i],col=T2_COLORS[i%T2_COLORS.length];
+      t2Boxes.push({y:t2Y,h,color:col,pct:t.pct,label:t.label,val:t.val,s1:t.s1||0,s2:t.s2||0,s3:t.s3||0,t1idx:t.t1idx,t1label:t.t1label});
+      drawBox(T2_X,t2Y,T2_W,h,col,t.label,t.pct,t.val,8);
+      t2Y+=h+BOX_GAP;
+    });
+
+    // ── T2 Scope leaf column ────────────────────────────
+    let lf2Boxes=[];
+    if(mode==='split'){
+      const allL2Pcts=[];allT2.forEach(t=>allL2Pcts.push(t.s1||0,t.s2||0,t.s3||0));
+      const l2Tot=allL2Pcts.reduce((a,b)=>a+b,0)||1;
+      const N2=allL2Pcts.length,L2AVAIL=FULL_H-LEAF_GAP*(N2-1);
+      const MIN_L2=Math.max(3,L2AVAIL/N2*0.18);
+      let al2H=allL2Pcts.map(p=>Math.max(MIN_L2,(p/l2Tot)*L2AVAIL));
+      const ls2=al2H.reduce((a,b)=>a+b,0);al2H=al2H.map(h=>h/ls2*L2AVAIL);
+      let fi2=0,l2Y=TOP;
+      allT2.forEach((t,i)=>{
+        const tb=t2Boxes[i];const lPcts=[t.s1||0,t.s2||0,t.s3||0];
+        const lhs=[al2H[fi2],al2H[fi2+1],al2H[fi2+2]];
+        const ptot=lPcts.reduce((a,b)=>a+b,0)||1;let t2c=tb.y;
+        lhs.forEach((lh,si)=>{
+          const slH=(lPcts[si]/ptot)*tb.h;
+          ribbon(T2_X+T2_W,t2c,t2c+slH,LF2_X,l2Y,l2Y+lh,S_COLORS[si],0.20);
+          t2c+=slH;
+          drawBox(LF2_X,l2Y,LF2_W,lh,S_COLORS[si],['S1','S2','S3'][si],lPcts[si]/ptot*100,lPcts[si],8);
+          lf2Boxes.push({y:l2Y,h:lh,si,t2idx:i,t2label:t.label,t1label:t.t1label});
+          l2Y+=lh+LEAF_GAP;
+        });
+        fi2+=3;
+      });
+    } else {
+      const sm2Vals=[allT2.reduce((a,t)=>a+(t.s1||0),0),allT2.reduce((a,t)=>a+(t.s2||0),0),allT2.reduce((a,t)=>a+(t.s3||0),0)];
+      const sm2Tot=sm2Vals.reduce((a,b)=>a+b,0)||1;
+      const sm2H=propH(sm2Vals,FULL_H,BOX_GAP);
+      let sm2Y=TOP;const b2Tops=sm2H.map(h=>{const y=sm2Y;sm2Y+=h+BOX_GAP;return y;});
+      t2Boxes.forEach((tb,i)=>{
+        const t=allT2[i];const lP=[t.s1||0,t.s2||0,t.s3||0];const ptot=lP.reduce((a,b)=>a+b,0)||1;
+        let t2c=tb.y;
+        lP.forEach((p,si)=>{const slH=(p/ptot)*tb.h;ribbon(T2_X+T2_W,t2c,t2c+slH,LF2_X,b2Tops[si],b2Tops[si]+sm2H[si],S_COLORS[si],0.10);t2c+=slH;});
+      });
+      sm2H.forEach((h,si)=>{drawBox(LF2_X,b2Tops[si],LF2_W,h,S_COLORS[si],['S1','S2','S3'][si],sm2Vals[si]/sm2Tot*100,sm2Vals[si],9);});
+      const s3s2H=sm2H[2],s3s2Y=b2Tops[2];let sc3c2=s3s2Y;
+      allT2.forEach((t,i)=>{
+        const share=(t.s3||0)/(sm2Vals[2]||1);
+        lf2Boxes.push({y:sc3c2,h:s3s2H*share,si:2,t2idx:i,t2label:t.label,t1label:t.t1label});
+        sc3c2+=s3s2H*share;
+      });
+    }
+
+    // ── Tier 3 sector boxes ──────────────────────────────
+    if(allT3.length){
+      const t3Vals=allT3.map(t=>t.val);
+      const t3H=propH(t3Vals,FULL_H,BOX_GAP);
+      let t3Y=TOP;
+      allT3.forEach((t,i)=>{
+        const h=t3H[i],col=T3_COLORS[i%T3_COLORS.length];
+        const lf2=lf2Boxes.find(b=>b.si===2&&b.t2idx===t.t2idx);
+        if(lf2){
+          const sibs=allT3.filter(x=>x.t2idx===t.t2idx);
+          const sibTot=sibs.reduce((a,s)=>a+(s.s3||s.val||0),0)||1;
+          const sibBefore=sibs.slice(0,sibs.indexOf(t));
+          const srcOff=sibBefore.reduce((a,s)=>a+(s.s3||s.val||0)/sibTot*lf2.h,0);
+          const srcH=(t.s3||t.val||0)/sibTot*lf2.h;
+          ribbon(LF2_X+LF2_W,lf2.y+srcOff,lf2.y+srcOff+srcH,T3_X,t3Y,t3Y+h,col,0.18);
+        }
+        drawBox(T3_X,t3Y,T3_W,h,col,t.label,t.pct,t.val,7);
+        t3Y+=h+BOX_GAP;
+      });
+    }
   }
 
-  // Focal box
-  drawBox(C0,PAD_T,COL_W,BOX_H,'#0045AB',D.focalSector,D.t1Total,9);
-  hits.push({x:C0,y:PAD_T,w:COL_W,h:BOX_H,label:D.focalSector,val:D.t1Total,extra:'Focal sector'});
-
-  // SC0 — scopes of T1 layer
-  if(mode==='sum'){
-    let y=PAD_T; summedSC(t1).forEach((h,si)=>{drawScBox(CSC0,y,SC_W,h,SC[si],SCL[si]);y+=h;});
-  } else {
-    let y=PAD_T; t1SC.forEach(s=>{[s.s1,s.s2,s.s3].forEach((h,si)=>{drawScBox(CSC0,y,SC_W,h,SC[si],SCL[si]);y+=h;});});
-  }
-
-  // T1 boxes — ribbons from SC0 right edge
-  let y1=PAD_T; const by1=[];
-  t1.forEach((t,i)=>{
-    const h=t1H[i],col=T1C[i%T1C.length];
-    const sTop=mode==='sum'?PAD_T:PAD_T+t1SC.slice(0,i).reduce((a,s)=>a+s.s1+s.s2+s.s3,0);
-    const sBot=sTop+(mode==='sum'?BOX_H:(t1SC[i].s1+t1SC[i].s2+t1SC[i].s3));
-    ribbon(CSC0+SC_W,sTop,sBot,C1,y1,y1+h,col,0.20);
-    drawBox(C1,y1,COL_W,h,col,t.label,t.val,9);
-    hits.push({x:C1,y:y1,w:COL_W,h,label:'T1: '+t.label,val:t.val,extra:`S1:${(t.s1||0).toFixed(2)} S2:${(t.s2||0).toFixed(2)} S3:${(t.s3||0).toFixed(2)}`});
-    by1.push(y1);y1+=h+GAP;
-  });
-
-  // SC1 — scopes of T2 layer
-  if(mode==='sum'){
-    let y=PAD_T; summedSC(allT2).forEach((h,si)=>{drawScBox(CSC1,y,SC_W,h,SC[si],SCL[si]);y+=h;});
-  } else {
-    let y=PAD_T; t2SC.forEach(s=>{[s.s1,s.s2,s.s3].forEach((h,si)=>{drawScBox(CSC1,y,SC_W,h,SC[si],SCL[si]);y+=h;});});
-  }
-
-  // T2 boxes — ribbons from SC1 right edge
-  let y2=PAD_T; const by2=[];
-  allT2.forEach((t,i)=>{
-    const h=t2H[i],col=T2C[i%T2C.length];
-    const sibs=allT2.filter(x=>x.t1idx===t.t1idx);
-    const sibTot=sibs.reduce((a,s)=>a+s.val,0)||1;
-    const sbef=sibs.slice(0,sibs.indexOf(t));
-    const sTop=mode==='sum'?PAD_T:PAD_T+t2SC.slice(0,i).reduce((a,s)=>a+s.s1+s.s2+s.s3,0);
-    const sBot=sTop+(mode==='sum'?BOX_H:(t2SC[i].s1+t2SC[i].s2+t2SC[i].s3));
-    ribbon(CSC1+SC_W,sTop,sBot,C2,y2,y2+h,col,0.20);
-    drawBox(C2,y2,COL_W,h,col,t.label,t.val,8);
-    hits.push({x:C2,y:y2,w:COL_W,h,label:'T2: '+t.label,val:t.val,extra:`via ${t.t1label} · S1:${(t.s1||0).toFixed(2)} S2:${(t.s2||0).toFixed(2)} S3:${(t.s3||0).toFixed(2)}`});
-    by2.push(y2);y2+=h+GAP;
-  });
-
-  // SC2 — scopes of T3 layer
-  if(mode==='sum'){
-    let y=PAD_T; summedSC(allT3).forEach((h,si)=>{drawScBox(CSC2,y,SC_W,h,SC[si],SCL[si]);y+=h;});
-  } else {
-    let y=PAD_T; t3SC.forEach(s=>{[s.s1,s.s2,s.s3].forEach((h,si)=>{drawScBox(CSC2,y,SC_W,h,SC[si],SCL[si]);y+=h;});});
-  }
-
-  // T3 boxes — ribbons from SC2 right edge
-  let y3=PAD_T;
-  allT3.forEach((t,i)=>{
-    if(!t3H[i])return;
-    const h=t3H[i],col=T3C[i%T3C.length];
-    const sTop=mode==='sum'?PAD_T:PAD_T+t3SC.slice(0,i).reduce((a,s)=>a+s.s1+s.s2+s.s3,0);
-    const sBot=sTop+(mode==='sum'?BOX_H:(t3SC[i].s1+t3SC[i].s2+t3SC[i].s3));
-    ribbon(CSC2+SC_W,sTop,sBot,C3,y3,y3+h,col,0.18);
-    drawBox(C3,y3,COL_W,h,col,t.label,t.val,7);
-    hits.push({x:C3,y:y3,w:COL_W,h,label:'T3: '+t.label,val:t.val,extra:`via ${t.t2label} · S1:${(t.s1||0).toFixed(2)} S2:${(t.s2||0).toFixed(2)} S3:${(t.s3||0).toFixed(2)}`});
-    y3+=h+GAP;
-  });
-
-  // Scope legend
-  ctx.textAlign='left';ctx.textBaseline='middle';
-  const LY=PAD_T+BOX_H+10;
-  SC.forEach((c,i)=>{
-    ctx.fillStyle=c;ctx.globalAlpha=0.85;ctx.fillRect(CSC0+i*68,LY,10,10);ctx.globalAlpha=1;
-    ctx.fillStyle='rgba(244,245,245,0.5)';ctx.font='400 9px \'Segoe UI\',sans-serif';
-    ctx.fillText(['Scope 1 · Direct','Scope 2 · Electricity','Scope 3 · Upstream'][i],CSC0+i*68+14,LY+5);
-  });
-
-  // Tooltip — correct for CSS scaling
-  canvas.onmousemove=(e)=>{
-    const r=canvas.getBoundingClientRect();
-    const scX=CW/r.width,scY=CH/r.height;
-    const mx=(e.clientX-r.left)*scX,my=(e.clientY-r.top)*scY;
-    const hit=hits.find(z=>mx>=z.x&&mx<=z.x+z.w&&my>=z.y&&my<=z.y+z.h);
-    if(hit){
-      tip.innerHTML=`<strong>${hit.label}</strong><br>${hit.val.toFixed(3)} Mg CO₂e/M USD<br><span style="color:var(--mid);font-size:11px">${hit.extra}</span>`;
-      tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';
-      canvas.style.cursor='pointer';
-    } else {tip.style.display='none';canvas.style.cursor='default';}
-  };
-  canvas.onmouseleave=()=>{tip.style.display='none';};
+  // Footer label
+  ctx.font="400 7px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='rgba(167,204,231,0.4)';
+  ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText('Mg CO\u2082e per Million USD \u00b7 '+D.focalSector,ANC_X,TOP+FULL_H+14);
 }
 
 function getRowValues(row, tierKey) {
