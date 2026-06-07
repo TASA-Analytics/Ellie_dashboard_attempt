@@ -1,5 +1,6 @@
 /* ============================================================
-   TASA EFX — auth.js  (Netlify version)
+   TASA EFX — auth.js  (Netlify version) - updated without secrets
+  
    Handles: sign-in modal, session management, feedback button,
             logging via Netlify Function (no API keys here).
 
