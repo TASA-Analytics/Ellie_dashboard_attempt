@@ -557,6 +557,7 @@ const EF_SHEET     = 'Sector Emissions Factors';
 const TR_SHEET     = 'Total Requirements';
 const T1_PATH_SHEET = 'Tier_1 Pathway Analysis';
 const T2_PATH_SHEET = 'Tier_2 Pathway Analysis';
+const T3_PATH_SHEET = 'Tier_3 Pathway Analysis';
 const SILVER_CSV   = 'TASA_open_silver_stacked_output_all.csv';
 const FREE_YEAR    = '2023';
 
@@ -841,7 +842,7 @@ async function rlcaLoadAndRender(silverSector){
       if(!resp.ok) throw new Error('File not found: '+model.path);
       const buf=await resp.arrayBuffer();
       wb=XLSX.read(new Uint8Array(buf),{
-        type:'array',sheets:[SHEET_NAME,EF_SHEET,TR_SHEET,T1_PATH_SHEET,T2_PATH_SHEET],
+        type:'array',sheets:[SHEET_NAME,EF_SHEET,TR_SHEET,T1_PATH_SHEET,T2_PATH_SHEET,T3_PATH_SHEET],
         cellStyles:false,cellFormula:false,cellHTML:false,cellNF:false,sheetStubs:false
       });
       model._wb=wb;
@@ -1343,105 +1344,144 @@ function loadSankeyData(wb, rlcaSector) {
   sankeyData = null;
   const wsT1 = wb.Sheets[T1_PATH_SHEET];
   const wsT2 = wb.Sheets[T2_PATH_SHEET];
+  const wsT3 = wb.Sheets[T3_PATH_SHEET];
   if (!wsT1 || !wsT2) {
     console.warn('[Sankey] Missing sheets. Need:', T1_PATH_SHEET, 'and', T2_PATH_SHEET);
     return;
   }
 
-  // ── Tier 1 ───────────────────────────────────────────
-  const t1Raw = XLSX.utils.sheet_to_json(wsT1, {defval:''});
-  const sectorCol = Object.keys(t1Raw[0]||{})[0];
-
-  // Find col names flexibly
   function findCol(row, ...kws) {
     return Object.keys(row).find(k => kws.every(w => k.toLowerCase().includes(w.toLowerCase()))) || null;
   }
+
+  // ── Tier 1 ───────────────────────────────────────────
+  const t1Raw = XLSX.utils.sheet_to_json(wsT1, {defval:''});
+  const sectorCol = Object.keys(t1Raw[0]||{})[0];
   const sampleRow = t1Raw[0] || {};
   const T1_INPUT = findCol(sampleRow, 'tier 1', 'input') || findCol(sampleRow, 'tier 1', 'sector');
   const T1_TOT   = findCol(sampleRow, 'tier 1', 'total');
   const T1_S1    = findCol(sampleRow, 'tier 1', 'scope 1');
   const T1_S2    = findCol(sampleRow, 'tier 1', 'scope 2');
   const T1_S3    = findCol(sampleRow, 'tier 1', 'scope 3');
-
   if (!T1_INPUT || !T1_TOT) { console.warn('[Sankey] T1 columns not found'); return; }
+
+  const topN = parseInt(document.getElementById('sankey-topn')?.value||'12');
 
   const t1Rows = t1Raw
     .filter(r => String(r[sectorCol]||'').trim() === rlcaSector)
-    .map(r => ({
-      label: String(r[T1_INPUT]||'').trim(),
-      val:   parseFloat(r[T1_TOT]) || 0,
-      s1:    parseFloat(r[T1_S1])  || 0,
-      s2:    parseFloat(r[T1_S2])  || 0,
-      s3:    parseFloat(r[T1_S3])  || 0,
-    }))
+    .map(r => ({ label: String(r[T1_INPUT]||'').trim(), val: parseFloat(r[T1_TOT])||0,
+      s1: parseFloat(r[T1_S1])||0, s2: parseFloat(r[T1_S2])||0, s3: parseFloat(r[T1_S3])||0 }))
     .filter(r => r.label && r.val > 0);
 
-  // De-dup, sort, bucket non-top into Other
   const seen1 = new Set(); const t1Dedup = [];
-  t1Rows.sort((a,b) => b.val-a.val).forEach(r => {
-    if (!seen1.has(r.label)) { seen1.add(r.label); t1Dedup.push(r); }
-  });
-
-  const topN = parseInt(document.getElementById('sankey-topn')?.value||'12');
-  const isOther1 = r => r.label.toLowerCase() === 'other';
-  const t1Main  = t1Dedup.filter(r => !isOther1(r)).slice(0, topN);
-  const t1Rest  = [...t1Dedup.filter(r => !isOther1(r)).slice(topN), ...t1Dedup.filter(isOther1)];
-  if (t1Rest.length) {
-    t1Main.push({ label:'Other', val: t1Rest.reduce((a,r)=>a+r.val,0),
-      s1: t1Rest.reduce((a,r)=>a+r.s1,0), s2: t1Rest.reduce((a,r)=>a+r.s2,0), s3: t1Rest.reduce((a,r)=>a+r.s3,0) });
-  }
+  t1Rows.sort((a,b)=>b.val-a.val).forEach(r => { if(!seen1.has(r.label)){seen1.add(r.label);t1Dedup.push(r);} });
+  const isOther = r => r.label.toLowerCase()==='other';
+  const t1Main = t1Dedup.filter(r=>!isOther(r)).slice(0,topN);
+  const t1Rest = [...t1Dedup.filter(r=>!isOther(r)).slice(topN), ...t1Dedup.filter(isOther)];
+  if (t1Rest.length) t1Main.push({ label:'Other', val:t1Rest.reduce((a,r)=>a+r.val,0),
+    s1:t1Rest.reduce((a,r)=>a+r.s1,0), s2:t1Rest.reduce((a,r)=>a+r.s2,0), s3:t1Rest.reduce((a,r)=>a+r.s3,0) });
   const t1Total = t1Main.reduce((a,r)=>a+r.val,0)||1;
-  const tier1 = t1Main.map(r => ({ ...r, pct: r.val/t1Total*100 }));
+  const tier1 = t1Main.map(r=>({...r, pct:r.val/t1Total*100}));
+
+  // Track valid (t1,t2) pairs for T3 bucketing
+  const t2ValidPairs = new Set();
 
   // ── Tier 2 ───────────────────────────────────────────
   const t2Raw = XLSX.utils.sheet_to_json(wsT2, {defval:''});
-  const t2Sample = t2Raw[0] || {};
-  const T2_T1P  = findCol(t2Sample, 't1', 'parent') || Object.keys(t2Sample)[0];
-  const T2_SEC  = findCol(t2Sample, 't2', 'sector') || findCol(t2Sample, 'tier 2', 'input') || Object.keys(t2Sample)[1];
-  const T2_TOT  = findCol(t2Sample, 'total') || Object.keys(t2Sample)[2];
-  const T2_S1   = findCol(t2Sample, 's1') || findCol(t2Sample, 'scope 1');
-  const T2_S2   = findCol(t2Sample, 's2') || findCol(t2Sample, 'scope 2');
-  const T2_S3   = findCol(t2Sample, 's3') || findCol(t2Sample, 'scope 3');
+  const t2Sample = t2Raw[0]||{};
+  const T2_T1P = findCol(t2Sample,'t1','parent')||Object.keys(t2Sample)[0];
+  const T2_SEC = findCol(t2Sample,'t2','sector')||findCol(t2Sample,'tier 2','input')||Object.keys(t2Sample)[1];
+  const T2_TOT = findCol(t2Sample,'total')||Object.keys(t2Sample)[2];
+  const T2_S1  = findCol(t2Sample,'s1')||findCol(t2Sample,'scope 1');
+  const T2_S2  = findCol(t2Sample,'s2')||findCol(t2Sample,'scope 2');
+  const T2_S3  = findCol(t2Sample,'s3')||findCol(t2Sample,'scope 3');
 
-  // Group T2 rows by T1 parent
-  const tier2 = {};
-  const globalT2 = {}; // label → cumulative val for global top-N
+  const rawTier2 = {};
+  const globalT2 = {};
   t2Raw.forEach(r => {
     const t1p = String(r[T2_T1P]||'').trim();
     const lbl = String(r[T2_SEC]||'').trim();
     const val = parseFloat(r[T2_TOT])||0;
-    if (!lbl || !t1p || val === 0) return;
-    if (!tier2[t1p]) tier2[t1p] = {};
-    if (!tier2[t1p][lbl]) tier2[t1p][lbl] = { val:0, s1:0, s2:0, s3:0 };
-    tier2[t1p][lbl].val += val;
-    tier2[t1p][lbl].s1  += parseFloat(r[T2_S1])||0;
-    tier2[t1p][lbl].s2  += parseFloat(r[T2_S2])||0;
-    tier2[t1p][lbl].s3  += parseFloat(r[T2_S3])||0;
-    globalT2[lbl] = (globalT2[lbl]||0) + val;
+    if (!lbl||!t1p||val===0) return;
+    if (!rawTier2[t1p]) rawTier2[t1p]={};
+    if (!rawTier2[t1p][lbl]) rawTier2[t1p][lbl]={val:0,s1:0,s2:0,s3:0};
+    rawTier2[t1p][lbl].val+=val;
+    rawTier2[t1p][lbl].s1+=parseFloat(r[T2_S1])||0;
+    rawTier2[t1p][lbl].s2+=parseFloat(r[T2_S2])||0;
+    rawTier2[t1p][lbl].s3+=parseFloat(r[T2_S3])||0;
+    globalT2[lbl]=(globalT2[lbl]||0)+val;
   });
+  const topT2 = new Set(Object.entries(globalT2).filter(([l])=>l.toLowerCase()!=='other')
+    .sort((a,b)=>b[1]-a[1]).slice(0,topN).map(([l])=>l));
 
-  // Pick global top-N T2 sectors
-  const topT2 = new Set(
-    Object.entries(globalT2).filter(([l]) => l.toLowerCase()!=='other')
-      .sort((a,b)=>b[1]-a[1]).slice(0, topN).map(([l])=>l)
-  );
-
-  // For each T1 parent, bucket non-top T2 into Other
   const tier2Final = {};
-  Object.entries(tier2).forEach(([t1p, children]) => {
-    const rows = Object.entries(children).map(([lbl, v]) => ({label:lbl, ...v}))
-      .sort((a,b) => b.val-a.val);
-    const main  = rows.filter(r => topT2.has(r.label));
-    const rest  = rows.filter(r => !topT2.has(r.label));
-    if (rest.length) {
-      main.push({ label:'Other', val: rest.reduce((a,r)=>a+r.val,0),
-        s1: rest.reduce((a,r)=>a+r.s1,0), s2: rest.reduce((a,r)=>a+r.s2,0), s3: rest.reduce((a,r)=>a+r.s3,0) });
-    }
-    const t2Tot = main.reduce((a,r)=>a+r.val,0)||1;
-    tier2Final[t1p] = main.map(r => ({ ...r, pct: r.val/t2Tot*100 }));
+  Object.entries(rawTier2).forEach(([t1p,children])=>{
+    const rows = Object.entries(children).map(([lbl,v])=>({label:lbl,...v})).sort((a,b)=>b.val-a.val);
+    const main = rows.filter(r=>topT2.has(r.label));
+    const rest = rows.filter(r=>!topT2.has(r.label));
+    if (rest.length) main.push({label:'Other',val:rest.reduce((a,r)=>a+r.val,0),
+      s1:rest.reduce((a,r)=>a+r.s1,0),s2:rest.reduce((a,r)=>a+r.s2,0),s3:rest.reduce((a,r)=>a+r.s3,0)});
+    const t2Tot=main.reduce((a,r)=>a+r.val,0)||1;
+    tier2Final[t1p]=main.map(r=>({...r,pct:r.val/t2Tot*100}));
+    main.forEach(r=>t2ValidPairs.add(t1p+'|||'+r.label));
   });
 
-  sankeyData = { focalSector: rlcaSector, tier1, tier2: tier2Final, t1Total };
+  // ── Tier 3 ───────────────────────────────────────────
+  const tier3Final = {};
+  if (wsT3) {
+    const t3Raw = XLSX.utils.sheet_to_json(wsT3, {defval:''});
+    const t3Sample = t3Raw[0]||{};
+    const T3_T1  = findCol(t3Sample,'tier 1','input')||findCol(t3Sample,'t1');
+    const T3_T2  = findCol(t3Sample,'tier 2','input')||findCol(t3Sample,'t2');
+    const T3_SEC = findCol(t3Sample,'tier 3','input')||findCol(t3Sample,'tier 3','sector');
+    const T3_TOT = findCol(t3Sample,'tier 3','total');
+    const T3_S1  = findCol(t3Sample,'tier 3','scope 1');
+    const T3_S2  = findCol(t3Sample,'tier 3','scope 2');
+    const T3_S3  = findCol(t3Sample,'tier 3','scope 3');
+
+    if (T3_T1 && T3_T2 && T3_SEC && T3_TOT) {
+      // Global top-N T3 by summed value
+      const globalT3 = {};
+      const t3Rows = t3Raw.filter(r => String(r[sectorCol]||'').trim()===rlcaSector ||
+        !t3Raw[0][sectorCol]); // handle if no sector filter col
+      t3Raw.forEach(r => {
+        const lbl = String(r[T3_SEC]||'').trim();
+        const val = parseFloat(r[T3_TOT])||0;
+        if (lbl && lbl.toLowerCase()!=='other' && val>0) globalT3[lbl]=(globalT3[lbl]||0)+val;
+      });
+      const topT3 = new Set(Object.entries(globalT3).sort((a,b)=>b[1]-a[1]).slice(0,topN).map(([l])=>l));
+
+      // Group by (T1, T2) pair
+      const raw3 = {};
+      t3Raw.forEach(r => {
+        const t1p = String(r[T3_T1]||'').trim();
+        const t2p = String(r[T3_T2]||'').trim();
+        const lbl = String(r[T3_SEC]||'').trim();
+        const val = parseFloat(r[T3_TOT])||0;
+        if (!t1p||!t2p||!lbl||val===0) return;
+        // Remap pairs not in valid T2 set to Other|||Other
+        const pairKey = t2ValidPairs.has(t1p+'|||'+t2p) ? t1p+'|||'+t2p : 'Other|||Other';
+        if (!raw3[pairKey]) raw3[pairKey]={};
+        const isTop = topT3.has(lbl) && lbl.toLowerCase()!=='other';
+        const bucketLbl = isTop ? lbl : '__other__';
+        if (!raw3[pairKey][bucketLbl]) raw3[pairKey][bucketLbl]={val:0,s1:0,s2:0,s3:0};
+        raw3[pairKey][bucketLbl].val+=val;
+        raw3[pairKey][bucketLbl].s1+=parseFloat(r[T3_S1])||0;
+        raw3[pairKey][bucketLbl].s2+=parseFloat(r[T3_S2])||0;
+        raw3[pairKey][bucketLbl].s3+=parseFloat(r[T3_S3])||0;
+      });
+
+      Object.entries(raw3).forEach(([pairKey, sectors]) => {
+        const rows = Object.entries(sectors)
+          .map(([lbl,v])=>({label: lbl==='__other__'?'Other':lbl, ...v}))
+          .sort((a,b)=>b.val-a.val);
+        const t3Tot = rows.reduce((a,r)=>a+r.val,0)||1;
+        tier3Final[pairKey] = rows.map(r=>({...r, pct:r.val/t3Tot*100}));
+      });
+    }
+  }
+
+  sankeyData = { focalSector:rlcaSector, tier1, tier2:tier2Final, tier3:tier3Final, t1Total };
 }
 
 // ── Sankey renderer ───────────────────────────────────
@@ -1454,61 +1494,64 @@ function renderSankey() {
   if (!sankeyData || !sankeyData.tier1.length) {
     stateEl.style.display = 'flex';
     wrapEl.style.display  = 'none';
-    stateEl.innerHTML = '<span>⚠️ Pathway Analysis sheets not found in this Excel file.<br><small style="color:var(--mid)">Requires sheets: <code>Tier_1 Pathway Analysis</code> and <code>Tier_2 Pathway Analysis</code></small></span>';
+    stateEl.innerHTML = '<span>⚠️ Pathway Analysis sheets not found in this Excel file.<br><small style="color:var(--mid)">Requires sheets: <code>Tier_1 Pathway Analysis</code>, <code>Tier_2 Pathway Analysis</code>, <code>Tier_3 Pathway Analysis</code></small></span>';
     return;
   }
 
   stateEl.style.display = 'none';
   wrapEl.style.display  = 'block';
 
-  const D = sankeyData;
+  const D    = sankeyData;
   const topN = parseInt(document.getElementById('sankey-topn')?.value||'12');
 
-  // Layout constants
-  const BOX_H    = 600;
-  const BOX_GAP  = 4;
-  const COL_W    = 160;
-  const GAP_X    = 90;
-  const PAD_L    = 16;
-  const PAD_T    = 30;
-  const PAD_B    = 20;
-  const CHEV     = 14;
+  // Layout
+  const BOX_H  = 700;
+  const BOX_GAP = 3;
+  const COL_W  = 150;
+  const GAP_X  = 80;
+  const PAD_L  = 12;
+  const PAD_T  = 28;
+  const PAD_B  = 16;
+  const CHEV   = 12;
 
-  // Colors
   const T1_COLS = ['#0045AB','#1a5cbf','#8C5ACC','#3FA9F6','#D4AF37','#A7F3D0',
                    '#FF66B3','#0d3d8a','#6a3aab','#2e6fd4','#B98EFF','#7a48bb','#6B7280'];
   const T2_COLS = ['#3FA9F6','#A7CCE7','#6EE7B7','#93C5FD','#FCA5A5','#C4B5FD',
-                   '#FFBB00','#FF66B3','#D4AF37','#A7F3D0','#B98EFF','#6B7280','#3FA9F6'];
-  const S_COLS  = ['#B98EFF','#3FA9F6','#A7F3D0'];
+                   '#FFBB00','#FF66B3','#D4AF37','#A7F3D0','#B98EFF','#6B7280','#0045AB'];
+  const T3_COLS = ['#A7F3D0','#FFBB00','#B98EFF','#3FA9F6','#FF66B3','#D4AF37',
+                   '#93C5FD','#FCA5A5','#6EE7B7','#C4B5FD','#A7CCE7','#6B7280','#0045AB'];
 
-  // Compute T2 groups for each T1
-  const t1 = D.tier1;
-  let allT2 = []; // flat list of {t1idx, label, val, pct, s1,s2,s3}
-  t1.forEach((t, i) => {
-    const children = D.tier2[t.label] || [];
-    children.forEach(c => allT2.push({ t1idx:i, t1label:t.label, ...c }));
-  });
-
-  // Column X positions: Focal | T1 | T2
   const COL0_X = PAD_L;
   const COL1_X = COL0_X + COL_W + GAP_X;
   const COL2_X = COL1_X + COL_W + GAP_X;
-  const TOTAL_W = COL2_X + COL_W + PAD_L;
+  const COL3_X = COL2_X + COL_W + GAP_X;
+  const TOTAL_W = COL3_X + COL_W + PAD_L;
 
-  // Heights proportional to value
   function propH(items, totalH, gap) {
     const tot = items.reduce((a,r)=>a+r.val,0)||1;
     const avail = totalH - gap*(items.length-1);
-    const MIN = Math.max(3, avail/items.length*0.15);
-    let hs = items.map(r => Math.max(MIN, r.val/tot*avail));
+    const MIN = Math.max(3, avail/items.length*0.12);
+    let hs = items.map(r=>Math.max(MIN, r.val/tot*avail));
     const s = hs.reduce((a,b)=>a+b,0);
-    return hs.map(h => h/s*avail);
+    return hs.map(h=>h/s*avail);
   }
 
-  // T1 heights
+  const t1  = D.tier1;
+  // Flatten T2 across all T1 parents in order
+  const allT2 = [];
+  t1.forEach((t,i) => {
+    (D.tier2[t.label]||[]).forEach(c => allT2.push({t1idx:i, t1label:t.label, ...c}));
+  });
+  // Flatten T3 across all T2 in order
+  const allT3 = [];
+  allT2.forEach((t2item, t2i) => {
+    const key = t2item.t1label+'|||'+t2item.label;
+    (D.tier3[key]||[]).forEach(c => allT3.push({t2idx:t2i, t2label:t2item.label, t1label:t2item.t1label, ...c}));
+  });
+
   const t1H = propH(t1, BOX_H, BOX_GAP);
-  // T2 heights (all together, proportional globally)
   const t2H = allT2.length ? propH(allT2, BOX_H, BOX_GAP) : [];
+  const t3H = allT3.length ? propH(allT3, BOX_H, BOX_GAP) : [];
 
   const CANVAS_H = BOX_H + PAD_T + PAD_B;
   canvas.width  = TOTAL_W;
@@ -1518,133 +1561,103 @@ function renderSankey() {
 
   const hitZones = [];
 
-  // ── Draw helpers ──────────────────────────────────────
-  function drawBox(x, y, w, h, color, label, val, pct, fontSize) {
-    const r = 4;
-    ctx.fillStyle = color;
-    ctx.globalAlpha = 0.88;
+  function drawBox(x,y,w,h,color,label,val,fontSize) {
+    ctx.fillStyle=color; ctx.globalAlpha=0.88;
     ctx.beginPath();
-    ctx.moveTo(x+r,y); ctx.lineTo(x+w-CHEV,y);
+    ctx.moveTo(x+4,y); ctx.lineTo(x+w-CHEV,y);
     ctx.lineTo(x+w,y+h/2); ctx.lineTo(x+w-CHEV,y+h);
-    ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-    ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
-    ctx.closePath(); ctx.fill();
-    ctx.globalAlpha = 1;
-
-    if (h > 14) {
-      ctx.fillStyle = '#F4F5F5';
-      ctx.font = `600 ${fontSize}px 'Segoe UI',Arial,sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const cx = x + (w-CHEV)/2, cy = y + h*0.40;
-      const maxW = w - CHEV - 8;
-      // Word wrap
-      const words = label.split(' ');
-      const lines = []; let cur = '';
-      words.forEach(wd => {
-        const test = cur ? cur+' '+wd : wd;
-        if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur=wd; }
-        else cur = test;
-      });
-      if (cur) lines.push(cur);
-      const lh = fontSize + 2;
-      const startY = cy - (lines.length-1)*lh/2;
-      lines.forEach((ln,i) => ctx.fillText(ln, cx, startY+i*lh));
-      if (h > 28) {
-        ctx.font = `400 ${Math.max(7,fontSize-2)}px 'Segoe UI',Arial,sans-serif`;
-        ctx.fillStyle = 'rgba(255,255,255,0.55)';
-        ctx.fillText(val.toFixed(2)+' Mg', cx, startY+lines.length*lh+3);
-      }
+    ctx.lineTo(x+4,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-4);
+    ctx.lineTo(x,y+4); ctx.quadraticCurveTo(x,y,x+4,y);
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha=1;
+    if (h>12) {
+      ctx.fillStyle='#F4F5F5'; ctx.font=`600 ${fontSize}px 'Segoe UI',Arial,sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      const cx=x+(w-CHEV)/2, cy=y+h*0.40, maxW=w-CHEV-6;
+      const words=label.split(' '); const lines=[]; let cur='';
+      words.forEach(wd=>{const t=cur?cur+' '+wd:wd;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=wd;}else cur=t;});
+      if(cur)lines.push(cur);
+      const lh=fontSize+2, startY=cy-(lines.length-1)*lh/2;
+      lines.forEach((ln,i)=>ctx.fillText(ln,cx,startY+i*lh));
+      if(h>26){ctx.font=`400 ${Math.max(7,fontSize-2)}px 'Segoe UI',sans-serif`;ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillText(val.toFixed(2)+' Mg',cx,startY+lines.length*lh+3);}
     }
   }
 
-  function drawRibbon(x0,y0Top,y0Bot, x1,y1Top,y1Bot, color, alpha) {
-    const cp = (x1-x0)*0.5;
+  function drawRibbon(x0,y0t,y0b,x1,y1t,y1b,color,alpha) {
+    const cp=(x1-x0)*0.5;
     ctx.beginPath();
-    ctx.moveTo(x0,y0Top);
-    ctx.bezierCurveTo(x0+cp,y0Top, x1-cp,y1Top, x1,y1Top);
-    ctx.lineTo(x1,y1Bot);
-    ctx.bezierCurveTo(x1-cp,y1Bot, x0+cp,y0Bot, x0,y0Bot);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.globalAlpha = alpha;
-    ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.moveTo(x0,y0t); ctx.bezierCurveTo(x0+cp,y0t,x1-cp,y1t,x1,y1t);
+    ctx.lineTo(x1,y1b); ctx.bezierCurveTo(x1-cp,y1b,x0+cp,y0b,x0,y0b);
+    ctx.closePath(); ctx.fillStyle=color; ctx.globalAlpha=alpha; ctx.fill(); ctx.globalAlpha=1;
   }
 
-  // ── Column headers ────────────────────────────────────
-  ctx.fillStyle = 'rgba(167,243,208,0.5)';
-  ctx.font = "700 9px 'Segoe UI',sans-serif";
-  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  const headers = ['Focal Sector', 'Tier 1 Inputs', 'Tier 2 Inputs'];
-  [COL0_X, COL1_X, COL2_X].forEach((x,i) => ctx.fillText(headers[i], x+COL_W/2, 4));
+  // Headers
+  ctx.fillStyle='rgba(167,243,208,0.5)'; ctx.font="700 9px 'Segoe UI',sans-serif";
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  ['Focal Sector','Tier 1 Inputs','Tier 2 Inputs','Tier 3 Inputs']
+    .forEach((h,i)=>ctx.fillText(h,[COL0_X,COL1_X,COL2_X,COL3_X][i]+COL_W/2,4));
 
-  // ── Focal sector box (single, full height) ────────────
-  const focalColor = '#0045AB';
-  drawBox(COL0_X, PAD_T, COL_W, BOX_H, focalColor, D.focalSector, D.t1Total, 100, 9);
-  hitZones.push({ x:COL0_X, y:PAD_T, w:COL_W, h:BOX_H,
-    label:D.focalSector, val:D.t1Total, extra:'Focal · Scope 3 total' });
+  // Focal box
+  drawBox(COL0_X,PAD_T,COL_W,BOX_H,'#0045AB',D.focalSector,D.t1Total,9);
+  hitZones.push({x:COL0_X,y:PAD_T,w:COL_W,h:BOX_H,label:D.focalSector,val:D.t1Total,extra:'Focal sector · Scope 3 total'});
 
-  // ── T1 boxes and ribbons ──────────────────────────────
-  let t1Y = PAD_T;
-  t1.forEach((t, i) => {
-    const h = t1H[i];
-    const color = T1_COLS[i % T1_COLS.length];
-    // Ribbon from focal → T1
-    const srcFrac = t.val / D.t1Total;
-    const srcTop = PAD_T + t1H.slice(0,i).reduce((a,b)=>a+b+BOX_GAP,0);
-    drawRibbon(COL0_X+COL_W-CHEV, PAD_T + t1H.slice(0,i).reduce((a,b)=>a+b+BOX_GAP,0),
-               PAD_T + t1H.slice(0,i+1).reduce((a,b)=>a+b+BOX_GAP,0) - BOX_GAP,
-               COL1_X, t1Y, t1Y+h, color, 0.22);
-    drawBox(COL1_X, t1Y, COL_W, h, color, t.label, t.val, t.pct, 9);
-    hitZones.push({ x:COL1_X, y:t1Y, w:COL_W, h,
-      label:'T1: '+t.label, val:t.val, extra:`${t.pct.toFixed(1)}% of Scope 3` });
-    t1Y += h + BOX_GAP;
+  // T1 boxes + ribbons from focal
+  let t1Y=PAD_T;
+  const t1BoxY=[];
+  t1.forEach((t,i)=>{
+    const h=t1H[i], color=T1_COLS[i%T1_COLS.length];
+    const prevH=t1H.slice(0,i).reduce((a,b)=>a+b+BOX_GAP,0);
+    drawRibbon(COL0_X+COL_W-CHEV,PAD_T+prevH,PAD_T+prevH+h,COL1_X,t1Y,t1Y+h,color,0.22);
+    drawBox(COL1_X,t1Y,COL_W,h,color,t.label,t.val,9);
+    hitZones.push({x:COL1_X,y:t1Y,w:COL_W,h,label:'T1: '+t.label,val:t.val,extra:`${t.pct.toFixed(1)}% of Scope 3`});
+    t1BoxY.push(t1Y); t1Y+=h+BOX_GAP;
   });
 
-  // ── T2 boxes and ribbons ──────────────────────────────
-  let t2Y = PAD_T;
-  let t2BoxPositions = [];
-  allT2.forEach((t, i) => {
-    const h = t2H[i];
-    const color = T2_COLS[i % T2_COLS.length];
-    // Find T1 box position
-    const t1i = t.t1idx;
-    const t1BoxY = PAD_T + t1H.slice(0,t1i).reduce((a,b)=>a+b+BOX_GAP,0);
-    const t1BoxH = t1H[t1i];
-    // Proportion of this T2 within its T1 parent
-    const siblings = allT2.filter(x => x.t1idx===t1i);
-    const sibTot = siblings.reduce((a,s)=>a+s.val,0)||1;
-    const sibBefore = siblings.slice(0, siblings.indexOf(t));
-    const srcTop = t1BoxY + sibBefore.reduce((a,s)=>a+s.val/sibTot*t1BoxH,0);
-    const srcBot = srcTop + t.val/sibTot*t1BoxH;
-    drawRibbon(COL1_X+COL_W-CHEV, srcTop, srcBot, COL2_X, t2Y, t2Y+h, color, 0.20);
-    drawBox(COL2_X, t2Y, COL_W, h, color, t.label, t.val, t.pct, 8);
-    hitZones.push({ x:COL2_X, y:t2Y, w:COL_W, h,
-      label:'T2: '+t.label+'\n(via '+t.t1label+')', val:t.val,
-      extra:`${t.pct.toFixed(1)}% of ${t.t1label}` });
-    t2BoxPositions.push({ y:t2Y, h, color });
-    t2Y += h + BOX_GAP;
+  // T2 boxes + ribbons from T1
+  let t2Y=PAD_T;
+  const t2BoxY=[];
+  allT2.forEach((t,i)=>{
+    const h=t2H[i], color=T2_COLS[i%T2_COLS.length];
+    const t1i=t.t1idx;
+    const siblings=allT2.filter(x=>x.t1idx===t1i);
+    const sibTot=siblings.reduce((a,s)=>a+s.val,0)||1;
+    const sibBefore=siblings.slice(0,siblings.indexOf(t));
+    const srcTop=t1BoxY[t1i]+sibBefore.reduce((a,s)=>a+s.val/sibTot*t1H[t1i],0);
+    const srcBot=srcTop+t.val/sibTot*t1H[t1i];
+    drawRibbon(COL1_X+COL_W-CHEV,srcTop,srcBot,COL2_X,t2Y,t2Y+h,color,0.20);
+    drawBox(COL2_X,t2Y,COL_W,h,color,t.label,t.val,8);
+    hitZones.push({x:COL2_X,y:t2Y,w:COL_W,h,label:'T2: '+t.label,val:t.val,extra:`via ${t.t1label} · ${t.pct.toFixed(1)}%`});
+    t2BoxY.push(t2Y); t2Y+=h+BOX_GAP;
   });
 
-  // ── Tooltip interaction ───────────────────────────────
-  canvas.onmousemove = (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    const hit = hitZones.find(z => mx>=z.x && mx<=z.x+z.w && my>=z.y && my<=z.y+z.h);
-    if (hit) {
-      tip.innerHTML = `<strong>${hit.label.replace('\n','<br>')}</strong><br>
-        ${hit.val.toFixed(3)} Mg CO₂e/M USD<br>
-        <span style="color:var(--mid)">${hit.extra}</span>`;
-      tip.style.display = 'block';
-      tip.style.left = (e.clientX+14)+'px';
-      tip.style.top  = (e.clientY-10)+'px';
-      canvas.style.cursor = 'pointer';
-    } else {
-      tip.style.display = 'none';
-      canvas.style.cursor = 'default';
-    }
+  // T3 boxes + ribbons from T2
+  let t3Y=PAD_T;
+  allT3.forEach((t,i)=>{
+    if (!t3H[i]) return;
+    const h=t3H[i], color=T3_COLS[i%T3_COLS.length];
+    const t2i=t.t2idx;
+    const siblings=allT3.filter(x=>x.t2idx===t2i);
+    const sibTot=siblings.reduce((a,s)=>a+s.val,0)||1;
+    const sibBefore=siblings.slice(0,siblings.indexOf(t));
+    const srcTop=t2BoxY[t2i]+sibBefore.reduce((a,s)=>a+s.val/sibTot*t2H[t2i],0);
+    const srcBot=srcTop+t.val/sibTot*t2H[t2i];
+    drawRibbon(COL2_X+COL_W-CHEV,srcTop,srcBot,COL3_X,t3Y,t3Y+h,color,0.18);
+    drawBox(COL3_X,t3Y,COL_W,h,color,t.label,t.val,7);
+    hitZones.push({x:COL3_X,y:t3Y,w:COL_W,h,label:'T3: '+t.label,val:t.val,extra:`via ${t.t2label} · ${t.pct.toFixed(1)}%`});
+    t3Y+=h+BOX_GAP;
+  });
+
+  // Tooltip
+  canvas.onmousemove=(e)=>{
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    const hit=hitZones.find(z=>mx>=z.x&&mx<=z.x+z.w&&my>=z.y&&my<=z.y+z.h);
+    if(hit){
+      tip.innerHTML=`<strong>${hit.label}</strong><br>${hit.val.toFixed(3)} Mg CO₂e/M USD<br><span style="color:var(--mid)">${hit.extra}</span>`;
+      tip.style.display='block'; tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-10)+'px';
+      canvas.style.cursor='pointer';
+    } else { tip.style.display='none'; canvas.style.cursor='default'; }
   };
-  canvas.onmouseleave = () => { tip.style.display='none'; };
+  canvas.onmouseleave=()=>{ tip.style.display='none'; };
 }
 
 function getRowValues(row, tierKey) {
