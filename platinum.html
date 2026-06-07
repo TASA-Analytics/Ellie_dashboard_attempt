@@ -243,7 +243,9 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 // ══════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════
-const XLSX_FILE       = 'TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx';
+const XLSX_FILE = window.TASA_AUTH?.isUnlocked
+  ? 'data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx'
+  : 'data/free/TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx';
 const SHEET_NAME      = 'Hotspots_USD';
 const SILVER_CSV      = 'TASA_open_silver_stacked_output_all.csv';
 
@@ -827,20 +829,24 @@ function renderTable(){
 }
 
 // ── Boot: fetch each file exactly once ───────────────────────
-(async()=>{
+async function boot(){
   try{
     console.time('[PT] total boot');
-
+ 
+    const XLSX_FILE = window.TASA_AUTH?.isUnlocked
+      ? 'data/premium/platinum-full.xlsx'
+      : 'data/free/platinum-preview.xlsx';
+ 
     console.time('[PT] fetch both files');
     const [silverResp, xlsxResp] = await Promise.all([
       fetch(SILVER_CSV),
       fetch(XLSX_FILE)
     ]);
     console.timeEnd('[PT] fetch both files');
-
+ 
     if(!silverResp.ok) throw new Error('Silver CSV not found: '+SILVER_CSV);
     if(!xlsxResp.ok)   throw new Error('Platinum Excel not found: '+XLSX_FILE);
-
+ 
     console.time('[PT] read response bodies');
     const [silverText, xlsxBuf] = await Promise.all([
       silverResp.text(),
@@ -849,26 +855,29 @@ function renderTable(){
     console.timeEnd('[PT] read response bodies');
     console.log('[PT] Silver text size:', silverText.length, 'bytes');
     console.log('[PT] Excel buffer size:', xlsxBuf.byteLength, 'bytes');
-
+ 
     console.time('[PT] buildSilverMap');
     buildSilverMap(silverText);
     console.timeEnd('[PT] buildSilverMap');
-
+ 
     loadExcel(new Uint8Array(xlsxBuf));
-
+ 
     console.time('[PT] renderDashboard');
-    // Set sector dropdown to DEFAULT_SECTOR if it exists, else first option
     const sSel = document.getElementById('f-sector');
     const defOpt = [...sSel.options].find(o=>o.value===DEFAULT_SECTOR);
     if(defOpt) sSel.value = DEFAULT_SECTOR;
     renderDashboard(sSel.value, '2023');
     console.timeEnd('[PT] renderDashboard');
-
+ 
     console.timeEnd('[PT] total boot');
-
+ 
   } catch(e){
     showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure both files are in the root of your GitHub repo.');
   }
-})();
+}
+ 
+boot();
+window.addEventListener('tasaAuthChanged', boot);
 </script>
+<script src="auth.js"></script>
 </body>

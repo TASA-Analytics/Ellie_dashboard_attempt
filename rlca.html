@@ -358,7 +358,9 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 // ══════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════
-const XLSX_FILE  = 'TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx';
+const XLSX_FILE = window.TASA_AUTH?.isUnlocked
+  ? 'data/premium/TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0_DEMO.xlsx'
+  : 'data/free/TASA-EFX_rLCA_Manufacture-of-sweets,-chewing-gum-and-confectionery-products-other-than-chocolate_MEX_2023_v2.0.xlsx';
 const SHEET_NAME = '10 Tiers_all_sectors';
 const EF_SHEET   = 'Sector Emissions Factors';
 const SILVER_CSV = 'TASA_open_silver_stacked_output_all.csv';
@@ -808,7 +810,7 @@ function dismissUpsell(){ document.getElementById('upsell').classList.remove('sh
 document.getElementById('upsell').addEventListener('click',function(e){if(e.target===this)dismissUpsell();});
 
 // ── Boot ──────────────────────────────────────────────
-(async () => {
+async function boot(){
   try {
     const [silverResp, xlsxResp] = await Promise.all([
       fetch(SILVER_CSV),
@@ -835,10 +837,13 @@ document.getElementById('upsell').addEventListener('click',function(e){if(e.targ
     loadExcel(wb);
     buildSilverMap(silverText);
 
-  } catch(e) {
-    showError(`<strong>${e.message}</strong>`);
+  } catch(e){
+    showError('Failed to load data: <strong>'+e.message+'</strong><br>Make sure both files are in the root of your GitHub repo.');
   }
-})();
+}
+ 
+boot();
+window.addEventListener('tasaAuthChanged', boot);
 </script>
 </body>
 </html>
