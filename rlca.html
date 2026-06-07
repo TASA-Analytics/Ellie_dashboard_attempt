@@ -885,10 +885,7 @@ function showError(msg) {
   document.getElementById('loading-state').innerHTML =
     `<div style="color:#B98EFF;text-align:center;font-size:13px;line-height:1.8;max-width:480px">
       <div style="font-size:32px;margin-bottom:10px">⚠️</div>
-      <strong>Could not load data</strong><br>${msg}<br>
-      <span style="color:var(--mid);font-size:11px">Ensure
-      <code style="color:var(--teal)">${XLSX_FILE}</code>
-      is in the same folder as this HTML file.</span>
+      <strong>Could not load data</strong><br>${msg}
     </div>`;
 }
 
