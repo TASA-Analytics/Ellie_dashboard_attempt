@@ -2,7 +2,7 @@
   "_note": "Free-tier entries only. Premium entries are returned dynamically by Lambda as presigned S3 URLs. Replace us-east-1 with your actual AWS region (e.g. us-east-1).",
   "free": [
     {
-      "path": "https://tasa-efx-public.s3.us-east-1.amazonaws.com/data/free/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
+      "path": "https://tasa-efx-public.s3.us-east-2.amazonaws.com/data/free/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
       "country": "South Korea",
       "sectors": [
         {
