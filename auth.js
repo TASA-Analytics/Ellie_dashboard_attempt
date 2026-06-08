@@ -51,7 +51,8 @@ function clearSession() {
 window.TASA_AUTH = {
   isUnlocked: false,
   user: null,
-  presignedManifest: null
+  presignedManifest: null,
+  conferenceName: null
 };
 
 function refreshAuthState() {
@@ -60,10 +61,12 @@ function refreshAuthState() {
     window.TASA_AUTH.isUnlocked = true;
     window.TASA_AUTH.user = session.user;
     window.TASA_AUTH.presignedManifest = session.presignedManifest || null;
+    window.TASA_AUTH.conferenceName = session.conferenceName || null;
   } else {
     window.TASA_AUTH.isUnlocked = false;
     window.TASA_AUTH.user = null;
     window.TASA_AUTH.presignedManifest = null;
+    window.TASA_AUTH.conferenceName = null;
   }
 }
 
@@ -86,7 +89,7 @@ async function validateCode(code, name, email, industry) {
     }
     if (!res.ok) throw new Error('Server error ' + res.status);
     const data = await res.json();
-    return { valid: true, presignedManifest: data.presignedManifest };
+    return { valid: true, presignedManifest: data.presignedManifest, conferenceName: data.conferenceName };
   } catch (e) {
     console.warn('[TASA] Auth error:', e.message);
     return { valid: false, expired: false, serverError: true };
@@ -481,7 +484,7 @@ async function submitSignin() {
   }
 
   if (result.valid) {
-    setSession({ isUnlocked: true, user: { name, email, industry, code }, presignedManifest: result.presignedManifest });
+    setSession({ isUnlocked: true, user: { name, email, industry, code }, presignedManifest: result.presignedManifest, conferenceName: result.conferenceName });
     refreshAuthState();
     closeSigninModal();
     updateNavUI();
@@ -543,7 +546,8 @@ function updateBanners() {
   if (window.TASA_AUTH.isUnlocked) {
     if (accessBanner) {
       const name = window.TASA_AUTH.user?.name ? ` · ${window.TASA_AUTH.user.name}` : '';
-      bannerText.textContent = `Full Platinum & rLCA access active${name}`;
+      const conf = window.TASA_AUTH.conferenceName || 'Premium Access';
+      bannerText.textContent = `${conf} active${name}`;
       accessBanner.classList.add('visible');
     }
     if (previewBanner) previewBanner.classList.remove('visible');

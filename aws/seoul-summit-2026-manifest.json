@@ -1,0 +1,42 @@
+{
+  "platinum": [
+    {
+      "file": "TASA-EFX_USA_Platinum_Model_2024_v3.0.xlsx",
+      "country": "United States",
+      "sectors": [
+        { "silverSector": "Semiconductors", "platSector": "Semiconductors" },
+        { "silverSector": "Electronic capacitors, resistors, coils, transformers, connectors and other components (except semiconductors and printed circuit assemblies)", "platSector": "Electronic capacitors, resistors, coils, transformers, connectors and other components (except semiconductors and printed circuit assemblies)" },
+        { "silverSector": "Printed circuit and electronic assembly", "platSector": "Printed circuit and electronic assembly" },
+        { "silverSector": "Computers", "platSector": "Computers" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_KOR_Platinum_Model_2024_v3.0.xlsx",
+      "country": "South Korea",
+      "sectors": [
+        { "silverSector": "Printed Circuit Board and populated board", "platSector": "Printed Circuit Board and populated board" },
+        { "silverSector": "Semiconductors", "platSector": "Semiconductors" },
+        { "silverSector": "Computers", "platSector": "Computers" },
+        { "silverSector": "Computer Storage Devices", "platSector": "Computer Storage Devices" }
+      ]
+    }
+  ],
+  "rlca": [
+    {
+      "file": "TASA-EFX_rLCA_Printed-Circuit-Board-and-populated-board_KOR_2024_v2.0.xlsx",
+      "country": "South Korea",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Printed Circuit Board and populated board", "rlcaSector": "Printed Circuit Board and populated board" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_rLCA_Semiconductors_KOR_2024_v2.0.xlsx",
+      "country": "South Korea",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Semiconductors", "rlcaSector": "Semiconductors" }
+      ]
+    }
+  ]
+}

@@ -13,8 +13,9 @@ const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl }               = require('@aws-sdk/s3-request-presigner');
 const { DynamoDBClient, PutItemCommand } = require('@aws-sdk/client-dynamodb');
 
-const REGION         = process.env.AWS_REGION || 'us-east-1';
-const s3             = new S3Client({ region: REGION });
+const REGION         = process.env.AWS_REGION  || 'us-east-1';
+const S3_REGION      = process.env.S3_REGION   || REGION;
+const s3             = new S3Client({ region: S3_REGION });
 const dynamo         = new DynamoDBClient({ region: REGION });
 
 const ACCESS_CODES    = JSON.parse(process.env.ACCESS_CODES || '{}');
@@ -94,7 +95,7 @@ async function handleAuth({ code, name, email, industry, page }, headers) {
   return {
     statusCode: 200,
     headers,
-    body: JSON.stringify({ valid: true, presignedManifest, user: { name, email } })
+    body: JSON.stringify({ valid: true, presignedManifest, user: { name, email }, conferenceName: match.name || 'Premium Access' })
   };
 }
 

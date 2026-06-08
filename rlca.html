@@ -851,7 +851,7 @@ async function rlcaLoadAndRender(silverSector){
   const footerTag=document.getElementById('footer-tag');
   if(footerTag) footerTag.textContent=`rLCA · ${shortSector} · ${country} ${model.year}`;
   const freeTag=document.getElementById('rlca-free-tag');
-  if(freeTag) freeTag.textContent=window.TASA_AUTH?.isUnlocked ? `✓ ${model.code} · ${model.year} · Full Access` : `✓ ${model.code} · ${model.year} · Demo`;
+  if(freeTag) freeTag.textContent=window.TASA_AUTH?.isUnlocked ? `✓ ${model.code} · ${window.TASA_AUTH?.conferenceName || 'Full Access'}` : `✓ ${model.code} · ${model.year} · Demo`;
   const statCountry=document.getElementById('stat-country');
   if(statCountry) statCountry.textContent=model.code;
   const statYear=document.getElementById('stat-year');
