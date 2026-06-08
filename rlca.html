@@ -527,6 +527,8 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <span id="footer-tag">rLCA · Emissions Intelligence Platform</span>
 </footer>
 
+<script src="auth.js"></script>
+
 <script>
 // ══════════════════════════════════════════════════════
 // CONFIG
@@ -798,8 +800,10 @@ function populateRlcaSectorDropdown(country,silent){
     });
   }
   const defaultSector=avail[0]||null;
-  if(defaultSector) rlcaSelectSector(defaultSector,silent);
-  else {const lbl=document.getElementById('rlca-dd-sector-btn-label');if(lbl) lbl.textContent='No sectors available';}
+  if(defaultSector){
+    rlcaSelectSector(defaultSector,true);   // update UI labels silently
+    rlcaLoadAndRender(defaultSector);       // always load default data
+  } else {const lbl=document.getElementById('rlca-dd-sector-btn-label');if(lbl) lbl.textContent='No sectors available';}
 }
 
 function rlcaSelectSector(sector,silent){
@@ -2004,6 +2008,5 @@ async function boot(){
 boot();
 window.addEventListener('tasaAuthChanged', ()=>{ currentModelPath=null; tableData=[]; boot(); });
 </script>
-<script src="auth.js"></script>
 </body>
 </html>
