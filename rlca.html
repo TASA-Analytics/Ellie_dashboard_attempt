@@ -501,6 +501,10 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <div id="sankey-state" style="display:flex;align-items:center;justify-content:center;min-height:200px;gap:10px;color:var(--mid);font-size:13px;">
     <span>Select a sector above to view supply chain flows</span>
   </div>
+  <!-- Top scrollbar mirror -->
+  <div id="sankey-scroll-top" style="display:none;overflow-x:auto;overflow-y:hidden;height:12px;">
+    <div id="sankey-scroll-inner" style="height:1px;"></div>
+  </div>
   <div id="sankey-wrap" style="display:none;overflow-x:auto;overflow-y:auto;max-height:80vh;padding:8px 4px 12px;">
     <canvas id="sankey-canvas" style="display:block;"></canvas>
   </div>
@@ -1584,6 +1588,17 @@ function renderSankey() {
   canvasEl.style.width=TW+'px';canvasEl.style.height=TH+'px';
   const ctx=canvasEl.getContext('2d');ctx.scale(DPR,DPR);
   ctx.fillStyle='#0a1628';ctx.fillRect(0,0,TW,TH);
+
+  // Sync top scrollbar width and scroll events
+  const scrollTop = document.getElementById('sankey-scroll-top');
+  const scrollInner = document.getElementById('sankey-scroll-inner');
+  if (scrollTop && scrollInner) {
+    scrollTop.style.display = 'block';
+    scrollInner.style.width = TW + 'px';
+    let syncing = false;
+    scrollTop.onscroll = () => { if(!syncing){syncing=true;wrapEl.scrollLeft=scrollTop.scrollLeft;syncing=false;} };
+    wrapEl.onscroll    = () => { if(!syncing){syncing=true;scrollTop.scrollLeft=wrapEl.scrollLeft;syncing=false;} };
+  }
 
   const hits=[];
   function regHit(x,y,w,h,lbl,val){hits.push({x,y,w,h,lbl,val});}
