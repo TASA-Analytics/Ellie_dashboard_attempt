@@ -1,45 +1,28 @@
 /* ============================================================
-   TASA EFX — auth.js  (Netlify version) - updated without secrets
-  
+   TASA EFX — auth.js  (AWS version)
+
    Handles: sign-in modal, session management, feedback button,
-            logging via Netlify Function (no API keys here).
+            logging via AWS Lambda + DynamoDB (no secrets here).
 
    HOW TO USE:
    1. Add <script src="auth.js"></script> before </body> on
       every page (index, silver, platinum, rlca).
-   2. Add netlify/functions/log.js to your repo (provided).
-   3. Add AIRTABLE_TOKEN and AIRTABLE_BASE_ID to Netlify
-      environment variables — never in this file.
-   4. In platinum.html and rlca.html use:
-        const XLSX_FILE = window.TASA_AUTH?.isUnlocked
-          ? 'data/premium/platinum-full.xlsx'
-          : 'data/free/platinum-preview.xlsx';
-   5. Listen for auth state change to reload data:
-        window.addEventListener('tasaAuthChanged', boot);
-
-   SWAPPING TO AWS LATER:
-   Replace validateCode() with a fetch() to your Lambda URL.
-   Nothing else changes.
+   2. Deploy aws/lambda/index.js to AWS Lambda + API Gateway.
+   3. Set ACCESS_CODES, S3_PREMIUM_BUCKET, ALLOWED_ORIGIN in
+      Lambda environment variables — never in this file.
+   4. Replace the REPLACE_ME placeholder in TASA_CONFIG below
+      with your actual API Gateway invoke URL.
    ============================================================ */
 
 
 /* ── CONFIG ─────────────────────────────────────────────────── */
-// No API keys here — all secrets live in Netlify environment
-// variables and are only used inside netlify/functions/log.js
+// After AWS setup: replace REPLACE_ME with your API Gateway URL.
+// Example: https://abc123xyz.execute-api.us-east-1.amazonaws.com/prod
+// No access codes here — all validation is server-side in Lambda.
 
 const TASA_CONFIG = {
-
-  // Access codes — format: 'CODE': { expires: 'YYYY-MM-DD' }
-  // Codes are case-insensitive. Add more before each conference.
-  accessCodes: {
-    'CONF-PLAT-2025': { expires: '2025-12-31' },
-    'CONF-PLAT-2026': { expires: '2026-12-31' },
-    'TASA-DEMO-01':   { expires: '2099-01-01' },
-  },
-
-  // Netlify function endpoint — this never changes
-  logEndpoint: '/.netlify/functions/log'
-
+  authEndpoint: 'https://hmq9u0svqk.execute-api.us-east-1.amazonaws.com/prod/auth',
+  logEndpoint:  'https://hmq9u0svqk.execute-api.us-east-1.amazonaws.com/prod/log'
 };
 
 
@@ -67,7 +50,8 @@ function clearSession() {
 // window.TASA_AUTH.isUnlocked before deciding which file to fetch
 window.TASA_AUTH = {
   isUnlocked: false,
-  user: null
+  user: null,
+  presignedManifest: null
 };
 
 function refreshAuthState() {
@@ -75,31 +59,45 @@ function refreshAuthState() {
   if (session && session.isUnlocked) {
     window.TASA_AUTH.isUnlocked = true;
     window.TASA_AUTH.user = session.user;
+    window.TASA_AUTH.presignedManifest = session.presignedManifest || null;
   } else {
     window.TASA_AUTH.isUnlocked = false;
     window.TASA_AUTH.user = null;
+    window.TASA_AUTH.presignedManifest = null;
   }
 }
 
 
-/* ── CODE VALIDATION ─────────────────────────────────────────── */
-// Runs entirely in the browser against the accessCodes list above.
-// TO SWAP TO AWS: replace this function body with a fetch() to
-// your Lambda URL and add async/await to submitSignin().
+/* ── CODE VALIDATION (server-side via AWS Lambda) ────────────── */
+// POSTs to Lambda /auth. Access codes live only in Lambda env vars.
+// On success, Lambda returns presigned S3 URLs for the conference's
+// premium data files — these are stored in sessionStorage.
 
-function validateCode(code) {
-  const upper = (code || '').trim().toUpperCase();
-  const match = TASA_CONFIG.accessCodes[upper];
-  if (!match) return { valid: false, expired: false };
-  const today = new Date().toISOString().slice(0, 10);
-  if (match.expires < today) return { valid: false, expired: true };
-  return { valid: true, expired: false };
+async function validateCode(code, name, email, industry) {
+  try {
+    const res = await fetch(TASA_CONFIG.authEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, name, email, industry, page: currentPage() })
+    });
+    if (res.status === 401) {
+      const data = await res.json().catch(() => ({}));
+      return { valid: false, expired: !!data.expired };
+    }
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+    return { valid: true, presignedManifest: data.presignedManifest };
+  } catch (e) {
+    console.warn('[TASA] Auth error:', e.message);
+    return { valid: false, expired: false, serverError: true };
+  }
 }
 
 
-/* ── LOGGING VIA NETLIFY FUNCTION ────────────────────────────── */
-// Posts to /.netlify/functions/log which holds the Airtable token
-// server-side. No secret is ever exposed to the browser.
+/* ── LOGGING VIA AWS LAMBDA ──────────────────────────────────── */
+// Posts to Lambda /log endpoint which writes to DynamoDB.
+// Sign-in logging is handled inside Lambda's /auth handler.
+// This function is used only for feedback submissions.
 
 async function logEvent(table, fields) {
   try {
@@ -471,21 +469,19 @@ async function submitSignin() {
   btn.disabled = true;
   btn.textContent = 'Checking…';
 
-  const result = validateCode(code);
+  // Lambda validates the code and logs the attempt server-side
+  const result = await validateCode(code, name, email, industry);
 
-  // Log attempt to Airtable via Netlify function — no token in this file
-  logEvent('Sign-ins', {
-    'Name':      name      || '(not provided)',
-    'Email':     email     || '(not provided)',
-    'Industry':  industry  || '(not provided)',
-    'Code':      code,
-    'Page':      currentPage(),
-    'Timestamp': new Date().toISOString(),
-    'Status':    result.valid ? 'Valid' : result.expired ? 'Expired' : 'Invalid'
-  });
+  if (result.serverError) {
+    btn.disabled = false;
+    btn.textContent = 'Unlock access';
+    errEl.textContent = 'Connection error — please check your network and try again.';
+    errEl.style.display = 'block';
+    return;
+  }
 
   if (result.valid) {
-    setSession({ isUnlocked: true, user: { name, email, industry, code } });
+    setSession({ isUnlocked: true, user: { name, email, industry, code }, presignedManifest: result.presignedManifest });
     refreshAuthState();
     closeSigninModal();
     updateNavUI();

@@ -1,0 +1,50 @@
+{
+  "_instructions": [
+    "Upload this file as 'manifest.json' into each conference folder in your private S3 bucket.",
+    "Example: s3://tasa-efx-premium/apec-2026/manifest.json",
+    "",
+    "The 'file' field is the XLSX filename that sits in the same S3 folder.",
+    "Lambda reads this manifest, generates presigned URLs for each file, and returns",
+    "them to the browser with 'path' set to the signed URL.",
+    "",
+    "platinum entries must have: file, country, sectors[].silverSector, sectors[].platSector",
+    "rlca entries must have:     file, country, year, sectors[].silverSector, sectors[].rlcaSector",
+    "",
+    "Delete the '_instructions' key before uploading (or leave it — Lambda ignores unknown keys)."
+  ],
+  "platinum": [
+    {
+      "file": "TASA-EFX_KOR_Platinum_Model_2024_v3.0.xlsx",
+      "country": "South Korea",
+      "sectors": [
+        { "silverSector": "Abrasive Material",                               "platSector": "Abrasive Material" },
+        { "silverSector": "Printed Circuit Board and populated board",        "platSector": "Printed Circuit Board and populated board" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx",
+      "country": "Mexico",
+      "sectors": [
+        { "silverSector": "Manufacture of sweets, chewing gum and confectionery products other than chocolate", "platSector": "Manufacturing of sugar, chocolate, candy, etc" }
+      ]
+    }
+  ],
+  "rlca": [
+    {
+      "file": "TASA-EFX_rLCA_Abrasive-Material_KOR_2023_v1.0.xlsx",
+      "country": "South Korea",
+      "year": "2023",
+      "sectors": [
+        { "silverSector": "Abrasive Material", "rlcaSector": "Abrasive Material" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_rLCA_Manufacture-of-sweets_MEX_2023_v2.0.xlsx",
+      "country": "Mexico",
+      "year": "2023",
+      "sectors": [
+        { "silverSector": "Manufacture of sweets, chewing gum and confectionery products other than chocolate", "rlcaSector": "Manufacture of sweets, chewing gum and confectionery products other than chocolate" }
+      ]
+    }
+  ]
+}

@@ -195,7 +195,8 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 <script>
 // ══════════════════════════════════════════
 // CONFIG
-const CSV_URL = 'TASA_open_silver_stacked_output_all.csv';
+// ↓ Replace us-east-1 and bucket name after S3 setup (Step 1 in AWS guide)
+const CSV_URL = 'https://tasa-efx-public.s3.us-east-1.amazonaws.com/TASA_open_silver_stacked_output_all.csv';
 // ══════════════════════════════════════════
 
 const SCOPE_COLORS = {'Scope 1':'#B98EFF','Scope 2':'#3FA9F6','Scope 3':'#A7F3D0'};

@@ -580,7 +580,8 @@ const TR_SHEET     = 'Total Requirements';
 const T1_PATH_SHEET = 'Tier_1 Pathway Analysis';
 const T2_PATH_SHEET = 'Tier_2 Pathway Analysis';
 const T3_PATH_SHEET = 'Tier_3 Pathway Analysis';
-const SILVER_CSV   = 'TASA_open_silver_stacked_output_all.csv';
+// ↓ Replace us-east-1 and bucket name after S3 setup (Step 1 in AWS guide)
+const SILVER_CSV   = 'https://tasa-efx-public.s3.us-east-1.amazonaws.com/TASA_open_silver_stacked_output_all.csv';
 const FREE_YEAR    = '2023';
 
 const COUNTRY_CODES = {
@@ -658,11 +659,17 @@ async function loadManifest(){
   availableModels    = [];
 
   try {
-    const resp = await fetch(MANIFEST_URL);
-    if(!resp.ok) throw new Error(`${MANIFEST_URL} returned ${resp.status}`);
-    const json = await resp.json();
     const isUnlocked = window.TASA_AUTH?.isUnlocked;
-    const entries = isUnlocked ? (json.premium||[]) : (json.free||[]);
+    let entries;
+    if (isUnlocked) {
+      // Premium entries come from Lambda as presigned S3 URLs — no static manifest needed
+      entries = window.TASA_AUTH.presignedManifest?.rlca || [];
+    } else {
+      const resp = await fetch(MANIFEST_URL);
+      if(!resp.ok) throw new Error(`${MANIFEST_URL} returned ${resp.status}`);
+      const json = await resp.json();
+      entries = json.free || [];
+    }
 
     const seen = new Set();
     entries.forEach(entry => {

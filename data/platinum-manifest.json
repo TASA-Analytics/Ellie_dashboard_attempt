@@ -1,38 +1,13 @@
 {
+  "_note": "Free-tier entries only. Premium entries are returned dynamically by Lambda as presigned S3 URLs. Replace us-east-1 with your actual AWS region (e.g. us-east-1).",
   "free": [
     {
-      "path": "data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
+      "path": "https://tasa-efx-public.s3.us-east-1.amazonaws.com/data/free/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
       "country": "South Korea",
       "sectors": [
         {
           "silverSector": "Abrasive Material",
           "platSector": "Abrasive Material"
-        }
-      ]
-    }
-  ],
-  "premium": [
-    {
-      "path": "data/premium/TASA-EFX_KOR_Platinum_Model_2024_v3.0-test.xlsx",
-      "country": "South Korea",
-      "sectors": [
-        {
-          "silverSector": "Abrasive Material",
-          "platSector": "Abrasive Material"
-       },
-        {
-          "silverSector": "Printed Circuit Board and populated board",
-          "platSector": "Printed Circuit Board and populated board"
-        }
-      ]
-    },
-    {
-      "path": "data/premium/TASA-EFX_MEX_Platinum_Model_2023_v2.1.xlsx",
-      "country": "Mexico",
-      "sectors": [
-        {
-          "silverSector": "Manufacture of sweets, chewing gum and confectionery products other than chocolate",
-          "platSector": "Manufacturing of sugar, chocolate, candy, etc"
         }
       ]
     }

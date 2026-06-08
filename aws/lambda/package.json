@@ -1,0 +1,11 @@
+{
+  "name": "tasa-efx-api",
+  "version": "1.0.0",
+  "description": "TASA EFX Lambda — auth + logging",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0"
+  }
+}
