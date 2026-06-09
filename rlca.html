@@ -1999,7 +1999,7 @@ function renderTable(rows, totS1, totS2) {
       <td style="color:${S2_COLOR};font-weight:700;text-align:right">${fmt2(row.s2)}</td>
       <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${s1w}%;background:${S1_COLOR}"></div></div><span style="font-size:10px;color:var(--mid);min-width:32px;text-align:right">${s1p}%</span></div></td>
       <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${s2w}%;background:${S2_COLOR}"></div></div><span style="font-size:10px;color:var(--mid);min-width:32px;text-align:right">${s2p}%</span></div></td>
-      <td style="color:var(--white);font-weight:700;text-align:right">${fmt(row.combined)}</td>
+      <td style="color:var(--white);font-weight:700;text-align:right">${fmt2(row.combined)}</td>
     </tr>`;
   }).join('');
 }
