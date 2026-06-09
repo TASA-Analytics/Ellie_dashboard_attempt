@@ -1256,7 +1256,7 @@ function renderTRDonuts() {
       const adjVal  = isFocal ? (r.total - 1) * 1000 : r.total * 1000;
       return { label: r.label, val: adjVal, isFocal };
     })
-    .filter(r => !r.isFocal && r.val > 0)
+    .filter(r => r.val > 0)
     .sort((a,b) => b.val - a.val);
 
   // Total upstream sum includes ALL rows (focal adjusted), for correct callout total
