@@ -1245,7 +1245,8 @@ function renderTRDonuts() {
   if (directRest > 0) directTop.push({ label: 'All Others', val: directRest });
 
   const directSegs = directTop.map((r,i) => ({
-    label: r.label, val: r.val, color: TR_COLORS[i % TR_COLORS.length]
+    label: r.label, val: r.val,
+    color: r.label==='All Others' ? '#6B7280' : TR_COLORS[i % TR_COLORS.length]
   }));
   drawDonutTR('donut-tr-direct', directSegs, 'donut-tr-direct-legend', 'donut-tr-direct-tip');
 
@@ -1271,7 +1272,8 @@ function renderTRDonuts() {
   if (totalRest > 0) totalTop.push({ label: 'All Others', val: totalRest });
 
   const totalSegs = totalTop.map((r,i) => ({
-    label: r.label, val: r.val, color: TR_COLORS[i % TR_COLORS.length]
+    label: r.label, val: r.val,
+    color: r.label==='All Others' ? '#6B7280' : TR_COLORS[i % TR_COLORS.length]
   }));
   drawDonutTR('donut-tr-total', totalSegs, 'donut-tr-total-legend', 'donut-tr-total-tip');
 
@@ -1938,6 +1940,11 @@ function fmt(v) {
   if(a>=0.001) return v.toFixed(5);
   return v.toExponential(3);
 }
+function fmt2(v) {
+  if(v===0) return '0'; const a=Math.abs(v);
+  if(a>=1000) return (v/1000).toFixed(2)+'k';
+  return v.toFixed(2);
+}
 function fmtAxis(v) {
   if(v===0) return '0'; const a=Math.abs(v);
   if(a>=1000) return (v/1000).toFixed(1)+'k';
@@ -1988,8 +1995,8 @@ function renderTable(rows, totS1, totS2) {
     const s2p=totS2>0?(row.s2/totS2*100).toFixed(1):'0.0';
     return `<tr>
       <td style="color:var(--white);font-weight:500">${row.sector}</td>
-      <td style="color:${S1_COLOR};font-weight:700;text-align:right">${fmt(row.s1)}</td>
-      <td style="color:${S2_COLOR};font-weight:700;text-align:right">${fmt(row.s2)}</td>
+      <td style="color:${S1_COLOR};font-weight:700;text-align:right">${fmt2(row.s1)}</td>
+      <td style="color:${S2_COLOR};font-weight:700;text-align:right">${fmt2(row.s2)}</td>
       <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${s1w}%;background:${S1_COLOR}"></div></div><span style="font-size:10px;color:var(--mid);min-width:32px;text-align:right">${s1p}%</span></div></td>
       <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${s2w}%;background:${S2_COLOR}"></div></div><span style="font-size:10px;color:var(--mid);min-width:32px;text-align:right">${s2p}%</span></div></td>
       <td style="color:var(--white);font-weight:700;text-align:right">${fmt(row.combined)}</td>
