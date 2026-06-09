@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -1432,68 +1432,83 @@ function loadSankeyData(wb, rlcaSector) {
   const t1Total = t1Main.reduce((a,r)=>a+r.val,0)||1;
 
   // ── Tier 0: read directly from Sector Emissions Factors sheet ──
-  let t0tot=0, t0s1=0, t0s2=0, t0s3=0;
+  let t0tot=0, t0s1=0, t0s2=0, t0s3=0, hasEFData=false;
   const wsEF0 = wb.Sheets[EF_SHEET];
   if (wsEF0) {
     const efRaw0 = XLSX.utils.sheet_to_json(wsEF0, {defval:''});
-    const efRow0 = efRaw0.find(r => String(r['Sector']||'').trim() === rlcaSector) || {};
-    t0tot = parseFloat(efRow0['Total Emissions Intensity']) || 0;
-    t0s1  = parseFloat(efRow0['Scope 1']) || 0;
-    t0s2  = parseFloat(efRow0['Scope 2']) || 0;
-    t0s3  = parseFloat(efRow0['Scope 3']) || 0;
+    // Exact match first; fall back to first row with a non-empty sector-like column
+    const efSample = efRaw0[0] || {};
+    const efSectorCol = findCol(efSample,'sector') || Object.keys(efSample)[0];
+    const efTotCol    = findCol(efSample,'total','emission') || findCol(efSample,'total','intensity') || findCol(efSample,'total') || Object.keys(efSample)[1];
+    const efS1Col     = findCol(efSample,'scope 1') || findCol(efSample,'s1') || Object.keys(efSample)[2];
+    const efS2Col     = findCol(efSample,'scope 2') || findCol(efSample,'s2') || Object.keys(efSample)[3];
+    const efS3Col     = findCol(efSample,'scope 3') || findCol(efSample,'s3') || Object.keys(efSample)[4];
+    const efRow0 = efRaw0.find(r => String(r[efSectorCol]||'').trim().toLowerCase() === rlcaSector.toLowerCase())
+                || efRaw0.find(r => String(r[efSectorCol]||'').trim() !== '')
+                || efSample;
+    t0tot = parseFloat(efRow0[efTotCol]) || 0;
+    t0s1  = parseFloat(efRow0[efS1Col])  || 0;
+    t0s2  = parseFloat(efRow0[efS2Col])  || 0;
+    t0s3  = parseFloat(efRow0[efS3Col])  || 0;
+    hasEFData = t0tot > 0;
   }
-  const effectiveTot = t0tot || t1Total;
+  const effectiveTot = hasEFData ? t0tot : t1Total;
   const tier1 = t1Main.map(r=>({...r, pct:r.val/effectiveTot*100}));
 
   // Track valid (t1,t2) pairs for T3 bucketing
   const t2ValidPairs = new Set();
 
-  // ── Tier 2 ───────────────────────────────────────────
+  // ── Tier 2: globally merged flat list ────────────────
+  // Each unique T2 sector appears once; t1Map records each T1 parent's contribution.
   const t2Raw = XLSX.utils.sheet_to_json(wsT2, {defval:''});
   const t2Sample = t2Raw[0]||{};
   const T2_T1P = findCol(t2Sample,'tier 1','input')||findCol(t2Sample,'t1','parent')||Object.keys(t2Sample)[1];
-  const T2_SEC = findCol(t2Sample,'t2','sector')||findCol(t2Sample,'tier 2','input')||Object.keys(t2Sample)[1];
-  const T2_TOT = findCol(t2Sample,'total')||Object.keys(t2Sample)[2];
-  const T2_S1  = findCol(t2Sample,'s1')||findCol(t2Sample,'scope 1');
-  const T2_S2  = findCol(t2Sample,'s2')||findCol(t2Sample,'scope 2');
-  const T2_S3  = findCol(t2Sample,'s3')||findCol(t2Sample,'scope 3');
+  const T2_SEC = findCol(t2Sample,'t2','sector')||findCol(t2Sample,'tier 2','input')||Object.keys(t2Sample)[2];
+  const T2_TOT = findCol(t2Sample,'tier 2','total')||findCol(t2Sample,'total')||Object.keys(t2Sample)[3];
+  const T2_S1  = findCol(t2Sample,'tier 2','scope 1')||findCol(t2Sample,'scope 1');
+  const T2_S2  = findCol(t2Sample,'tier 2','scope 2')||findCol(t2Sample,'scope 2');
+  const T2_S3  = findCol(t2Sample,'tier 2','scope 3')||findCol(t2Sample,'scope 3');
 
-  const rawTier2 = {};
-  const globalT2 = {};
+  const globalT2Map = {};
   t2Raw.forEach(r => {
     const t1p = String(r[T2_T1P]||'').trim();
     const lbl = String(r[T2_SEC]||'').trim();
     const val = parseFloat(r[T2_TOT])||0;
-    if (!lbl||!t1p||val===0) return;
-    if (!rawTier2[t1p]) rawTier2[t1p]={};
-    if (!rawTier2[t1p][lbl]) rawTier2[t1p][lbl]={val:0,s1:0,s2:0,s3:0};
-    rawTier2[t1p][lbl].val+=val;
-    rawTier2[t1p][lbl].s1+=parseFloat(r[T2_S1])||0;
-    rawTier2[t1p][lbl].s2+=parseFloat(r[T2_S2])||0;
-    rawTier2[t1p][lbl].s3+=parseFloat(r[T2_S3])||0;
-    globalT2[lbl]=(globalT2[lbl]||0)+val;
-  });
-  const topT2 = new Set(Object.entries(globalT2).filter(([l])=>l.toLowerCase()!=='other')
-    .sort((a,b)=>b[1]-a[1]).slice(0,topN).map(([l])=>l));
-
-  const tier2Final = {};
-  Object.entries(rawTier2).forEach(([t1p,children])=>{
-    const rows = Object.entries(children).map(([lbl,v])=>({label:lbl,...v})).sort((a,b)=>b.val-a.val);
-    const main = rows.filter(r=>topT2.has(r.label));
-    const rest = rows.filter(r=>!topT2.has(r.label));
-    if (rest.length) main.push({label:'Other',val:rest.reduce((a,r)=>a+r.val,0),
-      s1:rest.reduce((a,r)=>a+r.s1,0),s2:rest.reduce((a,r)=>a+r.s2,0),s3:rest.reduce((a,r)=>a+r.s3,0)});
-    const t2Tot=main.reduce((a,r)=>a+r.val,0)||1;
-    tier2Final[t1p]=main.map(r=>({...r,pct:r.val/t2Tot*100}));
-    main.forEach(r=>t2ValidPairs.add(t1p+'|||'+r.label));
+    if (!lbl || val === 0) return;
+    if (!globalT2Map[lbl]) globalT2Map[lbl] = {val:0,s1:0,s2:0,s3:0,t1Map:{}};
+    globalT2Map[lbl].val += val;
+    globalT2Map[lbl].s1  += parseFloat(r[T2_S1])||0;
+    globalT2Map[lbl].s2  += parseFloat(r[T2_S2])||0;
+    globalT2Map[lbl].s3  += parseFloat(r[T2_S3])||0;
+    if (t1p) globalT2Map[lbl].t1Map[t1p] = (globalT2Map[lbl].t1Map[t1p]||0) + val;
   });
 
-  // ── Tier 3 ───────────────────────────────────────────
-  const tier3Final = {};
+  // Sort named sectors by value, keep top N, collapse overflow + any existing Other into one bucket
+  const t2Named = Object.entries(globalT2Map)
+    .filter(([l]) => l.toLowerCase() !== 'other')
+    .map(([lbl, v]) => ({label:lbl, ...v}))
+    .sort((a,b) => b.val - a.val);
+  const t2OtherSrc = globalT2Map['Other'] || globalT2Map['other'];
+  const t2Main = t2Named.slice(0, topN);
+  const t2Overflow = t2Named.slice(topN);
+  if (t2Overflow.length || t2OtherSrc) {
+    const ob = {val:0,s1:0,s2:0,s3:0,t1Map:{}};
+    [...t2Overflow, ...(t2OtherSrc?[{...t2OtherSrc}]:[])].forEach(r => {
+      ob.val+=r.val; ob.s1+=r.s1; ob.s2+=r.s2; ob.s3+=r.s3;
+      Object.entries(r.t1Map||{}).forEach(([k,v])=>{ ob.t1Map[k]=(ob.t1Map[k]||0)+v; });
+    });
+    t2Main.push({label:'Other', ...ob});
+  }
+  const t2Grand = t2Main.reduce((a,r) => a+r.val, 0)||1;
+  const tier2Final = t2Main.map(r => ({...r, pct:r.val/t2Grand*100}));
+  const t2LabelSet = new Set(tier2Final.map(r => r.label));
+
+  // ── Tier 3: globally merged flat list ────────────────
+  // Each unique T3 sector appears once; t2Map records each T2 parent's contribution.
+  let tier3Final = [];
   if (wsT3) {
     const t3Raw = XLSX.utils.sheet_to_json(wsT3, {defval:''});
     const t3Sample = t3Raw[0]||{};
-    const T3_T1  = findCol(t3Sample,'tier 1','input')||findCol(t3Sample,'t1');
     const T3_T2  = findCol(t3Sample,'tier 2','input')||findCol(t3Sample,'t2');
     const T3_SEC = findCol(t3Sample,'tier 3','input')||findCol(t3Sample,'tier 3','sector');
     const T3_TOT = findCol(t3Sample,'tier 3','total');
@@ -1501,45 +1516,41 @@ function loadSankeyData(wb, rlcaSector) {
     const T3_S2  = findCol(t3Sample,'tier 3','scope 2');
     const T3_S3  = findCol(t3Sample,'tier 3','scope 3');
 
-    if (T3_T1 && T3_T2 && T3_SEC && T3_TOT) {
-      // Global top-N T3 by summed value
-      const globalT3 = {};
-      const t3Rows = t3Raw.filter(r => String(r[sectorCol]||'').trim()===rlcaSector ||
-        !t3Raw[0][sectorCol]); // handle if no sector filter col
+    if (T3_T2 && T3_SEC && T3_TOT) {
+      const t3Rows = t3Raw.filter(r => String(r[sectorCol]||'').trim()===rlcaSector || !t3Raw[0][sectorCol]);
+      const globalT3Map = {};
       t3Rows.forEach(r => {
+        let t2p = String(r[T3_T2]||'').trim();
         const lbl = String(r[T3_SEC]||'').trim();
         const val = parseFloat(r[T3_TOT])||0;
-        if (lbl && lbl.toLowerCase()!=='other' && val>0) globalT3[lbl]=(globalT3[lbl]||0)+val;
-      });
-      const topT3 = new Set(Object.entries(globalT3).sort((a,b)=>b[1]-a[1]).slice(0,topN).map(([l])=>l));
-
-      // Group by (T1, T2) pair
-      const raw3 = {};
-      t3Rows.forEach(r => {
-        const t1p = String(r[T3_T1]||'').trim();
-        const t2p = String(r[T3_T2]||'').trim();
-        const lbl = String(r[T3_SEC]||'').trim();
-        const val = parseFloat(r[T3_TOT])||0;
-        if (!t1p||!t2p||!lbl||val===0) return;
-        // Remap pairs not in valid T2 set to Other|||Other
-        const pairKey = t2ValidPairs.has(t1p+'|||'+t2p) ? t1p+'|||'+t2p : 'Other|||Other';
-        if (!raw3[pairKey]) raw3[pairKey]={};
-        const isTop = topT3.has(lbl) && lbl.toLowerCase()!=='other';
-        const bucketLbl = isTop ? lbl : '__other__';
-        if (!raw3[pairKey][bucketLbl]) raw3[pairKey][bucketLbl]={val:0,s1:0,s2:0,s3:0};
-        raw3[pairKey][bucketLbl].val+=val;
-        raw3[pairKey][bucketLbl].s1+=parseFloat(r[T3_S1])||0;
-        raw3[pairKey][bucketLbl].s2+=parseFloat(r[T3_S2])||0;
-        raw3[pairKey][bucketLbl].s3+=parseFloat(r[T3_S3])||0;
+        if (!lbl || val === 0) return;
+        // Remap T2 parents collapsed into Other to the Other bucket
+        if (t2p && !t2LabelSet.has(t2p)) t2p = 'Other';
+        if (!globalT3Map[lbl]) globalT3Map[lbl] = {val:0,s1:0,s2:0,s3:0,t2Map:{}};
+        globalT3Map[lbl].val += val;
+        globalT3Map[lbl].s1  += parseFloat(r[T3_S1])||0;
+        globalT3Map[lbl].s2  += parseFloat(r[T3_S2])||0;
+        globalT3Map[lbl].s3  += parseFloat(r[T3_S3])||0;
+        if (t2p) globalT3Map[lbl].t2Map[t2p] = (globalT3Map[lbl].t2Map[t2p]||0) + val;
       });
 
-      Object.entries(raw3).forEach(([pairKey, sectors]) => {
-        const rows = Object.entries(sectors)
-          .map(([lbl,v])=>({label: lbl==='__other__'?'Other':lbl, ...v}))
-          .sort((a,b)=>b.val-a.val);
-        const t3Tot = rows.reduce((a,r)=>a+r.val,0)||1;
-        tier3Final[pairKey] = rows.map(r=>({...r, pct:r.val/t3Tot*100}));
-      });
+      const t3Named = Object.entries(globalT3Map)
+        .filter(([l]) => l.toLowerCase() !== 'other')
+        .map(([lbl, v]) => ({label:lbl, ...v}))
+        .sort((a,b) => b.val - a.val);
+      const t3OtherSrc = globalT3Map['Other'] || globalT3Map['other'];
+      const t3Main = t3Named.slice(0, topN);
+      const t3Overflow = t3Named.slice(topN);
+      if (t3Overflow.length || t3OtherSrc) {
+        const ob = {val:0,s1:0,s2:0,s3:0,t2Map:{}};
+        [...t3Overflow, ...(t3OtherSrc?[{...t3OtherSrc}]:[])].forEach(r => {
+          ob.val+=r.val; ob.s1+=r.s1; ob.s2+=r.s2; ob.s3+=r.s3;
+          Object.entries(r.t2Map||{}).forEach(([k,v])=>{ ob.t2Map[k]=(ob.t2Map[k]||0)+v; });
+        });
+        t3Main.push({label:'Other', ...ob});
+      }
+      const t3Grand = t3Main.reduce((a,r) => a+r.val, 0)||1;
+      tier3Final = t3Main.map(r => ({...r, pct:r.val/t3Grand*100}));
     }
   }
 
@@ -1570,10 +1581,8 @@ function renderSankey() {
   const T3_COLORS=['#A7F3D0','#FFBB00','#B98EFF','#3FA9F6','#FF66B3','#D4AF37','#93C5FD','#FCA5A5','#6EE7B7','#C4B5FD','#A7CCE7','#6B7280','#0045AB'];
 
   const t1=D.tier1;
-  const allT2=[];
-  t1.forEach((t,i)=>(D.tier2[t.label]||[]).forEach(c=>allT2.push({t1idx:i,t1label:t.label,...c})));
-  const allT3=[];
-  allT2.forEach((t,t2i)=>(D.tier3[t.t1label+'|||'+t.label]||[]).forEach(c=>allT3.push({t2idx:t2i,t2label:t.label,t1label:t.t1label,...c})));
+  const allT2=D.tier2||[];
+  const allT3=D.tier3||[];
 
   // ── Canvas sizing: 1.5× container width, tall for scrolling ──────────
   const wrap=canvasEl.parentElement;
@@ -1730,14 +1739,15 @@ function renderSankey() {
   hdr(LF3_X,LF3_W,'TIER 3',mode==='split'?'Scope':'Scope (sum)');
 
   // ── Baseline chevron ──────────────────────────────────
-  const anchorVal=D.tot||D.t1Total;
+  const useEF = D.tot > 0;
+  const anchorVal = useEF ? D.tot : D.t1Total;
   drawChevron(ANC_X,TOP,ANC_W,FULL_H,'#0045AB',D.focalSector,anchorVal);
 
-  // ── Focal scope boxes: from Sector Emissions Factors (fallback: T1 sums) ──
-  const fTot=D.tot||D.t1Total||1;
-  const fS1=D.s1||t1.reduce((a,t)=>a+(t.s1||0),0);
-  const fS2=D.s2||t1.reduce((a,t)=>a+(t.s2||0),0);
-  const fS3=D.s3||t1.reduce((a,t)=>a+(t.s3||0),0);
+  // ── Focal scope boxes: from Sector Emissions Factors if available, else T1 sums ──
+  const fTot = useEF ? D.tot : (D.t1Total||1);
+  const fS1  = useEF ? D.s1  : t1.reduce((a,t)=>a+(t.s1||0),0);
+  const fS2  = useEF ? D.s2  : t1.reduce((a,t)=>a+(t.s2||0),0);
+  const fS3  = useEF ? D.s3  : t1.reduce((a,t)=>a+(t.s3||0),0);
   const scPcts=[fS1/fTot*100,fS2/fTot*100,fS3/fTot*100];
   const scVals=[fS1,fS2,fS3];
   const scH=propH(scPcts,FULL_H,BOX_GAP);
@@ -1836,39 +1846,36 @@ function renderSankey() {
 
   // ── T2 sector boxes ───────────────────────────────────
   if(!allT2.length){
-    // Footer
     ctx.font="400 7px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='rgba(167,204,231,0.4)';
     ctx.textAlign='left';ctx.textBaseline='top';
-    ctx.fillText('Mg CO\u2082e per Million USD \u00b7 '+D.focalSector,ANC_X,TOP+FULL_H+14);
+    ctx.fillText('Mg CO₂e per Million USD · '+D.focalSector,ANC_X,TOP+FULL_H+14);
     return;
   }
 
   const t2Vals=allT2.map(t=>t.val);
   const t2H=propH(t2Vals,FULL_H,BOX_GAP);
 
-  // Ribbons from T1 S3 leaf → T2
-  let t2Y=TOP;
-  allT2.forEach((t,i)=>{
-    const h=t2H[i],col=T2_COLORS[i%T2_COLORS.length];
-    // Find the S3 leaf belonging to this T1 parent
-    const lf=lfBoxes.find(b=>b.si===2&&b.parentIdx===t.t1idx);
-    if(lf){
-      const sibs=allT2.filter(x=>x.t1idx===t.t1idx);
-      const sibTot=sibs.reduce((a,s)=>a+(s.val||0),0)||1;
-      const sibBefore=sibs.slice(0,sibs.indexOf(t));
-      const srcOff=sibBefore.reduce((a,s)=>a+(s.val||0)/sibTot*lf.h,0);
-      const srcH=(t.val||0)/sibTot*lf.h;
-      ribbon(LF_X+LF_W,lf.y+srcOff,lf.y+srcOff+srcH,T2_X,t2Y,t2Y+h,col,0.20);
-    }
-    t2Y+=h+BOX_GAP;
+  // Pre-compute T2 positions (needed before drawing ribbons)
+  const t2Boxes=[];
+  {let y=TOP;allT2.forEach((t,i)=>{t2Boxes.push({y,h:t2H[i],label:t.label,val:t.val,pct:t.pct,s1:t.s1||0,s2:t.s2||0,s3:t.s3||0});y+=t2H[i]+BOX_GAP;});}
+
+  // Ribbons: each T1 S3 leaf carved into slices routed to each T2 sector via t1Map
+  const t2DstOff=new Array(allT2.length).fill(0);
+  t1.forEach((t1e,t1i)=>{
+    const lf=lfBoxes.find(b=>b.si===2&&b.parentIdx===t1i);
+    if(!lf||lf.h<0.5)return;
+    const t1tot=allT2.reduce((a,t2e)=>a+(t2e.t1Map[t1e.label]||0),0)||1;
+    let srcOff=0;
+    allT2.forEach((t2e,t2i)=>{
+      const c=t2e.t1Map[t1e.label]||0;if(c<=0)return;
+      const srcH=c/t1tot*lf.h;
+      const dstH=c/(t2e.val||1)*t2H[t2i];
+      ribbon(LF_X+LF_W,lf.y+srcOff,lf.y+srcOff+srcH,T2_X,t2Boxes[t2i].y+t2DstOff[t2i],t2Boxes[t2i].y+t2DstOff[t2i]+dstH,T2_COLORS[t2i%T2_COLORS.length],0.20);
+      srcOff+=srcH;t2DstOff[t2i]+=dstH;
+    });
   });
-  const t2Boxes=[];t2Y=TOP;
-  allT2.forEach((t,i)=>{
-    const h=t2H[i],col=T2_COLORS[i%T2_COLORS.length];
-    t2Boxes.push({y:t2Y,h,color:col,pct:t.pct,label:t.label,val:t.val,s1:t.s1||0,s2:t.s2||0,s3:t.s3||0,t1idx:t.t1idx});
-    drawBox(T2_X,t2Y,T2_W,h,col,t.label,t.pct,t.val,8);
-    t2Y+=h+BOX_GAP;
-  });
+
+  allT2.forEach((t,i)=>{drawBox(T2_X,t2Boxes[i].y,T2_W,t2H[i],T2_COLORS[i%T2_COLORS.length],t.label,t.pct,t.val,8);});
 
   // ── T2 scope leaves ───────────────────────────────────
   const lf2Boxes=buildLeafCol(t2Boxes,allT2,LF2_X,LF2_W,T2_X+T2_W,0.20);
@@ -1877,38 +1884,37 @@ function renderSankey() {
   if(!allT3.length){
     ctx.font="400 7px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='rgba(167,204,231,0.4)';
     ctx.textAlign='left';ctx.textBaseline='top';
-    ctx.fillText('Mg CO\u2082e per Million USD \u00b7 '+D.focalSector,ANC_X,TOP+FULL_H+14);
+    ctx.fillText('Mg CO₂e per Million USD · '+D.focalSector,ANC_X,TOP+FULL_H+14);
     return;
   }
 
   const t3Vals=allT3.map(t=>t.val);
   const t3H=propH(t3Vals,FULL_H,BOX_GAP);
 
-  // Ribbons from T2 S3 leaf → T3
-  let t3Y=TOP;
-  allT3.forEach((t,i)=>{
-    const h=t3H[i],col=T3_COLORS[i%T3_COLORS.length];
-    const lf2=lf2Boxes.find(b=>b.si===2&&b.parentIdx===t.t2idx);
-    if(lf2){
-      const sibs=allT3.filter(x=>x.t2idx===t.t2idx);
-      const sibTot=sibs.reduce((a,s)=>a+(s.val||0),0)||1;
-      const sibBefore=sibs.slice(0,sibs.indexOf(t));
-      const srcOff=sibBefore.reduce((a,s)=>a+(s.val||0)/sibTot*lf2.h,0);
-      const srcH=(t.val||0)/sibTot*lf2.h;
-      ribbon(LF2_X+LF2_W,lf2.y+srcOff,lf2.y+srcOff+srcH,T3_X,t3Y,t3Y+h,col,0.18);
-    }
-    t3Y+=h+BOX_GAP;
-  });
-  const t3Boxes=[];t3Y=TOP;
-  allT3.forEach((t,i)=>{
-    const h=t3H[i],col=T3_COLORS[i%T3_COLORS.length];
-    t3Boxes.push({y:t3Y,h,color:col,pct:t.pct,label:t.label,val:t.val,s1:t.s1||0,s2:t.s2||0,s3:t.s3||0,t2idx:t.t2idx});
-    drawBox(T3_X,t3Y,T3_W,h,col,t.label,t.pct,t.val,7);
-    t3Y+=h+BOX_GAP;
+  // Pre-compute T3 positions
+  const t3Boxes=[];
+  {let y=TOP;allT3.forEach((t,i)=>{t3Boxes.push({y,h:t3H[i],label:t.label,val:t.val,pct:t.pct,s1:t.s1||0,s2:t.s2||0,s3:t.s3||0});y+=t3H[i]+BOX_GAP;});}
+
+  // Ribbons: each T2 S3 leaf carved into slices routed to each T3 sector via t2Map
+  const t3DstOff=new Array(allT3.length).fill(0);
+  allT2.forEach((t2e,t2i)=>{
+    const lf2=lf2Boxes.find(b=>b.si===2&&b.parentIdx===t2i);
+    if(!lf2||lf2.h<0.5)return;
+    const t2tot=allT3.reduce((a,t3e)=>a+(t3e.t2Map[t2e.label]||0),0)||1;
+    let srcOff=0;
+    allT3.forEach((t3e,t3i)=>{
+      const c=t3e.t2Map[t2e.label]||0;if(c<=0)return;
+      const srcH=c/t2tot*lf2.h;
+      const dstH=c/(t3e.val||1)*t3H[t3i];
+      ribbon(LF2_X+LF2_W,lf2.y+srcOff,lf2.y+srcOff+srcH,T3_X,t3Boxes[t3i].y+t3DstOff[t3i],t3Boxes[t3i].y+t3DstOff[t3i]+dstH,T3_COLORS[t3i%T3_COLORS.length],0.18);
+      srcOff+=srcH;t3DstOff[t3i]+=dstH;
+    });
   });
 
+  allT3.forEach((t,i)=>{drawBox(T3_X,t3Boxes[i].y,T3_W,t3H[i],T3_COLORS[i%T3_COLORS.length],t.label,t.pct,t.val,7);});
+
   // ── T3 scope leaves ───────────────────────────────────
-  buildLeafCol(t3Boxes,allT3,LF3_X,LF3_W,T3_X+T3_W,0.18);
+  buildLeafCol(t3Boxes,allT3,LF3_X,LF3_W,T3_X+T3_W,0.18)
 
   // Footer
   ctx.font="400 7px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='rgba(167,204,231,0.4)';
