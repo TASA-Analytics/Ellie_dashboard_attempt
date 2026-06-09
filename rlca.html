@@ -1430,7 +1430,20 @@ function loadSankeyData(wb, rlcaSector) {
   if (t1Rest.length) t1Main.push({ label:'Other', val:t1Rest.reduce((a,r)=>a+r.val,0),
     s1:t1Rest.reduce((a,r)=>a+r.s1,0), s2:t1Rest.reduce((a,r)=>a+r.s2,0), s3:t1Rest.reduce((a,r)=>a+r.s3,0) });
   const t1Total = t1Main.reduce((a,r)=>a+r.val,0)||1;
-  const tier1 = t1Main.map(r=>({...r, pct:r.val/t1Total*100}));
+
+  // ── Tier 0: read directly from Sector Emissions Factors sheet ──
+  let t0tot=0, t0s1=0, t0s2=0, t0s3=0;
+  const wsEF0 = wb.Sheets[EF_SHEET];
+  if (wsEF0) {
+    const efRaw0 = XLSX.utils.sheet_to_json(wsEF0, {defval:''});
+    const efRow0 = efRaw0.find(r => String(r['Sector']||'').trim() === rlcaSector) || {};
+    t0tot = parseFloat(efRow0['Total Emissions Intensity']) || 0;
+    t0s1  = parseFloat(efRow0['Scope 1']) || 0;
+    t0s2  = parseFloat(efRow0['Scope 2']) || 0;
+    t0s3  = parseFloat(efRow0['Scope 3']) || 0;
+  }
+  const effectiveTot = t0tot || t1Total;
+  const tier1 = t1Main.map(r=>({...r, pct:r.val/effectiveTot*100}));
 
   // Track valid (t1,t2) pairs for T3 bucketing
   const t2ValidPairs = new Set();
@@ -1438,7 +1451,7 @@ function loadSankeyData(wb, rlcaSector) {
   // ── Tier 2 ───────────────────────────────────────────
   const t2Raw = XLSX.utils.sheet_to_json(wsT2, {defval:''});
   const t2Sample = t2Raw[0]||{};
-  const T2_T1P = findCol(t2Sample,'t1','parent')||Object.keys(t2Sample)[0];
+  const T2_T1P = findCol(t2Sample,'tier 1','input')||findCol(t2Sample,'t1','parent')||Object.keys(t2Sample)[1];
   const T2_SEC = findCol(t2Sample,'t2','sector')||findCol(t2Sample,'tier 2','input')||Object.keys(t2Sample)[1];
   const T2_TOT = findCol(t2Sample,'total')||Object.keys(t2Sample)[2];
   const T2_S1  = findCol(t2Sample,'s1')||findCol(t2Sample,'scope 1');
@@ -1493,7 +1506,7 @@ function loadSankeyData(wb, rlcaSector) {
       const globalT3 = {};
       const t3Rows = t3Raw.filter(r => String(r[sectorCol]||'').trim()===rlcaSector ||
         !t3Raw[0][sectorCol]); // handle if no sector filter col
-      t3Raw.forEach(r => {
+      t3Rows.forEach(r => {
         const lbl = String(r[T3_SEC]||'').trim();
         const val = parseFloat(r[T3_TOT])||0;
         if (lbl && lbl.toLowerCase()!=='other' && val>0) globalT3[lbl]=(globalT3[lbl]||0)+val;
@@ -1502,7 +1515,7 @@ function loadSankeyData(wb, rlcaSector) {
 
       // Group by (T1, T2) pair
       const raw3 = {};
-      t3Raw.forEach(r => {
+      t3Rows.forEach(r => {
         const t1p = String(r[T3_T1]||'').trim();
         const t2p = String(r[T3_T2]||'').trim();
         const lbl = String(r[T3_SEC]||'').trim();
@@ -1530,7 +1543,7 @@ function loadSankeyData(wb, rlcaSector) {
     }
   }
 
-  sankeyData = { focalSector:rlcaSector, tier1, tier2:tier2Final, tier3:tier3Final, t1Total };
+  sankeyData = { focalSector:rlcaSector, tier1, tier2:tier2Final, tier3:tier3Final, t1Total, tot:t0tot, s1:t0s1, s2:t0s2, s3:t0s3 };
 }
 
 // ── Sankey renderer ─────────────────────────────────────────────────────
@@ -1717,13 +1730,14 @@ function renderSankey() {
   hdr(LF3_X,LF3_W,'TIER 3',mode==='split'?'Scope':'Scope (sum)');
 
   // ── Baseline chevron ──────────────────────────────────
-  drawChevron(ANC_X,TOP,ANC_W,FULL_H,'#0045AB',D.focalSector,D.t1Total);
+  const anchorVal=D.tot||D.t1Total;
+  drawChevron(ANC_X,TOP,ANC_W,FULL_H,'#0045AB',D.focalSector,anchorVal);
 
-  // ── Focal scope boxes: derive from T1 sums ────────────
-  const fS1=t1.reduce((a,t)=>a+(t.s1||0),0);
-  const fS2=t1.reduce((a,t)=>a+(t.s2||0),0);
-  const fS3=t1.reduce((a,t)=>a+(t.s3||0),0);
-  const fTot=fS1+fS2+fS3||1;
+  // ── Focal scope boxes: from Sector Emissions Factors (fallback: T1 sums) ──
+  const fTot=D.tot||D.t1Total||1;
+  const fS1=D.s1||t1.reduce((a,t)=>a+(t.s1||0),0);
+  const fS2=D.s2||t1.reduce((a,t)=>a+(t.s2||0),0);
+  const fS3=D.s3||t1.reduce((a,t)=>a+(t.s3||0),0);
   const scPcts=[fS1/fTot*100,fS2/fTot*100,fS3/fTot*100];
   const scVals=[fS1,fS2,fS3];
   const scH=propH(scPcts,FULL_H,BOX_GAP);
