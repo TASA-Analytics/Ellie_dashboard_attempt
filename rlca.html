@@ -843,6 +843,7 @@ function onYearChange() {
 
 async function rlcaLoadAndRender(silverSector){
   if(!silverSector) return;
+  sankeyHover=null; connectedLabels=new Set();
   const country=ddState.country;
   const key=country+'||'+silverSector;
   const model=sectorToModelMap[key];
@@ -1760,7 +1761,7 @@ function renderSankey() {
     ctx.lineWidth=selected?1.5:0.5;
     ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.stroke();
     regHit(x,y,w,h,label,val);
-    if(h<7)return;
+    if(h<7){ctx.globalAlpha=1;return;}
     ctx.textBaseline='middle';ctx.textAlign='left';
     if(h>=18){
       ctx.font=`600 ${fs}px 'Segoe UI',Arial,sans-serif`;ctx.fillStyle='rgba(255,255,255,0.95)';
@@ -1790,7 +1791,7 @@ function renderSankey() {
     ctx.lineTo(x+w,y+h/2);ctx.lineTo(x+w-chev,y+h);
     ctx.lineTo(x,y+h);ctx.closePath();ctx.fill();
     regHit(x,y,w,h,label,val);
-    if(h<8)return;
+    if(h<8){ctx.globalAlpha=1;return;}
     const cx2=x+(w-chev)/2,mW=w-chev-8;
     ctx.font="600 10px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='#F4F5F5';
     ctx.textAlign='center';ctx.textBaseline='middle';
