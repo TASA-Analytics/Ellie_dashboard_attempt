@@ -1521,8 +1521,7 @@ function loadSankeyData(wb, rlcaSector) {
     });
     t2Main.push({label:'Other', ...ob});
   }
-  const t2Grand = t2Main.reduce((a,r) => a+r.val, 0)||1;
-  const tier2Final = t2Main.map(r => ({...r, pct:r.val/t2Grand*100}));
+  const tier2Final = t2Main.map(r => ({...r, pct:r.val/effectiveTot*100}));
   const t2LabelSet = new Set(tier2Final.map(r => r.label));
 
   // ── Tier 3: globally merged flat list ────────────────
@@ -1571,8 +1570,7 @@ function loadSankeyData(wb, rlcaSector) {
         });
         t3Main.push({label:'Other', ...ob});
       }
-      const t3Grand = t3Main.reduce((a,r) => a+r.val, 0)||1;
-      tier3Final = t3Main.map(r => ({...r, pct:r.val/t3Grand*100}));
+      tier3Final = t3Main.map(r => ({...r, pct:r.val/effectiveTot*100}));
     }
   }
 
