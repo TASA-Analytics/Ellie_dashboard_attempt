@@ -751,7 +751,7 @@ function populateRlcaCountryDropdown(){
   const avail=allCountries.filter(c=>availableCountries.has(c));
   const locked=allCountries.filter(c=>!availableCountries.has(c));
   if(avail.length){
-    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Available Models</div>');
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Demo Models</div>');
     avail.forEach(c=>{
       const item=document.createElement('div');
       item.className='dd-item available';
@@ -761,7 +761,7 @@ function populateRlcaCountryDropdown(){
     });
   }
   if(locked.length){
-    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Not Yet Available</div>');
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Non-Demo Models</div>');
     locked.forEach(c=>{
       const item=document.createElement('div');
       item.className='dd-item locked';
@@ -793,7 +793,7 @@ function populateRlcaSectorDropdown(country,silent){
   const avail=allSectors.filter(s=>availForCountry.has(s));
   const locked=allSectors.filter(s=>!availForCountry.has(s));
   if(avail.length){
-    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Available Sectors</div>');
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Demo Sectors</div>');
     avail.forEach(s=>{
       const item=document.createElement('div');
       item.className='dd-item available';
@@ -803,7 +803,7 @@ function populateRlcaSectorDropdown(country,silent){
     });
   }
   if(locked.length){
-    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Not Yet Available</div>');
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Non-Demo Sectors</div>');
     locked.forEach(s=>{
       const item=document.createElement('div');
       item.className='dd-item locked';
