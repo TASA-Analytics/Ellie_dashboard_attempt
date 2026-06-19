@@ -56,7 +56,7 @@ exports.handler = async (event) => {
 // ── POST /auth ────────────────────────────────────────────────────────────────
 // Validates access code, generates presigned S3 URLs for the conference folder,
 // and logs the sign-in attempt to DynamoDB.
-async function handleAuth({ code, name, email, industry, page }, headers) {
+async function handleAuth({ code, name, email, industry, jobTitle, page }, headers) {
   const upper   = (code || '').trim().toUpperCase();
   const match   = ACCESS_CODES[upper];
   const today   = new Date().toISOString().slice(0, 10);
@@ -69,6 +69,7 @@ async function handleAuth({ code, name, email, industry, page }, headers) {
     name:      name     || '(not provided)',
     email:     email    || '(not provided)',
     industry:  industry || '(not provided)',
+    job_title: jobTitle || '(not provided)',
     code:      upper,
     page:      page     || '',
     status,

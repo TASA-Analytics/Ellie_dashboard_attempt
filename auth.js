@@ -77,12 +77,12 @@ function refreshAuthState() {
 // On success, Lambda returns presigned S3 URLs for the conference's
 // premium data files — these are stored in sessionStorage.
 
-async function validateCode(code, name, email, industry) {
+async function validateCode(code, name, email, industry, jobTitle) {
   try {
     const res = await fetch(TASA_CONFIG.authEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, name, email, industry, page: currentPage() })
+      body: JSON.stringify({ code, name, email, industry, jobTitle, page: currentPage() })
     });
     if (res.status === 401) {
       const data = await res.json().catch(() => ({}));
@@ -424,16 +424,24 @@ function injectSigninModal() {
       />
       <div class="tasa-modal-row">
         <div>
-          <label class="tasa-modal-label">Name</label>
+          <label class="tasa-modal-label">Name <span>required</span></label>
           <input class="tasa-modal-input" id="tasa-name-input" type="text" placeholder="Jane Smith" />
         </div>
         <div>
-          <label class="tasa-modal-label">Industry</label>
-          <input class="tasa-modal-input" id="tasa-industry-input" type="text" placeholder="e.g. Energy" />
+          <label class="tasa-modal-label">Email <span>required</span></label>
+          <input class="tasa-modal-input" id="tasa-email-input" type="email" placeholder="jane@company.com" />
         </div>
       </div>
-      <label class="tasa-modal-label">Email</label>
-      <input class="tasa-modal-input" id="tasa-email-input" type="email" placeholder="jane@company.com" />
+      <div class="tasa-modal-row">
+        <div>
+          <label class="tasa-modal-label">Industry <span style="color:rgba(244,245,245,0.3)">optional</span></label>
+          <input class="tasa-modal-input" id="tasa-industry-input" type="text" placeholder="e.g. Energy" />
+        </div>
+        <div>
+          <label class="tasa-modal-label">Job Title <span style="color:rgba(244,245,245,0.3)">optional</span></label>
+          <input class="tasa-modal-input" id="tasa-jobtitle-input" type="text" placeholder="e.g. Analyst" />
+        </div>
+      </div>
       <button class="tasa-submit-btn" id="tasa-signin-submit" onclick="submitSignin()">
         Unlock access
       </button>
@@ -457,8 +465,9 @@ function closeSigninModal() {
 async function submitSignin() {
   const code     = (document.getElementById('tasa-code-input').value     || '').trim();
   const name     = (document.getElementById('tasa-name-input').value     || '').trim();
-  const industry = (document.getElementById('tasa-industry-input').value || '').trim();
   const email    = (document.getElementById('tasa-email-input').value    || '').trim();
+  const industry = (document.getElementById('tasa-industry-input').value || '').trim();
+  const jobTitle = (document.getElementById('tasa-jobtitle-input').value || '').trim();
   const errEl    = document.getElementById('tasa-signin-error');
   const btn      = document.getElementById('tasa-signin-submit');
 
@@ -469,12 +478,27 @@ async function submitSignin() {
     errEl.style.display = 'block';
     return;
   }
+  if (!name) {
+    errEl.textContent = 'Please enter your name.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!email) {
+    errEl.textContent = 'Please enter your email address.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block';
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'Checking…';
 
   // Lambda validates the code and logs the attempt server-side
-  const result = await validateCode(code, name, email, industry);
+  const result = await validateCode(code, name, email, industry, jobTitle);
 
   if (result.serverError) {
     btn.disabled = false;
