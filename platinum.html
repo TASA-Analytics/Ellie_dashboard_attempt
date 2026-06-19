@@ -908,26 +908,23 @@ function drawCanvas(d,mode){
     fs=fs||9;
     const[r,g,b]=hr(color);
     const gr=ctx.createLinearGradient(x,y,x,y+h);
-    gr.addColorStop(0,`rgba(${Math.min(r+28,255)},${Math.min(g+28,255)},${Math.min(b+28,255)},1)`);
-    gr.addColorStop(1,color);
+    gr.addColorStop(0,`rgba(${Math.round(r*0.72)},${Math.round(g*0.72)},${Math.round(b*0.72)},1)`);
+    gr.addColorStop(1,`rgba(${Math.round(r*0.55)},${Math.round(g*0.55)},${Math.round(b*0.55)},1)`);
     ctx.fillStyle=gr; rr(x,y,w,h,3); ctx.fill();
-    ctx.strokeStyle=rgba(color,0.35); ctx.lineWidth=0.6; rr(x,y,w,h,3); ctx.stroke();
+    ctx.strokeStyle=rgba(color,0.5); ctx.lineWidth=0.6; rr(x,y,w,h,3); ctx.stroke();
     regHit(x,y,w,h,label,val);
     if(h<7) return;
-    const bright=(0.299*r+0.587*g+0.114*b)/255;
-    const txtHi=bright>0.50?'rgba(0,0,0,0.82)':'rgba(255,255,255,0.95)';
-    const txtLo=bright>0.50?'rgba(0,0,0,0.52)':'rgba(255,255,255,0.62)';
     ctx.textBaseline='middle'; ctx.textAlign='left';
     if(h>=20){
-      ctx.font=`600 ${fs}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle=txtHi;
+      ctx.font=`600 ${fs}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.95)';
       let txt=label; const mW=w-8;
       while(ctx.measureText(txt).width>mW&&txt.length>3) txt=txt.slice(0,-1);
       if(txt!==label) txt=txt.slice(0,-1)+'…';
       ctx.fillText(txt,x+5,y+h*0.36);
-      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle=txtLo;
+      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.60)';
       ctx.fillText(pct+'%',x+5,y+h*0.68);
     } else {
-      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle=txtHi;
+      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.90)';
       ctx.fillText(pct+'%',x+5,y+h/2);
     }
   }
