@@ -1205,23 +1205,59 @@ function drawDonut(svgId, segs, total, legendId) {
 // ── Sankey data ───────────────────────────────────────
 let sankeyData = null;
 let sankeyMode = 'split'; // 'split' | 'sum'
-let sankeyHover = null;        // label of currently hovered box
-let sceneRibbons = [];         // [{from,to}] — populated each render, used for BFS
+let sankeyHover = null;        // label of currently selected (clicked) box
 let connectedLabels = new Set();
-let rafPending = false;
 
+// Data-driven connectivity — avoids common-ancestor fan-out bugs from label BFS.
+// Reads t1Map/t2Map directly to find which sectors are truly connected to `label`.
 function computeConnected(label) {
+  const D = sankeyData;
+  if (!D) return new Set([label]);
   const conn = new Set([label]);
-  let q = [label];
-  while(q.length){ // downstream
-    const from=q.shift();
-    sceneRibbons.forEach(r=>{if(r.from===from&&r.to&&!conn.has(r.to)){conn.add(r.to);q.push(r.to);}});
+
+  const isT1 = D.tier1.some(t => t.label === label);
+  const isT2 = (D.tier2||[]).some(t => t.label === label);
+  const isT3 = (D.tier3||[]).some(t => t.label === label);
+
+  // Always include anchor + scopes as dim-exempt ancestors
+  conn.add('Baseline'); conn.add(D.focalSector);
+  conn.add('Scope 1'); conn.add('Scope 2'); conn.add('Scope 3');
+
+  if (isT1) {
+    // Downstream: T2 sectors that list this T1 label in their t1Map
+    (D.tier2||[]).forEach(t2 => {
+      if ((t2.t1Map||{})[label] > 0) {
+        conn.add(t2.label);
+        // And their downstream T3
+        (D.tier3||[]).forEach(t3 => { if ((t3.t2Map||{})[t2.label] > 0) conn.add(t3.label); });
+      }
+    });
   }
-  q = [label];
-  while(q.length){ // upstream
-    const to=q.shift();
-    sceneRibbons.forEach(r=>{if(r.to===to&&r.from&&!conn.has(r.from)){conn.add(r.from);q.push(r.from);}});
+
+  if (isT2) {
+    // Upstream: T1 sectors that contribute to this T2 (keys in t1Map with value > 0)
+    const t2ent = (D.tier2||[]).find(t => t.label === label);
+    if (t2ent) {
+      Object.entries(t2ent.t1Map||{}).forEach(([t1l, v]) => { if (v > 0) conn.add(t1l); });
+    }
+    // Downstream: T3 sectors that list this T2 label in their t2Map
+    (D.tier3||[]).forEach(t3 => { if ((t3.t2Map||{})[label] > 0) conn.add(t3.label); });
   }
+
+  if (isT3) {
+    // Upstream: T2 contributors to this T3, and their T1 contributors
+    const t3ent = (D.tier3||[]).find(t => t.label === label);
+    if (t3ent) {
+      Object.entries(t3ent.t2Map||{}).forEach(([t2l, v]) => {
+        if (v > 0) {
+          conn.add(t2l);
+          const t2ent = (D.tier2||[]).find(t => t.label === t2l);
+          if (t2ent) Object.entries(t2ent.t1Map||{}).forEach(([t1l, vv]) => { if (vv > 0) conn.add(t1l); });
+        }
+      });
+    }
+  }
+
   return conn;
 }
 let _sankeyWb  = null;    // cached workbook for topN re-render
@@ -1670,29 +1706,30 @@ function renderSankey() {
     wrapEl.onscroll    = () => { if(!syncing){syncing=true;scrollTop.scrollLeft=wrapEl.scrollLeft;syncing=false;} };
   }
 
-  sceneRibbons=[];
   const hits=[];
   function regHit(x,y,w,h,lbl,val){hits.push({x,y,w,h,lbl,val});}
 
-  canvasEl.onmousemove=function(e){
+  function getHit(e){
     const cr=canvasEl.getBoundingClientRect();
     const mx=(e.clientX-cr.left)*(TW/cr.width),my=(e.clientY-cr.top)*(TH/cr.height);
-    const hit=hits.find(b=>mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h);
-    const newHover=hit?hit.lbl:null;
-    if(newHover!==sankeyHover){
-      sankeyHover=newHover;
-      connectedLabels=sankeyHover?computeConnected(sankeyHover):new Set();
-      if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;renderSankey();});}
-    }
+    return hits.find(b=>mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h)||null;
+  }
+
+  canvasEl.onmousemove=function(e){
+    const hit=getHit(e);
     if(hit){
       tip.innerHTML='<strong>'+hit.lbl+'</strong><br>'+hit.val.toFixed(3)+' Mg CO\u2082e / M USD';
       tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-8)+'px';
-      canvasEl.style.cursor='crosshair';
+      canvasEl.style.cursor='pointer';
     } else {tip.style.display='none';canvasEl.style.cursor='default';}
   };
-  canvasEl.onmouseleave=()=>{
-    tip.style.display='none';
-    if(sankeyHover){sankeyHover=null;connectedLabels=new Set();renderSankey();}
+  canvasEl.onmouseleave=()=>tip.style.display='none';
+  canvasEl.onclick=function(e){
+    const hit=getHit(e);
+    const newSel=hit?hit.lbl:null;
+    if(newSel===sankeyHover){sankeyHover=null;connectedLabels=new Set();}
+    else{sankeyHover=newSel;connectedLabels=sankeyHover?computeConnected(sankeyHover):new Set();}
+    renderSankey();
   };
 
   function hr(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
@@ -1718,7 +1755,10 @@ function renderSankey() {
     gr.addColorStop(0,`rgba(${Math.round(r*0.72)},${Math.round(g*0.72)},${Math.round(b*0.72)},1)`);
     gr.addColorStop(1,`rgba(${Math.round(r*0.55)},${Math.round(g*0.55)},${Math.round(b*0.55)},1)`);
     ctx.fillStyle=gr;ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.fill();
-    ctx.strokeStyle=rgba(color,0.5);ctx.lineWidth=0.5;ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.stroke();
+    const selected=label===sankeyHover;
+    ctx.strokeStyle=selected?'rgba(255,255,255,0.9)':rgba(color,0.5);
+    ctx.lineWidth=selected?1.5:0.5;
+    ctx.beginPath();ctx.roundRect(x,y,w,h,3);ctx.stroke();
     regHit(x,y,w,h,label,val);
     if(h<7)return;
     ctx.textBaseline='middle';ctx.textAlign='left';
@@ -1766,7 +1806,7 @@ function renderSankey() {
   function ribbon(x1,y1t,y1b,x2,y2t,y2b,color,a,fromLbl,toLbl){
     if(fromLbl||toLbl) sceneRibbons.push({from:fromLbl,to:toLbl});
     if(y1b<=y1t||y2b<=y2t||y1b-y1t<0.5||y2b-y2t<0.5)return;
-    const dimmed=sankeyHover&&fromLbl&&!connectedLabels.has(fromLbl)&&!connectedLabels.has(toLbl);
+    const dimmed=sankeyHover&&fromLbl&&!(connectedLabels.has(fromLbl)&&connectedLabels.has(toLbl));
     const mx=x1+(x2-x1)*0.52;
     ctx.beginPath();ctx.moveTo(x1,y1t);
     ctx.bezierCurveTo(mx,y1t,mx,y2t,x2,y2t);ctx.lineTo(x2,y2b);
