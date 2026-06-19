@@ -1841,7 +1841,6 @@ function renderSankey() {
     } else {
       // Summed: three combined bars
       const smV=[sectorData.reduce((a,t)=>a+(t.s1||0),0),sectorData.reduce((a,t)=>a+(t.s2||0),0),sectorData.reduce((a,t)=>a+(t.s3||0),0)];
-      const smTot=smV.reduce((a,b)=>a+b,0)||1;
       const smH=propH(smV,FULL_H,BOX_GAP);
       let smY=TOP;const bTops=smH.map(h=>{const y=smY;smY+=h+BOX_GAP;return y;});
       sectorBoxes.forEach((tb,i)=>{
@@ -1849,7 +1848,7 @@ function renderSankey() {
         let tsc=tb.y;
         lP.forEach((p,si)=>{const slH=(p/ptot)*tb.h;ribbon(nextX,tsc,tsc+slH,leafX,bTops[si],bTops[si]+smH[si],S_COLORS[si],0.10);tsc+=slH;});
       });
-      smH.forEach((h,si)=>{drawBox(leafX,bTops[si],leafW,h,S_COLORS[si],['S1','S2','S3'][si],smV[si]/smTot*100,smV[si],9);});
+      smH.forEach((h,si)=>{drawBox(leafX,bTops[si],leafW,h,S_COLORS[si],['S1','S2','S3'][si],smV[si]/anchorVal*100,smV[si],9);});
       // Return s3 slices per parent for next-tier ribbon sources
       const s3H=smH[2],s3Y=bTops[2];let s3c=s3Y;
       sectorData.forEach((t,i)=>{
