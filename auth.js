@@ -410,7 +410,7 @@ function injectSigninModal() {
       <p class="tasa-modal-title">Sign in to TASA EFX</p>
       <p class="tasa-modal-sub">
         Silver data is always free and visible. Enter an access code
-        to unlock the full Platinum and rLCA datasets.
+        to unlock more Platinum and rLCA datasets.
       </p>
       <div id="tasa-signin-error" class="tasa-error-msg"></div>
       <label class="tasa-modal-label">Access code <span>required</span></label>
