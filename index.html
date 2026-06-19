@@ -78,6 +78,16 @@
 
   footer { border-top:1px solid var(--border); padding:22px 36px; display:flex; justify-content:space-between; align-items:center; color:var(--mid); font-size:12px; }
 
+  .tiers-section { padding:0 36px 64px; max-width:1100px; margin:0 auto; }
+  .tiers-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .tier-col { padding:28px 26px; border-right:1px solid var(--border); }
+  .tier-col:last-child { border-right:none; }
+  .tier-name { font-size:17px; font-weight:700; color:#F4F5F5; margin-bottom:6px; }
+  .tier-tag { font-size:11px; font-weight:600; color:var(--accent); letter-spacing:0.04em; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+  .tier-desc { font-size:13px; line-height:1.65; color:var(--dim); }
+  .tier-desc strong { color:#F4F5F5; font-weight:600; }
+  @media(max-width:800px){ .tiers-grid{grid-template-columns:1fr;} .tier-col{border-right:none;border-bottom:1px solid var(--border);} .tier-col:last-child{border-bottom:none;} }
+
   @media(max-width:800px){
     nav,footer{padding:12px 16px;}
     .hero,.cards-section{padding-left:16px;padding-right:16px;}
@@ -111,6 +121,27 @@
     <a href="silver.html" class="btn-primary">Explore Open Silver</a>
     <a href="platinum.html" class="btn-ghost">Explore Platinum</a>
     <a href="rlca.html" class="btn-ghost">Explore rLCA</a>
+  </div>
+</section>
+
+<section class="tiers-section">
+  <p class="section-lbl">Dataset Tiers</p>
+  <div class="tiers-grid">
+    <div class="tier-col">
+      <div class="tier-name">Open Silver</div>
+      <div class="tier-tag">Scope-Expanded</div>
+      <p class="tier-desc">Scope 3 emissions factors for every sector of the economy — with scope 1, 2, and 3 breakdowns. <strong>Free to use</strong> for accurate reporting and to explore emissions structures with confidence.</p>
+    </div>
+    <div class="tier-col">
+      <div class="tier-name">Gold</div>
+      <div class="tier-tag">Scope &amp; Tier-Expanded</div>
+      <p class="tier-desc">Additional emissions extensions, 3 tiers deep into the supply chain, by scopes 1, 2, and 3, sizing emissions flows for targeted engagement.</p>
+    </div>
+    <div class="tier-col">
+      <div class="tier-name">Platinum</div>
+      <div class="tier-tag">Scope, Tier, &amp; Hotspot-Expanded</div>
+      <p class="tier-desc">Additional emissions factors by scopes 1, 2 and 3 of the top 20 direct-purchased (tier 1) inputs for each economic sector, highlighting emissions hotspots for targeted mitigation.</p>
+    </div>
   </div>
 </section>
 
@@ -165,9 +196,12 @@
 </section>
 
 <footer>
-  <!-- PLACEHOLDER: update copyright / contact -->
   <span>© 2025 TASA EFX. All rights reserved.</span>
-  <span>Emissions Intelligence Platform</span>
+  <span style="display:flex;gap:20px;align-items:center">
+    <a href="https://tasa-analytics.com" target="_blank" rel="noopener" style="color:var(--mid);text-decoration:none;transition:color .15s" onmouseover="this.style.color='#F4F5F5'" onmouseout="this.style.color=''">tasa-analytics.com</a>
+    <a href="https://tasa-efx.com/" target="_blank" rel="noopener" style="color:var(--mid);text-decoration:none;transition:color .15s" onmouseover="this.style.color='#F4F5F5'" onmouseout="this.style.color=''">tasa-efx.com</a>
+    <a href="https://tasa-efx.com/contact/" target="_blank" rel="noopener" style="color:var(--mid);text-decoration:none;transition:color .15s" onmouseover="this.style.color='#F4F5F5'" onmouseout="this.style.color=''">Contact Us</a>
+  </span>
 </footer>
 
 <script src="auth.js"></script>

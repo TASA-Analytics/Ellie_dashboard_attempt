@@ -250,7 +250,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 
 <div id="pane-dash" class="pane on">
   <div class="main" id="dash-content">
-    <div class="loading"><div class="spin"></div> Reading Excel file…</div>
+    <div class="loading"><div class="spin"></div> Loading data…</div>
   </div>
 </div>
 
@@ -269,9 +269,12 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 </div>
 
 <footer>
-  <!-- EDIT: update copyright / contact -->
   <span>© 2025 TASA EFX. All rights reserved.</span>
-  <span>Platinum Model · Emissions Intelligence Platform</span>
+  <span style="display:flex;gap:20px;align-items:center">
+    <a href="https://tasa-analytics.com" target="_blank" rel="noopener" style="color:var(--mid);text-decoration:none;transition:color .15s" onmouseover="this.style.color='#F4F5F5'" onmouseout="this.style.color=''">tasa-analytics.com</a>
+    <a href="https://tasa-efx.com/" target="_blank" rel="noopener" style="color:var(--mid);text-decoration:none;transition:color .15s" onmouseover="this.style.color='#F4F5F5'" onmouseout="this.style.color=''">tasa-efx.com</a>
+    <a href="https://tasa-efx.com/contact/" target="_blank" rel="noopener" style="color:var(--mid);text-decoration:none;transition:color .15s" onmouseover="this.style.color='#F4F5F5'" onmouseout="this.style.color=''">Contact Us</a>
+  </span>
 </footer>
 
 <script>
@@ -425,7 +428,7 @@ function populateCountryDropdown(){
     });
   }
   if(locked.length){
-    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Not Yet Available</div>');
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Non-Demo Sectors</div>');
     locked.forEach(c=>{
       const item = document.createElement('div');
       item.className = 'dd-item locked';
@@ -462,7 +465,7 @@ function populateSectorDropdown(country, silent){
   const locked = allSectors.filter(s=>!availForCountry.has(s));
 
   if(avail.length){
-    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Available Sectors</div>');
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Demo Sectors</div>');
     avail.forEach(s=>{
       const item = document.createElement('div');
       item.className = 'dd-item available';
@@ -472,7 +475,7 @@ function populateSectorDropdown(country, silent){
     });
   }
   if(locked.length){
-    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Not Yet Available</div>');
+    list.insertAdjacentHTML('beforeend','<div class="dd-section-label">Non-Demo Sectors</div>');
     locked.forEach(s=>{
       const item = document.createElement('div');
       item.className = 'dd-item locked';
@@ -649,7 +652,7 @@ async function loadModelAndRender(path, silverSector, year){
     return;
   }
   document.getElementById('dash-content').innerHTML=
-    '<div class="loading"><div class="spin"></div> Loading model…</div>';
+    '<div class="loading"><div class="spin"></div> Loading data…</div>';
   try{
     const buf  = await fetchXlsx(path);
     loadExcel(new Uint8Array(buf));

@@ -390,7 +390,7 @@ function injectBanners() {
     const previewBanner = document.createElement('div');
     previewBanner.id = 'tasa-preview-banner';
     previewBanner.innerHTML = `
-      <span>⬡ Preview mode — showing sample data. Sign in with an access code to unlock the full dataset.</span>
+      <span>⬡ Preview mode — showing sample data. Sign in with an access code to unlock more data.</span>
       <button onclick="openSigninModal()">Sign in</button>
     `;
     accessBanner.after(previewBanner);
