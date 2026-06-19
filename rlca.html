@@ -1432,6 +1432,7 @@ function loadSankeyData(wb, rlcaSector) {
   if (t1Rest.length) t1Main.push({ label:'Other', val:t1Rest.reduce((a,r)=>a+r.val,0),
     s1:t1Rest.reduce((a,r)=>a+r.s1,0), s2:t1Rest.reduce((a,r)=>a+r.s2,0), s3:t1Rest.reduce((a,r)=>a+r.s3,0) });
   const t1Total = t1Main.reduce((a,r)=>a+r.val,0)||1;
+  const t1NamedSet = new Set(t1Main.filter(r=>r.label!=='Other').map(r=>r.label));
 
   // ── Tier 0: read directly from Sector Emissions Factors sheet ──
   let t0tot=0, t0s1=0, t0s2=0, t0s3=0, hasEFData=false;
@@ -1473,7 +1474,8 @@ function loadSankeyData(wb, rlcaSector) {
 
   const globalT2Map = {};
   t2Raw.forEach(r => {
-    const t1p = String(r[T2_T1P]||'').trim();
+    let t1p = String(r[T2_T1P]||'').trim();
+    if (t1p && !t1NamedSet.has(t1p)) t1p = 'Other';
     const lbl = String(r[T2_SEC]||'').trim();
     const val = parseFloat(r[T2_TOT])||0;
     if (!lbl || val === 0) return;
@@ -1814,7 +1816,7 @@ function renderSankey() {
           const slH=(lPcts[si]/ptot)*tb.h;
           ribbon(nextX,tsc,tsc+slH,leafX,lY,lY+lh,S_COLORS[si],ribbonAlpha);
           tsc+=slH;
-          drawBox(leafX,lY,leafW,lh,S_COLORS[si],['S1','S2','S3'][si],lPcts[si]/ptot*100,lPcts[si],8);
+          drawBox(leafX,lY,leafW,lh,S_COLORS[si],['S1','S2','S3'][si],lPcts[si]/anchorVal*100,lPcts[si],8);
           lfBoxes.push({y:lY,h:lh,si,parentIdx:i,parentLabel:t.label});
           lY+=lh+LEAF_GAP;
         });
