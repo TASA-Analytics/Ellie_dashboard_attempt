@@ -673,3 +673,68 @@ function setup() {
   updateNavUI();
   updateBanners();
 }
+
+
+/* ── XLSX FILE CACHE (IndexedDB) ─────────────────────────────────
+   Caches raw XLSX bytes by filename so repeated loads skip the
+   download entirely. Presigned S3 URLs rotate every 4h but the
+   filenames are stable, so we key on filename, not URL.
+   Entries expire after 24h.
+───────────────────────────────────────────────────────────────── */
+const TASA_IDB = (() => {
+  const DB_NAME = 'tasa-xlsx-cache';
+  const STORE   = 'files';
+  const TTL     = 24 * 60 * 60 * 1000; // 24 hours in ms
+
+  function open() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = e => e.target.result.createObjectStore(STORE);
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror   = e => reject(e.target.error);
+    });
+  }
+
+  function idbOp(mode, fn) {
+    return open().then(db => new Promise((resolve, reject) => {
+      const req = fn(db.transaction(STORE, mode).objectStore(STORE));
+      req.onsuccess = () => resolve(req.result);
+      req.onerror   = () => reject(req.error);
+    }));
+  }
+
+  return {
+    keyFromUrl(url) {
+      try { return new URL(url).pathname.split('/').pop() || url; }
+      catch { return url; }
+    },
+    async get(key) {
+      try {
+        const entry = await idbOp('readonly', s => s.get(key));
+        if (!entry || Date.now() - entry.ts > TTL) return null;
+        return entry.buf;
+      } catch { return null; }
+    },
+    async set(key, buf) {
+      try { await idbOp('readwrite', s => s.put({ buf, ts: Date.now() }, key)); }
+      catch {} // non-fatal
+    }
+  };
+})();
+
+// Drop-in replacement for fetch(url).arrayBuffer() with IDB caching.
+// Returns ArrayBuffer. Throws on network error (same as fetch would).
+async function fetchXlsx(url) {
+  const key = TASA_IDB.keyFromUrl(url);
+  const cached = await TASA_IDB.get(key);
+  if (cached) {
+    console.log('[TASA] cache hit:', key);
+    return cached;
+  }
+  console.log('[TASA] cache miss, fetching:', key);
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('File not found: ' + url);
+  const buf = await resp.arrayBuffer();
+  TASA_IDB.set(key, buf); // fire-and-forget, don't block render
+  return buf;
+}

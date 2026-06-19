@@ -869,9 +869,7 @@ async function rlcaLoadAndRender(silverSector){
   try{
     let wb=model._wb;
     if(!wb){
-      const resp=await fetch(model.path);
-      if(!resp.ok) throw new Error('File not found: '+model.path);
-      const buf=await resp.arrayBuffer();
+      const buf=await fetchXlsx(model.path);
       wb=XLSX.read(new Uint8Array(buf),{
         type:'array',sheets:[SHEET_NAME,EF_SHEET,TR_SHEET,T1_PATH_SHEET,T2_PATH_SHEET,T3_PATH_SHEET],
         cellStyles:false,cellFormula:false,cellHTML:false,cellNF:false,sheetStubs:false

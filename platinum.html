@@ -651,9 +651,7 @@ async function loadModelAndRender(path, silverSector, year){
   document.getElementById('dash-content').innerHTML=
     '<div class="loading"><div class="spin"></div> Loading model…</div>';
   try{
-    const resp = await fetch(path);
-    if(!resp.ok) throw new Error('File not found: '+path);
-    const buf  = await resp.arrayBuffer();
+    const buf  = await fetchXlsx(path);
     loadExcel(new Uint8Array(buf));
     currentModelPath = path;
     renderDashboard(silverSector, platSector, year);
