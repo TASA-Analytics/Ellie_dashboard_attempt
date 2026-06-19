@@ -916,17 +916,20 @@ function drawCanvas(d,mode){
     ctx.strokeStyle=rgba(color,0.35); ctx.lineWidth=0.6; rr(x,y,w,h,3); ctx.stroke();
     regHit(x,y,w,h,label,val);
     if(h<7) return;
+    const bright=(0.299*r+0.587*g+0.114*b)/255;
+    const txtHi=bright>0.50?'rgba(0,0,0,0.82)':'rgba(255,255,255,0.95)';
+    const txtLo=bright>0.50?'rgba(0,0,0,0.52)':'rgba(255,255,255,0.62)';
     ctx.textBaseline='middle'; ctx.textAlign='left';
     if(h>=20){
-      ctx.font=`600 ${fs}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.95)';
+      ctx.font=`600 ${fs}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle=txtHi;
       let txt=label; const mW=w-8;
       while(ctx.measureText(txt).width>mW&&txt.length>3) txt=txt.slice(0,-1);
       if(txt!==label) txt=txt.slice(0,-1)+'…';
       ctx.fillText(txt,x+5,y+h*0.36);
-      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.62)';
+      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle=txtLo;
       ctx.fillText(pct+'%',x+5,y+h*0.68);
     } else {
-      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle='rgba(255,255,255,0.85)';
+      ctx.font=`${fs-1}px 'Segoe UI',Arial,sans-serif`; ctx.fillStyle=txtHi;
       ctx.fillText(pct+'%',x+5,y+h/2);
     }
   }
