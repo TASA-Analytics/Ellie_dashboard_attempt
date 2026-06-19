@@ -835,6 +835,7 @@ function onSectorChange(){}
 
 function onYearChange() {
   const y=document.getElementById('fb-year').value;
+  if(window.TASA_AUTH?.isUnlocked){ rlcaLoadAndRender(ddState.sector); return; }
   if(y===FREE_YEAR) { rlcaLoadAndRender(ddState.sector); return; }
   showUpsell(`Year · ${y}`,`rLCA reports for <strong>${y}</strong> are available through TASA EFX. Contact us for access across all years.`);
   document.getElementById('fb-year').value=FREE_YEAR;
@@ -857,11 +858,20 @@ async function rlcaLoadAndRender(silverSector){
   const footerTag=document.getElementById('footer-tag');
   if(footerTag) footerTag.textContent=`rLCA · ${shortSector} · ${country} ${model.year}`;
   const freeTag=document.getElementById('rlca-free-tag');
-  if(freeTag) freeTag.textContent=window.TASA_AUTH?.isUnlocked ? `✓ ${model.code} · ${window.TASA_AUTH?.conferenceName || 'Full Access'}` : `✓ ${model.code} · ${model.year} · Demo`;
+  if(freeTag) freeTag.textContent=window.TASA_AUTH?.isUnlocked ? `✓ ${window.TASA_AUTH?.conferenceName || 'Full Access'}` : '✓ DEMO Mode';
   const statCountry=document.getElementById('stat-country');
   if(statCountry) statCountry.textContent=model.code;
   const statYear=document.getElementById('stat-year');
   if(statYear) statYear.textContent=model.year;
+  if(!model.year) alert('Year not found in manifest for this model. Please add a "year" field to the manifest entry.');
+  const yearSel=document.getElementById('fb-year');
+  if(yearSel && model.year){
+    if(![...yearSel.options].some(o=>o.value===model.year)){
+      const opt=document.createElement('option'); opt.value=opt.textContent=model.year;
+      yearSel.insertBefore(opt,yearSel.firstChild);
+    }
+    yearSel.value=model.year;
+  }
 
   if(model.path===currentModelPath){
     renderCallout(); renderTierBarChart(); render(); renderTRDonuts(); renderSankey(); return;

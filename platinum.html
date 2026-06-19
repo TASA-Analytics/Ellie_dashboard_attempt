@@ -51,6 +51,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
   min-width:220px;appearance:none;cursor:pointer;transition:border-color .2s;}
 .fg select:focus{outline:none;border-color:var(--primary-lt);}
 .fg select option{background:#0a1628;}
+.filter-free-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:4px;
+  font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  background:rgba(167,243,208,0.12);border:1px solid rgba(167,243,208,0.3);color:#A7F3D0;
+  align-self:flex-end;}
 
 .main{padding:24px 36px;}
 
@@ -246,6 +250,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
       <option value="">—</option>
     </select>
   </div>
+  <div class="filter-free-tag" id="plat-free-tag">✓ DEMO Mode</div>
 </div>
 
 <div id="pane-dash" class="pane on">
@@ -1074,7 +1079,11 @@ async function boot(){
       return;
     }
 
-    // 3. Build tiered dropdowns and trigger initial load
+    // 3. Update demo tag
+    const platTag = document.getElementById('plat-free-tag');
+    if(platTag) platTag.textContent = window.TASA_AUTH?.isUnlocked ? `✓ ${window.TASA_AUTH?.conferenceName || 'Full Access'}` : '✓ DEMO Mode';
+
+    // 4. Build tiered dropdowns and trigger initial load
     populateCountryDropdown();
 
     // Auto-load the first available sector on boot
