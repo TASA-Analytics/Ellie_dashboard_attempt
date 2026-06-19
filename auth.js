@@ -44,6 +44,7 @@ function setSession(data) {
 
 function clearSession() {
   sessionStorage.removeItem('tasa_session');
+  TASA_IDB.clearAll(); // wipe cached files so they aren't accessible after logout
 }
 
 // Exposed globally so platinum.html / rlca.html can check
@@ -718,18 +719,25 @@ const TASA_IDB = (() => {
     async set(key, buf) {
       try { await idbOp('readwrite', s => s.put({ buf, ts: Date.now() }, key)); }
       catch {} // non-fatal
+    },
+    async clearAll() {
+      try { await idbOp('readwrite', s => s.clear()); }
+      catch {}
     }
   };
 })();
 
 // Drop-in replacement for fetch(url).arrayBuffer() with IDB caching.
 // Returns ArrayBuffer. Throws on network error (same as fetch would).
+// Cache hits are blocked when no active session exists.
 async function fetchXlsx(url) {
   const key = TASA_IDB.keyFromUrl(url);
-  const cached = await TASA_IDB.get(key);
-  if (cached) {
-    console.log('[TASA] cache hit:', key);
-    return cached;
+  if (getSession()?.isUnlocked) {
+    const cached = await TASA_IDB.get(key);
+    if (cached) {
+      console.log('[TASA] cache hit:', key);
+      return cached;
+    }
   }
   console.log('[TASA] cache miss, fetching:', key);
   const resp = await fetch(url);
