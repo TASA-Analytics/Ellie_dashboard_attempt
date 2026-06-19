@@ -1205,6 +1205,25 @@ function drawDonut(svgId, segs, total, legendId) {
 // ── Sankey data ───────────────────────────────────────
 let sankeyData = null;
 let sankeyMode = 'split'; // 'split' | 'sum'
+let sankeyHover = null;        // label of currently hovered box
+let sceneRibbons = [];         // [{from,to}] — populated each render, used for BFS
+let connectedLabels = new Set();
+let rafPending = false;
+
+function computeConnected(label) {
+  const conn = new Set([label]);
+  let q = [label];
+  while(q.length){ // downstream
+    const from=q.shift();
+    sceneRibbons.forEach(r=>{if(r.from===from&&r.to&&!conn.has(r.to)){conn.add(r.to);q.push(r.to);}});
+  }
+  q = [label];
+  while(q.length){ // upstream
+    const to=q.shift();
+    sceneRibbons.forEach(r=>{if(r.to===to&&r.from&&!conn.has(r.from)){conn.add(r.from);q.push(r.from);}});
+  }
+  return conn;
+}
 let _sankeyWb  = null;    // cached workbook for topN re-render
 let _sankeyRlcaSector = '';
 
@@ -1651,6 +1670,7 @@ function renderSankey() {
     wrapEl.onscroll    = () => { if(!syncing){syncing=true;scrollTop.scrollLeft=wrapEl.scrollLeft;syncing=false;} };
   }
 
+  sceneRibbons=[];
   const hits=[];
   function regHit(x,y,w,h,lbl,val){hits.push({x,y,w,h,lbl,val});}
 
@@ -1658,13 +1678,22 @@ function renderSankey() {
     const cr=canvasEl.getBoundingClientRect();
     const mx=(e.clientX-cr.left)*(TW/cr.width),my=(e.clientY-cr.top)*(TH/cr.height);
     const hit=hits.find(b=>mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h);
+    const newHover=hit?hit.lbl:null;
+    if(newHover!==sankeyHover){
+      sankeyHover=newHover;
+      connectedLabels=sankeyHover?computeConnected(sankeyHover):new Set();
+      if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;renderSankey();});}
+    }
     if(hit){
       tip.innerHTML='<strong>'+hit.lbl+'</strong><br>'+hit.val.toFixed(3)+' Mg CO\u2082e / M USD';
       tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-8)+'px';
       canvasEl.style.cursor='crosshair';
     } else {tip.style.display='none';canvasEl.style.cursor='default';}
   };
-  canvasEl.onmouseleave=()=>tip.style.display='none';
+  canvasEl.onmouseleave=()=>{
+    tip.style.display='none';
+    if(sankeyHover){sankeyHover=null;connectedLabels=new Set();renderSankey();}
+  };
 
   function hr(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
   function rgba(h,a){const[r,g,b]=hr(h);return`rgba(${r},${g},${b},${a})`;}
@@ -1683,6 +1712,7 @@ function renderSankey() {
 
   function drawBox(x,y,w,h,color,label,pct,val,fs){
     if(h<2)return;
+    ctx.globalAlpha=sankeyHover&&!connectedLabels.has(label)?0.1:1;
     const[r,g,b]=hr(color);
     const gr=ctx.createLinearGradient(x,y,x,y+h);
     gr.addColorStop(0,`rgba(${Math.round(r*0.72)},${Math.round(g*0.72)},${Math.round(b*0.72)},1)`);
@@ -1704,10 +1734,12 @@ function renderSankey() {
       ctx.font=`${Math.max(7,fs-2)}px 'Segoe UI',Arial,sans-serif`;ctx.fillStyle='rgba(255,255,255,0.90)';
       ctx.fillText(typeof pct==='number'?pct.toFixed(1)+'%':'',x+4,y+h/2);
     }
+    ctx.globalAlpha=1;
   }
 
   function drawChevron(x,y,w,h,color,label,val){
     if(h<2)return;
+    ctx.globalAlpha=sankeyHover&&!connectedLabels.has(label)?0.1:1;
     const chev=Math.min(18,h/2);
     const[r,g,b]=hr(color);
     const gr=ctx.createLinearGradient(x,y,x,y+h);
@@ -1728,15 +1760,18 @@ function renderSankey() {
     const lh=12,sY=y+h*0.38-(ls.length-1)*lh/2;
     ls.forEach((ln,i)=>ctx.fillText(ln,cx2,sY+i*lh));
     if(h>28){ctx.font="400 8px 'Segoe UI',Arial,sans-serif";ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillText(val.toFixed(2)+' Mg',cx2,sY+ls.length*lh+5);}
+    ctx.globalAlpha=1;
   }
 
-  function ribbon(x1,y1t,y1b,x2,y2t,y2b,color,a){
+  function ribbon(x1,y1t,y1b,x2,y2t,y2b,color,a,fromLbl,toLbl){
+    if(fromLbl||toLbl) sceneRibbons.push({from:fromLbl,to:toLbl});
     if(y1b<=y1t||y2b<=y2t||y1b-y1t<0.5||y2b-y2t<0.5)return;
+    const dimmed=sankeyHover&&fromLbl&&!connectedLabels.has(fromLbl)&&!connectedLabels.has(toLbl);
     const mx=x1+(x2-x1)*0.52;
     ctx.beginPath();ctx.moveTo(x1,y1t);
     ctx.bezierCurveTo(mx,y1t,mx,y2t,x2,y2t);ctx.lineTo(x2,y2b);
     ctx.bezierCurveTo(mx,y2b,mx,y1b,x1,y1b);ctx.closePath();
-    ctx.fillStyle=rgba(color,a);ctx.fill();
+    ctx.fillStyle=rgba(color,dimmed?a*0.07:a);ctx.fill();
   }
 
   function hdr(x,w,l1,l2){
@@ -1777,7 +1812,7 @@ function renderSankey() {
   scPcts.forEach((p,i)=>{
     const slH=(p/100)*FULL_H;
     // draw back-to-front so S1 is on top visually
-    ribbon(ANC_X+ANC_W,ancCur,ancCur+slH,SC_X,scY[i],scY[i]+scH[i],S_COLORS[i],0.22);
+    ribbon(ANC_X+ANC_W,ancCur,ancCur+slH,SC_X,scY[i],scY[i]+scH[i],S_COLORS[i],0.22,'Baseline',['Scope 1','Scope 2','Scope 3'][i]);
     ancCur+=slH;
   });
 
@@ -1798,7 +1833,7 @@ function renderSankey() {
     const h=t1H[i],col=T1_COLORS[i%T1_COLORS.length];
     // S3 share: use t.pct which is pct of total T1 sum
     const slH=(t.pct/(s3box.pct||1))*s3box.h;
-    ribbon(SC_X+SC_W,s3cur,s3cur+slH,T1_X,tY,tY+h,col,0.20);
+    ribbon(SC_X+SC_W,s3cur,s3cur+slH,T1_X,tY,tY+h,col,0.20,'Scope 3',t.label);
     s3cur+=slH;tY+=h+BOX_GAP;
   });
   const t1Boxes=[];tY=TOP;
@@ -1828,9 +1863,9 @@ function renderSankey() {
         const ptot=lPcts.reduce((a,b)=>a+b,0)||1;let tsc=tb.y;
         lhs.forEach((lh,si)=>{
           const slH=(lPcts[si]/ptot)*tb.h;
-          ribbon(nextX,tsc,tsc+slH,leafX,lY,lY+lh,S_COLORS[si],ribbonAlpha);
+          ribbon(nextX,tsc,tsc+slH,leafX,lY,lY+lh,S_COLORS[si],ribbonAlpha,t.label,t.label);
           tsc+=slH;
-          drawBox(leafX,lY,leafW,lh,S_COLORS[si],['S1','S2','S3'][si],lPcts[si]/anchorVal*100,lPcts[si],8);
+          drawBox(leafX,lY,leafW,lh,S_COLORS[si],t.label,lPcts[si]/anchorVal*100,lPcts[si],8);
           lfBoxes.push({y:lY,h:lh,si,parentIdx:i,parentLabel:t.label});
           lY+=lh+LEAF_GAP;
         });
@@ -1845,7 +1880,7 @@ function renderSankey() {
       sectorBoxes.forEach((tb,i)=>{
         const t=sectorData[i];const lP=[t.s1||0,t.s2||0,t.s3||0];const ptot=lP.reduce((a,b)=>a+b,0)||1;
         let tsc=tb.y;
-        lP.forEach((p,si)=>{const slH=(p/ptot)*tb.h;ribbon(nextX,tsc,tsc+slH,leafX,bTops[si],bTops[si]+smH[si],S_COLORS[si],0.10);tsc+=slH;});
+        lP.forEach((p,si)=>{const slH=(p/ptot)*tb.h;ribbon(nextX,tsc,tsc+slH,leafX,bTops[si],bTops[si]+smH[si],S_COLORS[si],0.10,t.label,t.label);tsc+=slH;});
       });
       smH.forEach((h,si)=>{drawBox(leafX,bTops[si],leafW,h,S_COLORS[si],['S1','S2','S3'][si],smV[si]/smTot*100,smV[si],9);});
       // Return s3 slices per parent for next-tier ribbon sources
@@ -1888,7 +1923,7 @@ function renderSankey() {
       const c=t2e.t1Map[t1e.label]||0;if(c<=0)return;
       const srcH=c/t1tot*lf.h;
       const dstH=c/(t2e.val||1)*t2H[t2i];
-      ribbon(LF_X+LF_W,lf.y+srcOff,lf.y+srcOff+srcH,T2_X,t2Boxes[t2i].y+t2DstOff[t2i],t2Boxes[t2i].y+t2DstOff[t2i]+dstH,T2_COLORS[t2i%T2_COLORS.length],0.20);
+      ribbon(LF_X+LF_W,lf.y+srcOff,lf.y+srcOff+srcH,T2_X,t2Boxes[t2i].y+t2DstOff[t2i],t2Boxes[t2i].y+t2DstOff[t2i]+dstH,T2_COLORS[t2i%T2_COLORS.length],0.20,t1e.label,t2e.label);
       srcOff+=srcH;t2DstOff[t2i]+=dstH;
     });
   });
@@ -1924,7 +1959,7 @@ function renderSankey() {
       const c=t3e.t2Map[t2e.label]||0;if(c<=0)return;
       const srcH=c/t2tot*lf2.h;
       const dstH=c/(t3e.val||1)*t3H[t3i];
-      ribbon(LF2_X+LF2_W,lf2.y+srcOff,lf2.y+srcOff+srcH,T3_X,t3Boxes[t3i].y+t3DstOff[t3i],t3Boxes[t3i].y+t3DstOff[t3i]+dstH,T3_COLORS[t3i%T3_COLORS.length],0.18);
+      ribbon(LF2_X+LF2_W,lf2.y+srcOff,lf2.y+srcOff+srcH,T3_X,t3Boxes[t3i].y+t3DstOff[t3i],t3Boxes[t3i].y+t3DstOff[t3i]+dstH,T3_COLORS[t3i%T3_COLORS.length],0.18,t2e.label,t3e.label);
       srcOff+=srcH;t3DstOff[t3i]+=dstH;
     });
   });
