@@ -527,7 +527,7 @@ async function submitSignin() {
     btn.textContent = 'Unlock access';
     errEl.textContent = result.expired
       ? 'This access code has expired. Please contact TASA EFX for a new code.'
-      : 'Code not recognised. Check for typos or contact your account manager.';
+      : 'Code not recognised. Try typing in code manually and checking for typos or contact us for support.';
     errEl.style.display = 'block';
   }
 }
