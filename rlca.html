@@ -280,11 +280,14 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <div class="fg">
     <label>Year</label>
     <select id="fb-year" onchange="onYearChange()">
+      <option value="2017">2017 (Base Year)</option>
+      <option value="2018">2018</option>
+      <option value="2019">2019</option>
+      <option value="2020">2020</option>
+      <option value="2021">2021</option>
+      <option value="2022">2022</option>
       <option value="2023" selected>2023</option>
       <option value="2024">2024</option>
-      <option value="2022">2022</option>
-      <option value="2020">2020</option>
-      <option value="2017">2017 (Base Year)</option>
     </select>
   </div>
   <div class="filter-free-tag" id="rlca-free-tag">✓ Demo Mode</div>
@@ -868,7 +871,8 @@ async function rlcaLoadAndRender(silverSector){
   if(yearSel && model.year){
     if(![...yearSel.options].some(o=>o.value===model.year)){
       const opt=document.createElement('option'); opt.value=opt.textContent=model.year;
-      yearSel.insertBefore(opt,yearSel.firstChild);
+      const after=[...yearSel.options].find(o=>o.value>model.year);
+      yearSel.insertBefore(opt, after||null);
     }
     yearSel.value=model.year;
   }
