@@ -455,6 +455,11 @@ function injectSigninModal() {
 function openSigninModal() {
   document.getElementById('tasa-modal-overlay').classList.add('open');
   document.getElementById('tasa-signin-error').style.display = 'none';
+  const btn = document.getElementById('tasa-signin-submit');
+  if (btn) { btn.disabled = false; btn.textContent = 'Unlock access'; }
+  ['tasa-code-input','tasa-name-input','tasa-email-input','tasa-industry-input','tasa-jobtitle-input'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
   setTimeout(() => document.getElementById('tasa-code-input').focus(), 100);
 }
 
@@ -509,6 +514,8 @@ async function submitSignin() {
   }
 
   if (result.valid) {
+    btn.disabled = false;
+    btn.textContent = 'Unlock access';
     setSession({ isUnlocked: true, user: { name, email, industry, code }, presignedManifest: result.presignedManifest, conferenceName: result.conferenceName });
     refreshAuthState();
     closeSigninModal();
