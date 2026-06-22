@@ -1,0 +1,82 @@
+{
+  "platinum": [
+    {
+      "file": "TASA-EFX_USA_Platinum_Model_2024_v3.0.xlsx",
+      "country": "United States",
+      "sectors": [
+        { "silverSector": "Flours and malts",            "platSector": "Flours and malts" },
+        { "silverSector": "Sugar, candy, and chocolate", "platSector": "Sugar, candy, and chocolate" },
+        { "silverSector": "Fluid milk and butter",       "platSector": "Fluid milk and butter" },
+        { "silverSector": "Major home appliances",       "platSector": "Major home appliances" },
+        { "silverSector": "Household goods repair",      "platSector": "Household goods repair" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_VNM_Platinum_Model_2024_v3.0.xlsx",
+      "country": "Vietnam",
+      "sectors": [
+        { "silverSector": "Flour and Other Grain Milling",   "platSector": "Flour and Other Grain Milling" },
+        { "silverSector": "Sugar",                            "platSector": "Sugar" },
+        { "silverSector": "Confectionery",                    "platSector": "Confectionery" },
+        { "silverSector": "Dairy Products",                   "platSector": "Dairy Products" },
+        { "silverSector": "Household Electrical Appliances",  "platSector": "Household Electrical Appliances" },
+        { "silverSector": "Repair, Not Elsewhere Classified", "platSector": "Repair, Not Elsewhere Classified" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_MEX_Platinum_Model_2024_v3.0.xlsx",
+      "country": "Mexico",
+      "sectors": [
+        { "silverSector": "Corn milling",                                                              "platSector": "Corn milling" },
+        { "silverSector": "Milling from other crops",                                                  "platSector": "Milling from other crops" },
+        { "silverSector": "Production of cane sugar",                                                  "platSector": "Production of cane sugar" },
+        { "silverSector": "Manufacture of chocolate and chocolate products",                            "platSector": "Manufacture of chocolate and chocolate products" },
+        { "silverSector": "Preparation of dairy derivatives and ferments",                             "platSector": "Preparation of dairy derivatives and ferments" },
+        { "silverSector": "Manufacture of minor household appliances",                                 "platSector": "Manufacture of minor household appliances" },
+        { "silverSector": "Repair and maintenance of household and personal electrical appliances",    "platSector": "Repair and maintenance of household and personal electrical appliances" }
+      ]
+    }
+  ],
+  "rlca": [
+    {
+      "file": "TASA-EFX_rLCA_Fluid-milk-and-butter_USA_2024_v2.0.xlsx",
+      "country": "United States",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Fluid milk and butter", "rlcaSector": "Fluid milk and butter" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_rLCA_Sugar,-candy,-and-chocolate_USA_2024_v2.0.xlsx",
+      "country": "United States",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Sugar, candy, and chocolate", "rlcaSector": "Sugar, candy, and chocolate" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_rLCA_Flours-and-malts_USA_2024_v2.0.xlsx",
+      "country": "United States",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Flours and malts", "rlcaSector": "Flours and malts" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_rLCA_Household-goods-repair_USA_2024_v2.0.xlsx",
+      "country": "United States",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Household goods repair", "rlcaSector": "Household goods repair" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_rLCA_Major-home-appliances_USA_2024_v2.0.xlsx",
+      "country": "United States",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Major home appliances", "rlcaSector": "Major home appliances" }
+      ]
+    }
+  ]
+}

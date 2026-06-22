@@ -1,0 +1,66 @@
+{
+  "platinum": [
+    {
+      "file": "TASA-EFX_USA_Platinum_Model_2024_v3.0.xlsx",
+      "country": "United States",
+      "sectors": [
+        { "silverSector": "Snack Foods", "platSector": "Snack Foods" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_MEX_Platinum_Model_2024_v3.0.xlsx",
+      "country": "Mexico",
+      "sectors": [
+        { "silverSector": "Manufacture of cars and trucks", "platSector": "Manufacture of cars and trucks" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_KOR_Platinum_Model_2024_v3.0.xlsx",
+      "country": "South Korea",
+      "sectors": [
+        { "silverSector": "Mobile Phones", "platSector": "Mobile Phones" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_IND_Platinum_Model_2024_v3.0.xlsx",
+      "country": "India",
+      "sectors": [
+        { "silverSector": "Manufacture of pharmaceutical; medicinal chemicals and botanical products", "platSector": "Manufacture of pharmaceutical; medicinal chemicals and botanical products" }
+      ]
+    }
+  ],
+  "rlca": [
+    {
+      "file": "TASA-EFX_rLCA_Snack-Foods_USA_2024_v2.0.xlsx",
+      "country": "United States",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Snack Foods", "rlcaSector": "Snack Foods" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_rLCA_Manufacture-of-cars-and-trucks_MEX_2024_v2.0.xlsx",
+      "country": "Mexico",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Manufacture of cars and trucks", "rlcaSector": "Manufacture of cars and trucks" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_rLCA_Mobile-Phones_KOR_2024_v2.0.xlsx",
+      "country": "South Korea",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Mobile Phones", "rlcaSector": "Mobile Phones" }
+      ]
+    },
+    {
+      "file": "TASA-EFX_rLCA_Manufacture-of-pharmaceutical_IND_2024_v2.0.xlsx",
+      "country": "India",
+      "year": "2024",
+      "sectors": [
+        { "silverSector": "Manufacture of pharmaceutical; medicinal chemicals and botanical products", "rlcaSector": "Manufacture of pharmaceutical; medicinal chemicals and botanical products" }
+      ]
+    }
+  ]
+}
