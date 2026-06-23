@@ -255,9 +255,9 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
 <div class="ph">
   <div>
-    <div class="ph-badge">rLCA · Rapid Lifecycle Assessment</div>
+    <div class="ph-badge">rLCA · Rapid Input-Output Lifecycle Assessment</div>
     <div class="ph-title" id="ph-title">Multi-tier Global Emissions Structure</div>
-    <div class="ph-sub">Scope 1 &amp; Scope 2 emissions intensity for every contributing upstream input, 10-tiers deep. Use the Tier dropdown to drill into each layer of the supply chain.</div>
+    <div class="ph-sub">Dig deep into the emissions structure of any supply chain, anywhere in the world. From supply chain composition to emissions of every contributing upstream input, 10-tiers deep, drill-down into each layer of the supply chain.</div>
   </div>
   <div class="ph-stats">
     <div class="stat-box"><div class="stat-val" id="stat-sectors">—</div><div class="stat-lbl">Sectors</div></div>
@@ -274,7 +274,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
     <div id="rlca-country-wrap"><select id="fb-country" onchange="onCountryChange()"><option value="">Loading…</option></select></div>
   </div>
   <div class="fg">
-    <label>Country Sector</label>
+    <label>Sector</label>
     <div id="rlca-sector-wrap"><select id="fb-sector" onchange="onSectorChange()"><option value="">Loading…</option></select></div>
   </div>
   <div class="fg">
@@ -370,7 +370,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   </div>
 
   <div class="donut-panel">
-    <div class="donut-panel-title">Scope Split</div>
+    <div class="donut-panel-title">Total Operational Emissions</div>
     <div class="donut-panel-sub" id="donut-scope-sub">S1 vs S2 · all sectors</div>
     <div class="donut-wrap">
       <svg id="donut-scope" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
@@ -379,8 +379,8 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   </div>
 
   <div class="donut-panel">
-    <div class="donut-panel-title">Tier Depth</div>
-    <div class="donut-panel-sub" id="donut-tier-sub">Near-term (T0–T3) vs deep (T4–T10)</div>
+    <div class="donut-panel-title">Operational Emissions Depth</div>
+    <div class="donut-panel-sub" id="donut-tier-sub">Traceable (T0–T1) vs difficult to trace (T2–T10)</div>
     <div class="donut-wrap">
       <svg id="donut-tier" width="96" height="96" viewBox="0 0 96 96" style="flex-shrink:0"></svg>
       <div class="donut-legend" id="donut-tier-legend"></div>
@@ -480,7 +480,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 </div>
 
 <div style="margin:14px 24px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-  <div style="font-size:11px;color:var(--mid)">Scope 1 · 2 · 3 flows shown between tiers · hover for detail</div>
+  <div style="font-size:11px;color:var(--mid)">Visualization of the first 3 tiers of supply chain relationships · hover for detail</div>
   <div style="margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
     <div style="display:flex;gap:6px;align-items:center;">
       <span style="font-size:10px;color:var(--mid);text-transform:uppercase;letter-spacing:0.1em;">Scope view</span>
@@ -1019,10 +1019,11 @@ function renderCallout() {
   const ei = efData['Total Emissions Intensity'];
   document.getElementById('total-ei').textContent =
     typeof ei === 'number' ? ei.toFixed(2) : (ei || '—');
-  const s1 = efData['Scope 1'] || 0, s2 = efData['Scope 2'] || 0;
+  const s1 = efData['Scope 1'] || 0, s2 = efData['Scope 2'] || 0, s3 = efData['Scope 3'] || 0;
   const parts = [];
   if (s1 > 0) parts.push(`<strong>S1:</strong> ${s1.toFixed(3)}`);
   if (s2 > 0) parts.push(`<strong>S2:</strong> ${s2.toFixed(3)}`);
+  if (s3 > 0) parts.push(`<strong>S3:</strong> ${s3.toFixed(3)}`);
   if (parts.length)
     document.getElementById('total-ei-sub').innerHTML = parts.join(' &nbsp;·&nbsp; ');
 }
@@ -1132,23 +1133,23 @@ function renderDonuts(tierTotals, selectedSector) {
 
   // Scope split donut
   const scopeSegs = scopeFilter === 'total'
-    ? [{label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR},
-       {label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}]
+    ? [{label:'Scope 1 Direct Emissions',      val:allS1, color:S1_COLOR},
+       {label:'Scope 2 Electricity Emissions', val:allS2, color:S2_COLOR}]
     : scopeFilter === 's1'
-    ? [{label:'Scope 1 · Direct',      val:allS1, color:S1_COLOR}]
-    : [{label:'Scope 2 · Electricity', val:allS2, color:S2_COLOR}];
+    ? [{label:'Scope 1 Direct Emissions',      val:allS1, color:S1_COLOR}]
+    : [{label:'Scope 2 Electricity Emissions', val:allS2, color:S2_COLOR}];
   drawDonut('donut-scope', scopeSegs, grand, 'donut-scope-legend');
 
-  // Tier depth donut — early (T0-T3) vs late (T4-T10), using active scope
-  const early = tierTotals.slice(0,4).reduce((a,t) => {
+  // Tier depth donut — traceable (T0-T1) vs difficult to trace (T2-T10), using active scope
+  const early = tierTotals.slice(0,2).reduce((a,t) => {
     return a + (showS1?t.s1:0) + (showS2?t.s2:0);
   }, 0);
-  const late  = tierTotals.slice(4).reduce((a,t) => {
+  const late  = tierTotals.slice(2).reduce((a,t) => {
     return a + (showS1?t.s1:0) + (showS2?t.s2:0);
   }, 0);
   drawDonut('donut-tier',[
-    {label:'Tiers 0–3 · Near-term',   val:early, color:'#D4AF37'},
-    {label:'Tiers 4–10 · Deep chain', val:late,  color:'#FF66B3'}
+    {label:'Tiers 0–1 · Traceable',            val:early, color:'#D4AF37'},
+    {label:'Tiers 2–10 · Difficult to trace',  val:late,  color:'#FF66B3'}
   ], grand, 'donut-tier-legend');
 
   // Update donut subtitles
@@ -1749,7 +1750,7 @@ function renderSankey() {
     ctx.beginPath();ctx.moveTo(x+3,TOP-2);ctx.lineTo(x+w-3,TOP-2);ctx.stroke();
   }
 
-  hdr(ANC_X,ANC_W,'BASELINE','STRUCTURE');
+  hdr(ANC_X,ANC_W,'FOCAL SECTOR',null);
   hdr(SC_X,SC_W,'SCOPE',null);
   hdr(T1_X,T1_W,'TIER 1','Input Sector');
   hdr(LF_X,LF_W,'TIER 1',mode==='split'?'Scope':'Scope (sum)');

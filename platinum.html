@@ -218,10 +218,9 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 </nav>
 
 <div class="ph">
-  <p class="ey">Platinum Model · Supply-Chain Analysis</p>
-  <h1>Supply Chain Emissions Flows and Hotspots</h1>
-  <!-- EDIT: update description -->
-  <p>Trace emissions of supply inputs using locationally-specific data. Select a country, NAICS category, and year to explore the supply-chain breakdown.</p>
+  <p class="ey">Platinum Model - Country-Level Emissions Factors</p>
+  <h1>Comprehensive, Expanded Emissions Contributions and Hotspots</h1>
+  <p>Trace emissions by scope and direct supplied inputs using high-quality, locationally-specific data. Select a country, industry sector, and year to explore the largest contributors to supply chain emissions.</p>
 </div>
 
 <div class="tabs">
@@ -239,7 +238,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
     </div>
   </div>
   <div class="fg">
-    <label>Country Sector</label>
+    <label>Sector</label>
     <div class="custom-select-wrap" id="sector-wrap">
       <select id="f-sector" onchange="onFilterChange()"><option value="">Loading…</option></select>
     </div>
@@ -778,7 +777,7 @@ function renderDashboard(silverSector, platSector, year){
         <div class="scope-bar-list" id="scope-bars"></div>
       </div>
       <div class="cb">
-        <h3>Top Tier 1 Input Sectors</h3>
+        <h3>Top Tier 1 Direct Purchased Input Sectors</h3>
         <p class="cs">Ranked by total Emissions Impact - Scope 1, 2, 3</p>
         <div class="leg">
           <div class="li"><div class="ld" style="background:var(--s1)"></div>Scope 1</div>
@@ -789,7 +788,7 @@ function renderDashboard(silverSector, platSector, year){
       </div>
     </div>
     <div class="cg1 cb">
-      <h3>Emissions Structure — Baseline Sankey</h3>
+      <h3>Emissions Structure – Tier 1 direct purchased inputs</h3>
       <p class="cs">Sector → Scope → Tier 1 Input → Tier 1 Scope · hover nodes for values</p>
       <div class="toggle-row">
         <span class="toggle-lbl">Tier 1 Scope view:</span>
@@ -955,7 +954,7 @@ function drawCanvas(d,mode){
     ctx.beginPath();ctx.moveTo(x+3,TOP-2);ctx.lineTo(x+w-3,TOP-2);ctx.stroke();
   }
 
-  hdr(ANC_X,ANC_W,'BASELINE','STRUCTURE');
+  hdr(ANC_X,ANC_W,'FOCAL SECTOR',null);
   hdr(SC_X,SC_W,'SCOPE',null);
   hdr(T1_X,T1_W,'TIER 1','Input Sector');
   hdr(LF_X,LF_W,mode==='detail'?'TIER 1':'TIER 1',mode==='detail'?'Scope':'Scope (summed)');

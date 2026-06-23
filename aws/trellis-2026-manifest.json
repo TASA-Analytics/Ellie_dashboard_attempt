@@ -4,7 +4,7 @@
       "file": "TASA-EFX_USA_Platinum_Model_2024_v3.0.xlsx",
       "country": "United States",
       "sectors": [
-        { "silverSector": "Snack Foods", "platSector": "Snack Foods" }
+        { "silverSector": "Snack foods", "platSector": "Snack foods" }
       ]
     },
     {
@@ -31,11 +31,11 @@
   ],
   "rlca": [
     {
-      "file": "TASA-EFX_rLCA_Snack-Foods_USA_2024_v2.0.xlsx",
+      "file": "TASA-EFX_rLCA_Snack-foods_USA_2024_v2.0.xlsx",
       "country": "United States",
       "year": "2024",
       "sectors": [
-        { "silverSector": "Snack Foods", "rlcaSector": "Snack Foods" }
+        { "silverSector": "Snack foods", "rlcaSector": "Snack foods" }
       ]
     },
     {
@@ -55,7 +55,7 @@
       ]
     },
     {
-      "file": "TASA-EFX_rLCA_Manufacture-of-pharmaceutical_IND_2024_v2.0.xlsx",
+      "file": "TASA-EFX_rLCA_Manufacture-of-pharmaceutical;-medicinal-chemicals-and-botanical-products_IND_2024_v2.0.xlsx",
       "country": "India",
       "year": "2024",
       "sectors": [
