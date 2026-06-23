@@ -70,6 +70,11 @@ select option:checked{background:#0a2a5e;color:var(--primary-lt);}
 
 .ctrl-hint{font-size:11px;color:var(--mid);margin-top:4px;}
 
+.select-wrap{position:relative;display:block;}
+.select-wrap::after{content:'▾';position:absolute;right:9px;top:50%;transform:translateY(-50%);
+  pointer-events:none;color:var(--dim);font-size:13px;line-height:1;}
+.select-wrap select{padding-right:24px;width:100%;}
+
 .chart-area{margin:0 24px 24px;background:var(--navy2);border:1px solid var(--bdr);
              border-radius:10px;overflow:hidden;min-height:200px;}
 
@@ -128,7 +133,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 <div class="ph">
   <p class="ph-title">Open Silver Emissions Factors - Country, Commodity, Emissions Scope</p>
   <!-- EDIT: update subtitle to match your product messaging -->
-  <p class="ph-sub">Scope 1 · 2 · 3 emissions intensity by economic sector, country, and year</p>
+  <p class="ph-sub">Scope 1 · 2 · 3 emissions intensity by economic sector, country, and year · All Open Silver models are available for free download at <a href="https://tasa-efx.com/" target="_blank" rel="noopener" style="color:var(--primary-lt);text-decoration:none;">tasa-efx.com</a></p>
 </div>
 
 <div class="tabs">
@@ -148,7 +153,10 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
         <input type="text" id="naics-search" placeholder="Search by code or description…" oninput="filterNaicsDropdown()" autocomplete="off">
       </div>
       <span class="naics-no-match" id="naics-no-match">No matching sectors</span>
-      <select id="f-naics" onchange="render()"><option value="">Loading…</option></select>
+      <div class="select-wrap">
+        <select id="f-naics" onchange="render()"><option value="">Loading…</option></select>
+      </div>
+      <div class="ctrl-hint">Type in the search box to filter by NAICS code or sector name, then select from the dropdown</div>
     </div>
     <div class="ctrl-group">
       <div class="ctrl-label">Countries</div>
@@ -431,7 +439,7 @@ function render(){
       pos += GAP_SECTOR;
     });
 
-    countryLabelPos[country] = (countryStart + pos - GAP_SECTOR) / 2;
+    countryLabelPos[country] = (countryStart + pos - GAP_SECTOR - 1) / 2;
     pos += GAP_COUNTRY;
   });
 
