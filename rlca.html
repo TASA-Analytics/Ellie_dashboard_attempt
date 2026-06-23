@@ -840,11 +840,20 @@ function onCountryChange(){}
 function onSectorChange(){}
 
 function onYearChange() {
-  const y=document.getElementById('fb-year').value;
-  if(window.TASA_AUTH?.isUnlocked){ rlcaLoadAndRender(ddState.sector); return; }
-  if(y===FREE_YEAR) { rlcaLoadAndRender(ddState.sector); return; }
+  const y = document.getElementById('fb-year').value;
+  if (window.TASA_AUTH?.isUnlocked) {
+    const model = sectorToModelMap[ddState.country + '||' + ddState.sector];
+    if (model?.year && model.year !== y) {
+      showUpsell('YEAR · ' + y, y);
+      document.getElementById('fb-year').value = model.year;
+      return;
+    }
+    rlcaLoadAndRender(ddState.sector);
+    return;
+  }
+  if (y === FREE_YEAR) { rlcaLoadAndRender(ddState.sector); return; }
   showUpsell('YEAR · ' + y, y);
-  document.getElementById('fb-year').value=FREE_YEAR;
+  document.getElementById('fb-year').value = FREE_YEAR;
 }
 
 async function rlcaLoadAndRender(silverSector){
