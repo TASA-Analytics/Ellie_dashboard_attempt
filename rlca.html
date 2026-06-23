@@ -484,8 +484,8 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
   <div style="margin-left:auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
     <div style="display:flex;gap:6px;align-items:center;">
       <span style="font-size:10px;color:var(--mid);text-transform:uppercase;letter-spacing:0.1em;">Scope view</span>
-      <button id="sankey-mode-split" class="sankey-toggle on" onclick="setSankeyMode('split')">Split S1/S2/S3</button>
-      <button id="sankey-mode-sum"   class="sankey-toggle"    onclick="setSankeyMode('sum')">Summed</button>
+      <button id="sankey-mode-split" class="sankey-toggle"    onclick="setSankeyMode('split')">Split S1/S2/S3</button>
+      <button id="sankey-mode-sum"   class="sankey-toggle on" onclick="setSankeyMode('sum')">Summed</button>
     </div>
     <div style="display:flex;gap:6px;align-items:center;">
       <span style="font-size:10px;color:var(--mid);text-transform:uppercase;letter-spacing:0.1em;">Top N</span>
@@ -1209,7 +1209,7 @@ function drawDonut(svgId, segs, total, legendId) {
 
 // ── Sankey data ───────────────────────────────────────
 let sankeyData = null;
-let sankeyMode = 'split'; // 'split' | 'sum'
+let sankeyMode = 'sum'; // 'split' | 'sum'
 let _sankeyWb  = null;    // cached workbook for topN re-render
 let _sankeyRlcaSector = '';
 

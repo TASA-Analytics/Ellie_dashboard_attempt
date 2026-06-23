@@ -331,7 +331,7 @@ const C={s1:'#B98EFF',s2:'#3FA9F6',s3:'#A7F3D0'};
 let silverMap  = {};
 // allRows for current loaded Excel
 let allRows    = [];
-let canvasMode = 'detail';
+let canvasMode = 'summed';
 
 // manifest-derived structures:
 // availableModels: array of { path, country, countryCode, year, tier }
@@ -792,8 +792,8 @@ function renderDashboard(silverSector, platSector, year){
       <p class="cs">Sector → Scope → Tier 1 Input → Tier 1 Scope · hover nodes for values</p>
       <div class="toggle-row">
         <span class="toggle-lbl">Tier 1 Scope view:</span>
-        <button class="tog on"  id="btn-detail" onclick="setCanvasMode('detail')">Broken Out</button>
-        <button class="tog off" id="btn-summed" onclick="setCanvasMode('summed')">Summed</button>
+        <button class="tog off" id="btn-detail" onclick="setCanvasMode('detail')">Broken Out</button>
+        <button class="tog on"  id="btn-summed" onclick="setCanvasMode('summed')">Summed</button>
       </div>
       <div class="sankey-wrap"><canvas id="sankey-canvas"></canvas></div>
     </div>`;
@@ -826,8 +826,8 @@ function renderDashboard(silverSector, platSector, year){
     </div>`;
   }).join('');
 
-  window._ptData=d; canvasMode='detail';
-  drawCanvas(d,'detail');
+  window._ptData=d; canvasMode='summed';
+  drawCanvas(d,'summed');
 }
 
 function setCanvasMode(mode){
