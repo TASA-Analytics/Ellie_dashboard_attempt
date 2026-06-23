@@ -78,6 +78,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px
   border-radius:10px;font-weight:800;text-decoration:none;font-size:14px;
   transition:transform .15s,box-shadow .15s;cursor:pointer;border:none;font-family:inherit;}
 .upsell-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(255,187,0,0.4);}
+.upsell-store-link{font-size:13px;color:var(--primary-lt);text-decoration:none;transition:color .15s;}
+.upsell-store-link:hover{color:var(--orange);}
 .upsell-dismiss{font-size:12px;color:rgba(255,255,255,0.32);cursor:pointer;
   background:none;border:none;font-family:inherit;transition:color .2s;padding:4px;}
 .upsell-dismiss:hover{color:rgba(255,255,255,0.65);}
@@ -229,13 +231,14 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 <!-- UPSELL OVERLAY -->
 <div class="upsell-overlay" id="upsell">
   <div class="upsell-card">
-    <span class="upsell-icon">📊</span>
-    <div class="upsell-what" id="upsell-what">Additional Data Available</div>
-    <h2>Unlock <span>Full rLCA</span> Access</h2>
-    <p id="upsell-msg">rLCA reports for additional countries, sectors, and years are available through TASA EFX. <strong>Contact us</strong> to get access to the full dataset.</p>
+    <span class="upsell-icon">🌟</span>
+    <div class="upsell-what" id="upsell-what"></div>
+    <h2>Unlock Additional <span>rLCA</span> Models</h2>
+    <p id="upsell-msg">rLCA models are available through the TASA EFX Store.</p>
     <div class="upsell-actions">
-      <a href="https://tasa-efx.com/rlca/" class="upsell-btn" target="_blank" rel="noopener">Contact TASA EFX →</a>
-      <button class="upsell-dismiss" onclick="dismissUpsell()">Go back to default view</button>
+      <a href="https://tasa-efx.com/contact/" class="upsell-btn" target="_blank" rel="noopener">Contact Us →</a>
+      <a href="https://tasa-efx.com/rlca/" class="upsell-store-link" target="_blank" rel="noopener">Browse TASA EFX Store →</a>
+      <button class="upsell-dismiss" onclick="dismissUpsell()">Go back</button>
     </div>
   </div>
 </div>
@@ -769,7 +772,7 @@ function populateRlcaCountryDropdown(){
       const item=document.createElement('div');
       item.className='dd-item locked';
       item.innerHTML=`<span class="dd-dot"></span>${c}`;
-      item.addEventListener('click',()=>{showUpsell(`Country · ${c}`,`rLCA reports for <strong>${c}</strong> are available through TASA EFX. Contact us to get access.`);closeAllDropdowns();});
+      item.addEventListener('click',()=>{showUpsell('COUNTRY · ' + c, c);closeAllDropdowns();});
       list.appendChild(item);
     });
   }
@@ -811,7 +814,7 @@ function populateRlcaSectorDropdown(country,silent){
       const item=document.createElement('div');
       item.className='dd-item locked';
       item.innerHTML=`<span class="dd-dot"></span>${s}`;
-      item.addEventListener('click',()=>{showUpsell(`Sector · ${s}`,`rLCA reports for <strong>${s}</strong> are available through TASA EFX. Contact us to get access.`);closeAllDropdowns();});
+      item.addEventListener('click',()=>{showUpsell('SECTOR · ' + s, s);closeAllDropdowns();});
       list.appendChild(item);
     });
   }
@@ -840,7 +843,7 @@ function onYearChange() {
   const y=document.getElementById('fb-year').value;
   if(window.TASA_AUTH?.isUnlocked){ rlcaLoadAndRender(ddState.sector); return; }
   if(y===FREE_YEAR) { rlcaLoadAndRender(ddState.sector); return; }
-  showUpsell(`Year · ${y}`,`rLCA reports for <strong>${y}</strong> are available through TASA EFX. Contact us for access across all years.`);
+  showUpsell('YEAR · ' + y, y);
   document.getElementById('fb-year').value=FREE_YEAR;
 }
 
@@ -849,7 +852,7 @@ async function rlcaLoadAndRender(silverSector){
   const country=ddState.country;
   const key=country+'||'+silverSector;
   const model=sectorToModelMap[key];
-  if(!model){ showUpsell(`Sector · ${silverSector}`,`rLCA reports for <strong>${silverSector}</strong> are available through TASA EFX.`); return; }
+  if(!model){ showUpsell('SECTOR · ' + silverSector, silverSector); return; }
 
   // Use explicit rlcaSector from manifest for Excel filtering
   const rlcaSector = model.rlcaSector || silverSector;
@@ -907,9 +910,13 @@ async function rlcaLoadAndRender(silverSector){
   }
 }
 
-function showUpsell(what,msg){
-  document.getElementById('upsell-what').textContent=what||'Additional Data Available';
-  document.getElementById('upsell-msg').innerHTML=msg||'rLCA reports for additional countries, sectors, and years are available through TASA EFX. <strong>Contact us</strong> to get access.';
+function showUpsell(what, name){
+  const el = document.getElementById('upsell-what');
+  el.textContent = what || '';
+  el.style.display = what ? '' : 'none';
+  document.getElementById('upsell-msg').innerHTML = name
+    ? `rLCA models for <strong>${name}</strong> are available through the TASA EFX Store.`
+    : `rLCA models are available through the TASA EFX Store.`;
   document.getElementById('upsell').classList.add('show');
 }
 function dismissUpsell(){ document.getElementById('upsell').classList.remove('show'); }
