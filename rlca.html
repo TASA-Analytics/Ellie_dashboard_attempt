@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>rLCA — TASA EFX</title>
+<title>rLCA — TASA-EFX</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
@@ -234,10 +234,10 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
     <span class="upsell-icon">🌟</span>
     <div class="upsell-what" id="upsell-what"></div>
     <h2>Unlock Additional <span>rLCA</span> Models</h2>
-    <p id="upsell-msg">rLCA models are available through the TASA EFX Store.</p>
+    <p id="upsell-msg">rLCA models are available through the TASA-EFX Store.</p>
     <div class="upsell-actions">
       <a href="https://tasa-efx.com/contact/" class="upsell-btn" target="_blank" rel="noopener">Contact Us →</a>
-      <a href="https://tasa-efx.com/rlca/" class="upsell-store-link" target="_blank" rel="noopener">Browse TASA EFX Store →</a>
+      <a href="https://tasa-efx.com/rlca/" class="upsell-store-link" target="_blank" rel="noopener">Browse TASA-EFX Store →</a>
       <button class="upsell-dismiss" onclick="dismissUpsell()">Go back</button>
     </div>
   </div>
@@ -245,8 +245,8 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 
 <nav>
   <a class="nav-logo" href="index.html">
-    <img src="TASA Logo Blue copy.png" alt="TASA EFX">
-    <span class="logo-text">TASA <em>EFX</em></span>
+    <img src="TASA Logo Blue copy.png" alt="TASA-EFX">
+    <span class="logo-text">TASA-<em>EFX</em></span>
   </a>
   <div class="nav-links">
     <a href="index.html">Home</a>
@@ -536,7 +536,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
     <a href="https://tasa-efx.com/contact/" target="_blank" rel="noopener" style="color:#F4F5F5;text-decoration:none;font-weight:500">Contact Us</a>
     <a href="https://tasa-efx.com/terms-and-conditions/" target="_blank" rel="noopener" style="color:#F4F5F5;text-decoration:none;font-weight:500">Terms and Conditions</a>
   </div>
-  <span>© 2025 TASA EFX. All rights reserved.</span>
+  <span>© 2025 TASA-EFX. All rights reserved.</span>
 </footer>
 
 <script src="auth.js"></script>
@@ -924,8 +924,8 @@ function showUpsell(what, name){
   el.textContent = what || '';
   el.style.display = what ? '' : 'none';
   document.getElementById('upsell-msg').innerHTML = name
-    ? `rLCA models for <strong>${name}</strong> are available through the TASA EFX Store.`
-    : `rLCA models are available through the TASA EFX Store.`;
+    ? `rLCA models for <strong>${name}</strong> are available through the TASA-EFX Store.`
+    : `rLCA models are available through the TASA-EFX Store.`;
   document.getElementById('upsell').classList.add('show');
 }
 function dismissUpsell(){ document.getElementById('upsell').classList.remove('show'); }
