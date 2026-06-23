@@ -21,9 +21,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px
     background:rgba(5,13,26,0.97);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--white);}
 .nav-logo img{height:36px;width:auto;display:block;}
-.logo-text{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.1;}
-.logo-text em{color:var(--orange);font-style:normal;}
-.logo-sub{display:block;font-size:9px;font-weight:500;letter-spacing:0.03em;color:rgba(244,245,245,0.45);text-transform:none;margin-top:1px;}
+.logo-wrap{display:flex;flex-direction:column;gap:1px;}
+.logo-main{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1;}
+.logo-main em{color:var(--orange);font-style:normal;}
+.logo-sub{font-size:11px;font-weight:400;color:rgba(244,245,245,0.55);letter-spacing:0.01em;}
 .nav-links{display:flex;gap:4px;}
 .nav-links a{color:var(--dim);text-decoration:none;font-size:13px;font-weight:500;
   padding:6px 12px;border-radius:6px;transition:background .15s,color .15s;}
@@ -121,7 +122,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 24px;display:flex;justify-co
 <nav>
   <a class="nav-logo" href="index.html">
     <img src="TASA Logo Blue copy.png" alt="TASA-EFX">
-    <div class="logo-text">TASA-<em>EFX</em><span class="logo-sub">Emissions Intelligence Platform (beta 1.2)</span></div>
+    <div class="logo-wrap"><div class="logo-main">TASA-<em>EFX</em></div><div class="logo-sub">Emissions Intelligence Platform (beta 1.2)</div></div>
   </a>
   <div class="nav-links">
     <a href="index.html">Home</a>
