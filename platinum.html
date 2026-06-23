@@ -226,7 +226,7 @@ footer{border-top:1px solid var(--bdr);padding:20px 36px;display:flex;justify-co
 
 <div class="tabs">
   <button class="tb on" onclick="switchTab('dash',this)">📊 Dashboard</button>
-  <button class="tb"    onclick="showRawDataStore()">📋 Raw Data</button>
+  <button class="tb"    onclick="showUpsell()">📋 Raw Data</button>
 </div>
 
 <!-- FILTERS: Country → Country Sector → Year -->
@@ -371,12 +371,6 @@ function switchTab(id,btn){
   btn.classList.add('on');
 }
 
-function showRawDataStore(){
-  document.getElementById('raw-store-modal').classList.add('open');
-}
-function closeRawDataStore(){
-  document.getElementById('raw-store-modal').classList.remove('open');
-}
 
 // ── Upsell ────────────────────────────────────────────────────
 function showUpsell(){ document.getElementById('upsell').classList.add('show'); }
@@ -1108,36 +1102,4 @@ window.addEventListener('tasaAuthChanged', ()=>{ currentModelPath=null; allRows=
 </script>
 <script src="auth.js"></script>
 
-<!-- Raw Data store modal -->
-<div id="raw-store-modal" style="
-  display:none;position:fixed;inset:0;z-index:8000;
-  background:rgba(2,6,16,0.88);align-items:center;justify-content:center;">
-  <div style="
-    background:#0a1628;border:1px solid rgba(0,69,171,0.35);border-radius:16px;
-    padding:40px 36px;max-width:420px;width:90%;text-align:center;position:relative;">
-    <button onclick="closeRawDataStore()" style="
-      position:absolute;top:14px;right:16px;background:none;border:none;
-      color:rgba(244,245,245,0.35);font-size:20px;cursor:pointer;line-height:1;">×</button>
-    <div style="font-size:32px;margin-bottom:16px;">🛒</div>
-    <h2 style="font-size:18px;font-weight:700;color:#F4F5F5;margin-bottom:10px;">Purchase Full Dataset</h2>
-    <p style="font-size:13px;line-height:1.6;color:rgba(244,245,245,0.55);margin-bottom:28px;">
-      Raw emissions data is available for purchase and download directly from the TASA EFX store.
-      Datasets include all sectors, scopes, and years in Excel format.
-    </p>
-    <a href="https://tasa-efx.com/" target="_blank" rel="noopener" style="
-      display:inline-block;background:#FFBB00;color:#050d1a;
-      padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;
-      text-decoration:none;transition:opacity .15s;">
-      Visit EFX Store →
-    </a>
-    <p style="font-size:11px;color:rgba(244,245,245,0.3);margin-top:18px;">
-      Questions? <a href="https://tasa-efx.com/contact/" target="_blank" rel="noopener"
-        style="color:rgba(167,204,231,0.6);text-decoration:none;">Contact us</a>
-    </p>
-  </div>
-</div>
-<style>
-  #raw-store-modal { display:none; }
-  #raw-store-modal.open { display:flex; }
-</style>
 </body>
