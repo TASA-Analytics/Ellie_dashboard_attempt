@@ -113,11 +113,12 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 36px
 .ld{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 
 .toggle-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;}
-.toggle-lbl{font-size:11px;color:var(--dim);}
-.tog{padding:5px 14px;border-radius:20px;border:2px solid var(--s3);cursor:pointer;
-  font-size:11px;font-family:inherit;font-weight:600;transition:.2s;}
-.tog.on{background:var(--s3);color:#fff;border-color:var(--s3);}
-.tog.off{background:transparent;color:var(--primary-lt);}
+.toggle-lbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.1em;}
+.sankey-toggle{padding:4px 12px;border-radius:20px;border:1.5px solid var(--bdr);
+  font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;
+  background:none;color:var(--dim);transition:all .2s;}
+.sankey-toggle.on{background:rgba(167,243,208,0.18);border-color:#2ECC71;color:#2ECC71;}
+.sankey-toggle:hover{border-color:#F4F5F5;color:#F4F5F5;}
 
 .tc{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
 .tc input{background:rgba(255,255,255,0.07);border:1.5px solid var(--bdr);
@@ -791,9 +792,9 @@ function renderDashboard(silverSector, platSector, year){
       <h3>Emissions Structure – Tier 1 direct purchased inputs</h3>
       <p class="cs">Sector → Scope → Tier 1 Input → Tier 1 Scope · hover nodes for values</p>
       <div class="toggle-row">
-        <span class="toggle-lbl">Tier 1 Scope view:</span>
-        <button class="tog off" id="btn-detail" onclick="setCanvasMode('detail')">Broken Out</button>
-        <button class="tog on"  id="btn-summed" onclick="setCanvasMode('summed')">Summed</button>
+        <span class="toggle-lbl">Scope view</span>
+        <button class="sankey-toggle"    id="btn-detail" onclick="setCanvasMode('detail')">Split S1/S2/S3</button>
+        <button class="sankey-toggle on" id="btn-summed" onclick="setCanvasMode('summed')">Summed</button>
       </div>
       <div class="sankey-wrap"><canvas id="sankey-canvas"></canvas></div>
     </div>`;
@@ -832,8 +833,8 @@ function renderDashboard(silverSector, platSector, year){
 
 function setCanvasMode(mode){
   canvasMode=mode;
-  document.getElementById('btn-detail').className='tog '+(mode==='detail'?'on':'off');
-  document.getElementById('btn-summed').className='tog '+(mode==='summed'?'on':'off');
+  document.getElementById('btn-detail').classList.toggle('on', mode==='detail');
+  document.getElementById('btn-summed').classList.toggle('on', mode==='summed');
   drawCanvas(window._ptData,mode);
 }
 
